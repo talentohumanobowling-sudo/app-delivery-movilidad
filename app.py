@@ -237,7 +237,7 @@ elif rol == "🚗 Prestador de Servicios":
                                 tlf_cliente = str(serv['Telefono_Cliente']).strip().replace(" ", "").replace("+", "")
                                 msg = f"Hola {serv['Cliente']}, le escribe su conductor {nom_prestador} respecto al servicio #{serv['ID_Servicio']}. Estatus actual: {nuevo_estado}."
                                 url_wa = f"https://wa.me/{tlf_cliente}?text={urllib.parse.quote(msg)}"
-                                st.link_button("💬 WhatsApp Cliente", url_wa)
+                                st.link_button("💬 WhatsApp", url_wa)
                             with col_b3:
                                 if st.button(f"❌ Cancelar #{serv['ID_Servicio']}", key=f"btn_canc_p_{serv['ID_Servicio']}"):
                                     df.at[idx, "Estado"] = "Cancelado"
@@ -326,4 +326,71 @@ elif rol == "⚙️ Administrador":
             if not prestadores_activos:
                 st.warning("⚠️ Debes autorizar al menos un prestador en la pestaña 'Autorizar Prestadores' antes de asignar servicios.")
             
-            for idx,
+            for idx, serv in pendientes.iterrows():
+                with st.expander(f"Solicitud #{serv['ID_Servicio']} - {serv['Cliente']} ({serv['Tipo_Servicio']}) | Estado: {serv['Estado']}"):
+                    st.write(f"**Origen:** {serv['Origen']} ➡️ **Destino:** {serv['Destino']}")
+                    st.write(f"**Teléfono:** {serv['Telefono_Cliente']} | **Pago:** {serv['Metodo_Pago']}")
+                    
+                    c_asig1, c_asig2 = st.columns(2)
+                    with c_asig1:
+                        cond_asignado = st.selectbox(f"Seleccionar Prestador Autorizado", prestadores_activos, key=f"cond_{serv['ID_Servicio']}")
+                    with c_asig2:
+                        tarifa_usd = st.number_input(f"Asignar Tarifa USD", min_value=0.0, step=0.5, value=float(serv['Monto_USD']) if pd.notna(serv['Monto_USD']) else 0.0, key=f"tar_{serv['ID_Servicio']}")
+                        
+                    col_act1, col_act2 = st.columns(2)
+                    with col_act1:
+                        if st.button(f"Confirmar Asignación #{serv['ID_Servicio']}", key=f"btn_asig_{serv['ID_Servicio']}"):
+                            df.at[idx, "Conductor"] = cond_asignado
+                            df.at[idx, "Monto_USD"] = tarifa_usd
+                            df.at[idx, "Estado"] = "Asignado"
+                            guardar_datos(df)
+                            st.success(f"¡Servicio #{serv['ID_Servicio']} asignado a {cond_asignado}!")
+                            st.rerun()
+                    with col_act2:
+                        if st.button(f"❌ Cancelar Servicio #{serv['ID_Servicio']}", key=f"btn_canc_{serv['ID_Servicio']}"):
+                            df.at[idx, "Estado"] = "Cancelado"
+                            guardar_datos(df)
+                            st.warning(f"Servicio #{serv['ID_Servicio']} cancelado.")
+                            st.rerun()
+        else:
+            st.info("No hay solicitudes pendientes por asignar.")
+
+    elif opcion_admin == "📋 Control General y Cancelaciones":
+        st.subheader("📋 Control General de Servicios y Cancelaciones")
+        if len(df) > 0:
+            st.dataframe(df.astype(str), use_container_width=True)
+            
+            st.markdown("---")
+            st.markdown("#### ⚙️ Gestión de Cancelación Directa")
+            id_a_cancelar = st.selectbox("Selecciona el ID del Servicio a Cancelar", df["ID_Servicio"].unique())
+            if st.button("🚫 Marcar Servicio como Cancelado"):
+                idx = df[df["ID_Servicio"] == id_a_cancelar].index
+                df.at[idx[0], "Estado"] = "Cancelado"
+                guardar_datos(df)
+                st.success(f"¡El servicio #{id_a_cancelar} ha sido cancelado exitosamente!")
+                st.rerun()
+        else:
+            st.info("No hay servicios registrados.")
+
+    elif opcion_admin == "📊 Finanzas":
+        st.subheader("📊 Finanzas Generales de la Empresa")
+        completados_tot = df[df["Estado"] == "Completado"]
+        if len(completados_tot) > 0:
+            total_recaudado = pd.to_numeric(completados_tot["Monto_USD"], errors='coerce').sum()
+            empresa_pct = 100.0 - st.session_state.porcentaje_prestador
+            ganancia_empresa_usd = total_recaudado * (empresa_pct / 100)
+            
+            c_f1, c_f2 = st.columns(2)
+            c_f1.metric("Recaudado Total USD", f"${total_recaudado:,.2f} USD")
+            c_f2.metric(f"Comisión Empresa ({empresa_pct}%)", f"${ganancia_empresa_usd:,.2f} USD")
+        else:
+            st.info("Aún no hay servicios completados.")
+
+    elif opcion_admin == "📁 Excel":
+        st.subheader("📁 Descargar Bases de Datos")
+        if os.path.exists(DB_FILE):
+            with open(DB_FILE, "rb") as file:
+                st.download_button("⬇️ Descargar Base de Servicios", file, file_name="base_datos_servicios.xlsx")
+        if os.path.exists(DB_PRESTADORES):
+            with open(DB_PRESTADORES, "rb") as file:
+                st.download_button("⬇️ Descargar Base de Prestadores", file, file_name="prestadores_autorizados.xlsx")
