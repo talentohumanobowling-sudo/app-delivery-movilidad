@@ -135,7 +135,6 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
             resultados = df[df["Telefono_Cliente"].astype(str).str.strip() == t_busq_clean]
             
             if len(resultados) > 0:
-                # Comprobar si alguno de los viajes del cliente ya fue aprobado por pago
                 pagos_aprobados_cliente = any(
                     (str(row.get('Pago_Verificado', 'No')).lower() in ["sí", "si"] or str(row['Metodo_Pago']).strip().lower() != "pago móvil")
                     and row['Estado'] not in ["Cancelado", "Completado"]
@@ -215,7 +214,7 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
                                 info_cond = df_prestadores[df_prestadores["Nombre"].str.lower() == str(serv['Conductor']).lower()]
                                 if len(info_cond) > 0:
                                     tlf_cond = info_cond.iloc[0]["Telefono"].strip().replace(" ", "").replace("+", "")
-                                    msg_c = f"Hola {serv['Conductor']}, le escribo desde la app respecto a mi servicio #{serv['ID_Servicio']}."
+                                    msg_c = f"Hola {serv['Conductor']}, le escribo desde la app respecto al servicio #{serv['ID_Servicio']}."
                                     url_wa_cond = f"https://wa.me/{tlf_cond}?text={urllib.parse.quote(msg_c)}"
                                     st.link_button("💬 Contactar a mi Conductor por WhatsApp", url_wa_cond)
                             else:
@@ -224,12 +223,11 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
                 st.warning("No se encontró ningún servicio registrado con ese número de teléfono.")
 
 # ==========================================
-# 2. VISTA PRESTADOR DE SERVICIOS (TIEMPO REAL + ALARMA DE NUEVO VIAJE)
+# 2. VISTA PRESTADOR DE SERVICIOS
 # ==========================================
 elif rol == "🚗 Prestador de Servicios":
     st.title("🚗 Panel del Prestador de Servicios (Tiempo Real)")
     
-    # Auto-refresh cada 5 segundos para mantener el panel en tiempo real
     auto_refresh_prestador = """
         <script>
             setTimeout(function(){
@@ -249,12 +247,9 @@ elif rol == "🚗 Prestador de Servicios":
         else:
             st.success("✅ ¡Acceso Autorizado!")
             servicios_cond = df[df["Conductor"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
-            
-            # Filtrar servicios activos asignados al prestador
             viajes_activos_cond = servicios_cond[servicios_cond["Estado"].isin(["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto"])]
             
             if len(viajes_activos_cond) > 0:
-                # ALARMA SONORA PARA EL PRESTADOR
                 audio_prestador = """
                     <script>
                         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -331,7 +326,7 @@ elif rol == "🚗 Prestador de Servicios":
                     st.dataframe(completados[["ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Monto_USD", "Metodo_Pago"]], use_container_width=True)
 
 # ==========================================
-# 3. VISTA ADMINISTRADOR (TIEMPO REAL + ALARMA SONORA)
+# 3. VISTA ADMINISTRADOR (FILTRADO INTELIGENTE POR TIPO DE VEHÍCULO)
 # ==========================================
 elif rol == "⚙️ Administrador":
     st.title("⚙️ Panel de Control Gerencial (Tiempo Real)")
@@ -394,7 +389,7 @@ elif rol == "⚙️ Administrador":
             with c_p2:
                 telefono_p = st.text_input("Teléfono *")
             with c_p3:
-                vehiculo_p = st.text_input("Vehículo / Tipo *")
+                vehiculo_p = st.selectbox("Vehículo / Tipo *", ["Moto", "Carro / Taxi", "Flete / Camión", "Delivery (Moto)", "Delivery (Carro)"])
                 
             if st.form_submit_button("➕ Registrar y Autorizar Prestador"):
                 if nombre_p and telefono_p:
@@ -422,11 +417,29 @@ elif rol == "⚙️ Administrador":
         pendientes = df[df["Estado"].isin(["Solicitado", "Pendiente", "Asignado"])]
         
         if len(pendientes) > 0:
-            prestadores_activos = df_prestadores[df_prestadores["Estatus"] == "Autorizado"]["Nombre"].tolist()
-            if not prestadores_activos:
+            prestadores_autorizados = df_prestadores[df_prestadores["Estatus"] == "Autorizado"]
+            if len(prestadores_autorizados) == 0:
                 st.warning("⚠️ Debes autorizar al menos un prestador en la pestaña 'Autorizar Prestadores' antes de asignar servicios.")
             
             for idx, serv in pendientes.iterrows():
+                tipo_solicitud = str(serv['Tipo_Servicio']).strip().lower()
+                
+                # FILTRADO INTELIGENTE SEGÚN EL TIPO DE SERVICIO
+                if "moto" in tipo_solicitud:
+                    prestadores_filtrados = prestadores_autorizados[prestadores_autorizados["Vehiculo"].str.lower().str.contains("moto")]
+                elif "taxi" in tipo_solicitud or "carro" in tipo_solicitud:
+                    prestadores_filtrados = prestadores_autorizados[prestadores_autorizados["Vehiculo"].str.lower().str.contains("carro|taxi")]
+                elif "flete" in tipo_solicitud:
+                    prestadores_filtrados = prestadores_autorizados[prestadores_autorizados["Vehiculo"].str.lower().str.contains("flete|camión|camion")]
+                elif "delivery" in tipo_solicitud:
+                    prestadores_filtrados = prestadores_autorizados[prestadores_autorizados["Vehiculo"].str.lower().str.contains("delivery|moto|carro")]
+                else:
+                    prestadores_filtrados = prestadores_autorizados
+                
+                lista_candidatos = prestadores_filtrados["Nombre"].tolist()
+                if not lista_candidatos:
+                    lista_candidatos = prestadores_autorizados["Nombre"].tolist() # Fallback si no hay coincidencia exacta
+                
                 with st.expander(f"Solicitud #{serv['ID_Servicio']} - {serv['Cliente']} ({serv['Tipo_Servicio']}) | Ref. Pago: {serv['Ref_Pago_Movil']}"):
                     st.write(f"**Origen:** {serv['Origen']} ➡️ **Destino:** {serv['Destino']}")
                     st.write(f"**Teléfono:** {serv['Telefono_Cliente']} | **Método de Pago:** {serv['Metodo_Pago']}")
@@ -435,7 +448,7 @@ elif rol == "⚙️ Administrador":
                     
                     c_asig1, c_asig2 = st.columns(2)
                     with c_asig1:
-                        cond_asignado = st.selectbox(f"Seleccionar Prestador", prestadores_activos, key=f"cond_{serv['ID_Servicio']}")
+                        cond_asignado = st.selectbox(f"Prestadores compatibles para {serv['Tipo_Servicio']}", lista_candidatos, key=f"cond_{serv['ID_Servicio']}")
                     with c_asig2:
                         tarifa_usd = st.number_input(f"Asignar Tarifa USD", min_value=0.0, step=0.5, value=float(serv['Monto_USD']) if pd.notna(serv['Monto_USD']) else 0.0, key=f"tar_{serv['ID_Servicio']}")
                         
