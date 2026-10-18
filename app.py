@@ -36,7 +36,7 @@ DATOS_PAGO_MOVIL = {
 
 def cargar_datos():
     if os.path.exists(DB_FILE):
-        df_temp = pd.read_excel(DB_FILE, dtype={"Ref_Pago_Movil": str, "Telefono_Cliente": str})
+        df_temp = pd.read_excel(DB_FILE, dtype={"Ref_Pago_Movil": str, "Telefono_Cliente": str, "ID_Servicio": int})
         if "Pago_Verificado" not in df_temp.columns:
             df_temp["Pago_Verificado"] = "No"
         return df_temp
@@ -51,6 +51,7 @@ def cargar_datos():
 
 def guardar_datos(df):
     df["Ref_Pago_Movil"] = df["Ref_Pago_Movil"].astype(str)
+    df["Telefono_Cliente"] = df["Telefono_Cliente"].astype(str)
     df.to_excel(DB_FILE, index=False)
 
 def cargar_prestadores():
@@ -84,7 +85,7 @@ st.sidebar.metric("💵 Tasa BCV del Día", f"Bs. {st.session_state.tasa_bcv:,.2
 if rol == "👤 Cliente (Solicitar y Consultar)":
     st.markdown("<h2 style='color: #1E88E5;'>📱 Portal de Cliente</h2>", unsafe_allow_html=True)
     
-    tab_solicitar, tab_consultar = st.tabs(["📝 Solicitar Nuevo Servicio", "🔍 Consultar Mi Viaje / Pagar"])
+    tab_solicitar, tab_consultar = st.tabs(["📝 Solicitar Nuevo Servicio", "🔍 Consultar Mis Viajes por Teléfono"])
     
     with tab_solicitar:
         with st.form("form_cliente"):
@@ -108,7 +109,7 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
                         "Fecha_Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         "Tipo_Servicio": tipo_serv,
                         "Cliente": nombre,
-                        "Telefono_Cliente": str(telefono),
+                        "Telefono_Cliente": str(telefono).strip(),
                         "Origen": origen,
                         "Destino": destino,
                         "Conductor": "Por Asignar",
@@ -126,73 +127,73 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
                     st.error("Por favor completa los campos obligatorios (*).")
                     
     with tab_consultar:
-        if len(df) == 0:
-            st.info("No hay solicitudes registradas.")
-        else:
-            id_busqueda = st.number_input("Ingresa tu ID de Servicio:", min_value=1001, step=1, value=1001)
-            resultado = df[df["ID_Servicio"] == id_busqueda]
+        st.subheader("🔍 Mis Servicios Activos e Historial")
+        telefono_busqueda = st.text_input("Ingresa tu número de teléfono registrado para ver tus servicios:")
+        
+        if telefono_busqueda:
+            t_busq_clean = telefono_busqueda.strip()
+            resultados = df[df["Telefono_Cliente"].astype(str).str.strip() == t_busq_clean]
             
-            if len(resultado) > 0:
-                serv = resultado.iloc[0]
-                monto_usd = float(serv['Monto_USD'])
-                monto_ves = monto_usd * st.session_state.tasa_bcv
-                
-                st.success(f"### 📍 Servicio #{serv['ID_Servicio']}")
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.markdown(f"**👤 Cliente:** {serv['Cliente']}")
-                    st.markdown(f"**🚘 Servicio:** {serv['Tipo_Servicio']}")
-                    st.markdown(f"**📍 Origen:** {serv['Origen']}")
-                    st.markdown(f"**🏁 Destino:** {serv['Destino']}")
-                with c2:
-                    st.markdown(f"**🚦 Estado:** `{serv['Estado']}`")
-                    st.markdown(f"**💵 Tarifa:** **${monto_usd:,.2f} USD** (Bs. {monto_ves:,.2f})")
-                
-                if serv['Estado'] == "Cancelado":
-                    st.error("⚠️ Este servicio ha sido cancelado.")
-                else:
-                    ref_actual = "" if pd.isna(serv['Ref_Pago_Movil']) or str(serv['Ref_Pago_Movil']) == "nan" else str(serv['Ref_Pago_Movil']).strip()
-                    pago_verif = str(serv.get('Pago_Verificado', 'No')).strip()
+            if len(resultados) > 0:
+                for idx_res, serv in resultados.iterrows():
+                    monto_usd = float(serv['Monto_USD'])
+                    monto_ves = monto_usd * st.session_state.tasa_bcv
                     
-                    if str(serv['Metodo_Pago']).strip().lower() == "pago móvil" and monto_usd > 0:
-                        st.markdown("---")
-                        st.info("📲 **Datos para Pago Móvil:**")
-                        st.warning(f"💱 **Monto exacto:** **Bs. {monto_ves:,.2f}** *(Tasa BCV: {st.session_state.tasa_bcv})*")
+                    with st.expander(f"📍 Servicio #{serv['ID_Servicio']} - {serv['Tipo_Servicio']} [{serv['Estado']}]", expanded=True):
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            st.markdown(f"**👤 Cliente:** {serv['Cliente']}")
+                            st.markdown(f"**📍 Origen:** {serv['Origen']}")
+                            st.markdown(f"**🏁 Destino:** {serv['Destino']}")
+                        with c2:
+                            st.markdown(f"**🚦 Estado:** `{serv['Estado']}`")
+                            st.markdown(f"**💵 Tarifa:** **${monto_usd:,.2f} USD** (Bs. {monto_ves:,.2f})")
                         
-                        col_p1, col_p2 = st.columns(2)
-                        with col_p1:
-                            st.write(f"🏦 **Banco:** {DATOS_PAGO_MOVIL['Banco']}")
-                            st.write(f"📱 **Teléfono:** {DATOS_PAGO_MOVIL['Telefono']}")
-                        with col_p2:
-                            st.write(f"🪪 **Cédula / RIF:** {DATOS_PAGO_MOVIL['Cedula_RIF']}")
-                            st.write(f"👤 **Titular:** {DATOS_PAGO_MOVIL['Titular']}")
-                        
-                        ref_ingresada = st.text_input("📝 Ingresa los dígitos de tu referencia bancaria:", value=ref_actual)
-                        if st.button("Reportar Referencia de Pago"):
-                            if ref_ingresada:
-                                idx = df[df["ID_Servicio"] == id_busqueda].index
-                                df.at[idx[0], "Ref_Pago_Movil"] = str(ref_ingresada)
-                                guardar_datos(df)
-                                st.success("¡Referencia reportada! Esperando confirmación bancaria del administrador.")
-                                st.rerun()
+                        if serv['Estado'] == "Cancelado":
+                            st.error("⚠️ Este servicio ha sido cancelado.")
+                        else:
+                            ref_actual = "" if pd.isna(serv['Ref_Pago_Movil']) or str(serv['Ref_Pago_Movil']) == "nan" else str(serv['Ref_Pago_Movil']).strip()
+                            pago_verif = str(serv.get('Pago_Verificado', 'No')).strip()
+                            
+                            if str(serv['Metodo_Pago']).strip().lower() == "pago móvil" and monto_usd > 0:
+                                st.markdown("---")
+                                st.info("📲 **Datos para Pago Móvil:**")
+                                st.warning(f"💱 **Monto exacto:** **Bs. {monto_ves:,.2f}** *(Tasa BCV: {st.session_state.tasa_bcv})*")
+                                
+                                col_p1, col_p2 = st.columns(2)
+                                with col_p1:
+                                    st.write(f"🏦 **Banco:** {DATOS_PAGO_MOVIL['Banco']}")
+                                    st.write(f"📱 **Teléfono:** {DATOS_PAGO_MOVIL['Telefono']}")
+                                with col_p2:
+                                    st.write(f"🪪 **Cédula / RIF:** {DATOS_PAGO_MOVIL['Cedula_RIF']}")
+                                    st.write(f"👤 **Titular:** {DATOS_PAGO_MOVIL['Titular']}")
+                                
+                                ref_ingresada = st.text_input("📝 Ingresa los dígitos de tu referencia bancaria:", value=ref_actual, key=f"ref_{serv['ID_Servicio']}")
+                                if st.button(f"Reportar Referencia #{serv['ID_Servicio']}", key=f"btn_ref_{serv['ID_Servicio']}"):
+                                    if ref_ingresada:
+                                        idx = df[df["ID_Servicio"] == serv['ID_Servicio']].index
+                                        df.at[idx[0], "Ref_Pago_Movil"] = str(ref_ingresada)
+                                        guardar_datos(df)
+                                        st.success("¡Referencia reportada! Esperando confirmación bancaria del administrador.")
+                                        st.rerun()
+                                    else:
+                                        st.error("Ingresa la referencia de pago.")
+                            
+                            if pago_verif.lower() == "sí" or pago_verif.lower() == "si" or str(serv['Metodo_Pago']).strip().lower() != "pago móvil":
+                                st.markdown("---")
+                                st.success("✅ **¡Pago Confirmado por la Empresa!**")
+                                st.markdown(f"### 👨‍✈️ Tu Prestador de Servicio Asignado es: **{serv['Conductor']}**")
+                                
+                                info_cond = df_prestadores[df_prestadores["Nombre"].str.lower() == str(serv['Conductor']).lower()]
+                                if len(info_cond) > 0:
+                                    tlf_cond = info_cond.iloc[0]["Telefono"].strip().replace(" ", "").replace("+", "")
+                                    msg_c = f"Hola {serv['Conductor']}, le escribo desde la app respecto a mi servicio #{serv['ID_Servicio']}."
+                                    url_wa_cond = f"https://wa.me/{tlf_cond}?text={urllib.parse.quote(msg_c)}"
+                                    st.link_button("💬 Contactar a mi Conductor por WhatsApp", url_wa_cond)
                             else:
-                                st.error("Ingresa la referencia de pago.")
-                    
-                    if pago_verif.lower() == "sí" or pago_verif.lower() == "si" or str(serv['Metodo_Pago']).strip().lower() != "pago móvil":
-                        st.markdown("---")
-                        st.success("✅ **¡Pago Confirmado por la Empresa!**")
-                        st.markdown(f"### 👨‍✈️ Tu Prestador de Servicio Asignado es: **{serv['Conductor']}**")
-                        
-                        info_cond = df_prestadores[df_prestadores["Nombre"].str.lower() == str(serv['Conductor']).lower()]
-                        if len(info_cond) > 0:
-                            tlf_cond = info_cond.iloc[0]["Telefono"].strip().replace(" ", "").replace("+", "")
-                            msg_c = f"Hola {serv['Conductor']}, le escribo desde la app respecto a mi servicio #{serv['ID_Servicio']}."
-                            url_wa_cond = f"https://wa.me/{tlf_cond}?text={urllib.parse.quote(msg_c)}"
-                            st.link_button("💬 Contactar a mi Conductor por WhatsApp", url_wa_cond)
-                    else:
-                        st.info("⏳ **Pago en proceso de verificación por el administrador.** Una vez confirmado, verás aquí los datos de tu conductor.")
+                                st.info("⏳ **Pago en proceso de verificación por el administrador.** Una vez confirmado, verás aquí los datos de tu conductor.")
             else:
-                st.warning("No se encontró ningún servicio con ese ID.")
+                st.warning("No se encontró ningún servicio registrado con ese número de teléfono.")
 
 # ==========================================
 # 2. VISTA PRESTADOR DE SERVICIOS
@@ -273,7 +274,6 @@ elif rol == "🚗 Prestador de Servicios":
 elif rol == "⚙️ Administrador":
     st.title("⚙️ Panel de Control Gerencial (Tiempo Real)")
     
-    # Auto-refresh nativo en JavaScript cada 5 segundos
     auto_refresh_html = """
         <script>
             setTimeout(function(){
@@ -283,7 +283,6 @@ elif rol == "⚙️ Administrador":
     """
     components.html(auto_refresh_html, height=0)
     
-    # Comprobar si hay solicitudes nuevas pendientes para emitir el pitido de alerta
     pendientes_alarma = df[df["Estado"].isin(["Solicitado", "Pendiente"])]
     if len(pendientes_alarma) > 0:
         audio_html = """
