@@ -9,10 +9,10 @@ DB_FILE = "base_datos_servicios.xlsx"
 
 # Datos de Pago Móvil de la Empresa
 DATOS_PAGO_MOVIL = {
-    "Banco": "Banco Mercantil (0105)",
-    "Telefono": "0412-1234567",
-    "Cedula_RIF": "J-123456789",
-    "Titular": "Servicios de Movilidad C.A."
+    "Banco": "BDV (0102)",
+    "Telefono": "0412-3349463",
+    "Cedula_RIF": "V-13609424",
+    "Titular": "Servicios de Movilidad"
 }
 
 def cargar_datos():
