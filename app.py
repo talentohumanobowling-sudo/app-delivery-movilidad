@@ -141,29 +141,50 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
                     st.markdown(f"**🏁 Destino:** {serv['Destino']}")
                 with c2:
                     st.markdown(f"**🚦 Estado:** `{serv['Estado']}`")
-                    st.markdown(f"**👨‍✈️ Conductor:** **{serv['Conductor']}**")
                     st.markdown(f"**💵 Tarifa:** **${monto_usd:,.2f} USD** (Bs. {monto_ves:,.2f})")
                 
-                if str(serv['Metodo_Pago']).strip().lower() == "pago móvil" and monto_usd > 0:
-                    st.markdown("---")
-                    st.info("📲 **Datos para Pago Móvil:**")
-                    st.warning(f"💱 **Monto exacto:** **Bs. {monto_ves:,.2f}** *(Tasa BCV: {st.session_state.tasa_bcv})*")
-                    col_p1, col_p2 = st.columns(2)
-                    with col_p1:
-                        st.write(f"🏦 **Banco:** {DATOS_PAGO_MOVIL['Banco']}")
-                        st.write(f"📱 **Teléfono:** {DATOS_PAGO_MOVIL['Telefono']}")
-                    with col_p2:
-                        st.write(f"🪪 **Cédula / RIF:** {DATOS_PAGO_MOVIL['Cedula_RIF']}")
-                        st.write(f"👤 **Titular:** {DATOS_PAGO_MOVIL['Titular']}")
+                if serv['Estado'] == "Cancelado":
+                    st.error("⚠️ Este servicio ha sido cancelado.")
+                else:
+                    ref_actual = "" if pd.isna(serv['Ref_Pago_Movil']) or str(serv['Ref_Pago_Movil']) == "nan" else str(serv['Ref_Pago_Movil']).strip()
                     
-                    val_actual = "" if pd.isna(serv['Ref_Pago_Movil']) or str(serv['Ref_Pago_Movil']) == "nan" else str(serv['Ref_Pago_Movil'])
-                    ref_ingresada = st.text_input("📝 Ingresa los dígitos de tu referencia:", value=val_actual)
-                    if st.button("Confirmar y Reportar Pago"):
-                        idx = df[df["ID_Servicio"] == id_busqueda].index
-                        df.at[idx[0], "Ref_Pago_Movil"] = str(ref_ingresada)
-                        guardar_datos(df)
-                        st.success("¡Referencia guardada!")
-                        st.rerun()
+                    if str(serv['Metodo_Pago']).strip().lower() == "pago móvil" and monto_usd > 0:
+                        st.markdown("---")
+                        st.info("📲 **Datos para Pago Móvil:**")
+                        st.warning(f"💱 **Monto exacto:** **Bs. {monto_ves:,.2f}** *(Tasa BCV: {st.session_state.tasa_bcv})*")
+                        
+                        col_p1, col_p2 = st.columns(2)
+                        with col_p1:
+                            st.write(f"🏦 **Banco:** {DATOS_PAGO_MOVIL['Banco']}")
+                            st.write(f"📱 **Teléfono:** {DATOS_PAGO_MOVIL['Telefono']}")
+                        with col_p2:
+                            st.write(f"🪪 **Cédula / RIF:** {DATOS_PAGO_MOVIL['Cedula_RIF']}")
+                            st.write(f"👤 **Titular:** {DATOS_PAGO_MOVIL['Titular']}")
+                        
+                        ref_ingresada = st.text_input("📝 Ingresa los dígitos de tu referencia bancaria:", value=ref_actual)
+                        if st.button("Confirmar y Reportar Pago"):
+                            if ref_ingresada:
+                                idx = df[df["ID_Servicio"] == id_busqueda].index
+                                df.at[idx[0], "Ref_Pago_Movil"] = str(ref_ingresada)
+                                guardar_datos(df)
+                                st.success("¡Referencia de pago registrada con éxito!")
+                                st.rerun()
+                            else:
+                                st.error("Ingresa la referencia de pago.")
+                    
+                    if ref_actual != "" or str(serv['Metodo_Pago']).strip().lower() != "pago móvil":
+                        st.markdown("---")
+                        st.success("✅ **¡Pago verificado / Registrado con éxito!**")
+                        st.markdown(f"### 👨‍✈️ Tu Prestador de Servicio Asignado es: **{serv['Conductor']}**")
+                        
+                        info_cond = df_prestadores[df_prestadores["Nombre"].str.lower() == str(serv['Conductor']).lower()]
+                        if len(info_cond) > 0:
+                            tlf_cond = info_cond.iloc[0]["Telefono"].strip().replace(" ", "").replace("+", "")
+                            msg_c = f"Hola {serv['Conductor']}, le escribo desde la app respecto a mi servicio #{serv['ID_Servicio']}."
+                            url_wa_cond = f"https://wa.me/{tlf_cond}?text={urllib.parse.quote(msg_c)}"
+                            st.markdown(f'<a href="{url_wa_cond}" target="_blank"><button style="background-color:#25D366; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">💬 Contactar a mi Conductor por WhatsApp</button></a>', unsafe_allow_html=True)
+                    else:
+                        st.info("⚠️ Para ver los datos y contacto de tu conductor asignado, por favor reporta el número de referencia de tu pago móvil.")
             else:
                 st.warning("No se encontró ningún servicio con ese ID.")
 
@@ -172,179 +193,4 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
 # ==========================================
 elif rol == "🚗 Prestador de Servicios":
     st.title("🚗 Panel del Prestador de Servicios")
-    st.markdown("---")
-    
-    nom_prestador = st.text_input("Ingresa tu Nombre exacto (autorizado por admin) para acceder:")
-    
-    if nom_prestador:
-        # Verificar si está autorizado
-        prestador_valido = df_prestadores[(df_prestadores["Nombre"].str.lower() == nom_prestador.lower()) & (df_prestadores["Estatus"] == "Autorizado")]
-        
-        if len(prestador_valido) == 0:
-            st.warning("⚠️ Tu nombre no se encuentra registrado o aún no ha sido autorizado por el Administrador.")
-        else:
-            st.success("✅ ¡Acceso Autorizado!")
-            servicios_cond = df[df["Conductor"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
-            
-            tab_viajes, tab_finanzas = st.tabs(["📋 Mis Viajes y Estatus", "💰 Mis Ganancias y Porcentaje"])
-            
-            with tab_viajes:
-                if len(servicios_cond) > 0:
-                    for idx, serv in servicios_cond.iterrows():
-                        monto_usd = float(serv['Monto_USD'])
-                        monto_ves = monto_usd * st.session_state.tasa_bcv
-                        ganancia_usd = monto_usd * (st.session_state.porcentaje_prestador / 100)
-                        ganancia_ves = ganancia_usd * st.session_state.tasa_bcv
-                        
-                        with st.expander(f"Servicio #{serv['ID_Servicio']} - {serv['Origen']} ➡️ {serv['Destino']} [{serv['Estado']}]"):
-                            st.write(f"**Cliente:** {serv['Cliente']} | **Teléfono:** {serv['Telefono_Cliente']}")
-                            st.write(f"**Monto Cobrar:** ${monto_usd:.2f} USD (Bs. {monto_ves:,.2f})")
-                            st.write(f"**Tu Ganancia ({st.session_state.porcentaje_prestador}%):** **${ganancia_usd:.2f} USD** (Bs. {ganancia_ves:,.2f})")
-                            st.write(f"**Ref. Pago Móvil:** {serv['Ref_Pago_Movil']}")
-                            
-                            estados_posibles = ["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto", "Completado", "Cancelado"]
-                            idx_est = estados_posibles.index(serv['Estado']) if serv['Estado'] in estados_posibles else 0
-                            nuevo_estado = st.selectbox("Actualizar Estatus:", estados_posibles, index=idx_est, key=f"st_{serv['ID_Servicio']}")
-                            
-                            col_b1, col_b2 = st.columns(2)
-                            with col_b1:
-                                if st.button(f"Guardar Estatus #{serv['ID_Servicio']}", key=f"btn_{serv['ID_Servicio']}"):
-                                    df.at[idx, "Estado"] = nuevo_estado
-                                    guardar_datos(df)
-                                    st.success("¡Estatus actualizado!")
-                                    st.rerun()
-                            with col_b2:
-                                # Botón de WhatsApp al Cliente
-                                tlf_cliente = str(serv['Telefono_Cliente']).strip().replace(" ", "").replace("+", "")
-                                msg = f"Hola {serv['Cliente']}, le escribe su conductor {nom_prestador} respecto al servicio #{serv['ID_Servicio']}. Estatus actual: {nuevo_estado}."
-                                url_wa = f"https://wa.me/{tlf_cliente}?text={urllib.parse.quote(msg)}"
-                                st.markdown(f'<a href="{url_wa}" target="_blank"><button style="background-color:#25D366; color:white; border:none; padding:8px 16px; border-radius:5px; cursor:pointer;">💬 Escribir al Cliente</button></a>', unsafe_allow_html=True)
-                else:
-                    st.info("No tienes servicios asignados actualmente.")
-                    
-            with tab_finanzas:
-                completados = servicios_cond[servicios_cond["Estado"] == "Completado"]
-                total_cobrado_usd = pd.to_numeric(completados["Monto_USD"], errors='coerce').sum()
-                ganancia_net_usd = total_cobrado_usd * (st.session_state.porcentaje_prestador / 100)
-                ganancia_net_ves = ganancia_net_usd * st.session_state.tasa_bcv
-                
-                c_g1, c_g2, c_g3 = st.columns(3)
-                c_g1.metric("Servicios Completados", len(completados))
-                c_g2.metric("Ganancia Total USD", f"${ganancia_net_usd:,.2f} USD")
-                c_g3.metric("Ganancia Total VES", f"Bs. {ganancia_net_ves:,.2f}")
-                
-                if len(completados) > 0:
-                    st.dataframe(completados[["ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Monto_USD", "Metodo_Pago"]], use_container_width=True)
-
-# ==========================================
-# 3. VISTA ADMINISTRADOR
-# ==========================================
-elif rol == "⚙️ Administrador":
-    st.title("⚙️ Panel de Control Gerencial")
-    
-    with st.expander("⚙️ Configuración General del Sistema", expanded=False):
-        col_adm1, col_adm2 = st.columns(2)
-        with col_adm1:
-            st.session_state.tasa_bcv = st.number_input("Tasa BCV (Bs. / USD)", value=float(st.session_state.tasa_bcv), step=0.10)
-        with col_adm2:
-            st.session_state.porcentaje_prestador = st.number_input("% Ganancia Prestador", value=float(st.session_state.porcentaje_prestador), step=5.0)
-            
-    st.markdown("---")
-    
-    opcion_admin = st.selectbox("Seleccione una sección de administración:", [
-        "👥 Autorizar Prestadores", 
-        "📥 Asignar Solicitudes y Tarifas", 
-        "📋 Control General", 
-        "📊 Finanzas", 
-        "📁 Excel"
-    ])
-    
-    if opcion_admin == "👥 Autorizar Prestadores":
-        st.subheader("👥 Gestión y Autorización de Prestadores de Servicio")
-        
-        with st.form("form_nuevo_prestador"):
-            c_p1, c_p2, c_p3 = st.columns(3)
-            with c_p1:
-                nombre_p = st.text_input("Nombre y Apellido *")
-            with c_p2:
-                telefono_p = st.text_input("Teléfono *")
-            with c_p3:
-                vehiculo_p = st.text_input("Vehículo / Tipo *")
-                
-            if st.form_submit_button("➕ Registrar y Autorizar Prestador"):
-                if nombre_p and telefono_p:
-                    nuevo_p = pd.DataFrame([{
-                        "Nombre": nombre_p,
-                        "Telefono": telefono_p,
-                        "Vehiculo": vehiculo_p,
-                        "Estatus": "Autorizado"
-                    }])
-                    df_prestadores = pd.concat([df_prestadores, nuevo_p], ignore_index=True)
-                    guardar_prestadores(df_prestadores)
-                    st.success(f"¡Prestador {nombre_p} autorizado con éxito!")
-                    st.rerun()
-                else:
-                    st.error("Completa los campos requeridos.")
-                    
-        st.markdown("#### Prestadores Registrados en el Sistema:")
-        if len(df_prestadores) > 0:
-            st.dataframe(df_prestadores, use_container_width=True)
-        else:
-            st.info("No hay prestadores registrados.")
-
-    elif opcion_admin == "📥 Asignar Solicitudes y Tarifas":
-        st.subheader("📥 Solicitudes Entrantes - Asignación de Conductor y Tarifa")
-        pendientes = df[df["Estado"].isin(["Solicitado", "Pendiente"])]
-        
-        if len(pendientes) > 0:
-            prestadores_activos = df_prestadores[df_prestadores["Estatus"] == "Autorizado"]["Nombre"].tolist()
-            if not prestadores_activos:
-                st.warning("⚠️ Debes autorizar al menos un prestador en la pestaña 'Autorizar Prestadores' antes de asignar servicios.")
-            
-            for idx, serv in pendientes.iterrows():
-                with st.expander(f"Solicitud #{serv['ID_Servicio']} - {serv['Cliente']} ({serv['Tipo_Servicio']})"):
-                    st.write(f"**Origen:** {serv['Origen']} ➡️ **Destino:** {serv['Destino']}")
-                    st.write(f"**Teléfono:** {serv['Telefono_Cliente']} | **Pago:** {serv['Metodo_Pago']}")
-                    
-                    c_asig1, c_asig2 = st.columns(2)
-                    with c_asig1:
-                        cond_asignado = st.selectbox(f"Seleccionar Prestador Autorizado", prestadores_activos, key=f"cond_{serv['ID_Servicio']}")
-                    with c_asig2:
-                        tarifa_usd = st.number_input(f"Asignar Tarifa USD", min_value=0.0, step=0.5, key=f"tar_{serv['ID_Servicio']}")
-                        
-                    if st.button(f"Confirmar Asignación #{serv['ID_Servicio']}", key=f"btn_asig_{serv['ID_Servicio']}"):
-                        df.at[idx, "Conductor"] = cond_asignado
-                        df.at[idx, "Monto_USD"] = tarifa_usd
-                        df.at[idx, "Estado"] = "Asignado"
-                        guardar_datos(df)
-                        st.success(f"¡Servicio #{serv['ID_Servicio']} asignado a {cond_asignado} por ${tarifa_usd} USD!")
-                        st.rerun()
-        else:
-            st.info("No hay solicitudes pendientes por asignar.")
-
-    elif opcion_admin == "📋 Control General":
-        st.subheader("📋 Todos los Servicios Registrados")
-        st.dataframe(df.astype(str), use_container_width=True)
-
-    elif opcion_admin == "📊 Finanzas":
-        st.subheader("📊 Finanzas Generales de la Empresa")
-        completados_tot = df[df["Estado"] == "Completado"]
-        if len(completados_tot) > 0:
-            total_recaudado = pd.to_numeric(completados_tot["Monto_USD"], errors='coerce').sum()
-            empresa_pct = 100.0 - st.session_state.porcentaje_prestador
-            ganancia_empresa_usd = total_recaudado * (empresa_pct / 100)
-            
-            c_f1, c_f2 = st.columns(2)
-            c_f1.metric("Recaudado Total USD", f"${total_recaudado:,.2f} USD")
-            c_f2.metric(f"Comisión Empresa ({empresa_pct}%)", f"${ganancia_empresa_usd:,.2f} USD")
-        else:
-            st.info("Aún no hay servicios completados.")
-
-    elif opcion_admin == "📁 Excel":
-        st.subheader("📁 Descargar Bases de Datos")
-        if os.path.exists(DB_FILE):
-            with open(DB_FILE, "rb") as file:
-                st.download_button("⬇️ Descargar Base de Servicios", file, file_name="base_datos_servicios.xlsx")
-        if os.path.exists(DB_PRESTADORES):
-            with open(DB_PRESTADORES, "rb") as file:
-                st.download_
+    st.
