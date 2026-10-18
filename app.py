@@ -5,7 +5,6 @@ import requests
 from datetime import datetime
 import urllib.parse
 import streamlit.components.v1 as components
-from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="App de Movilidad y Servicios", page_icon="🚖", layout="wide")
 
@@ -269,13 +268,20 @@ elif rol == "🚗 Prestador de Servicios":
                     st.dataframe(completados[["ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Monto_USD", "Metodo_Pago"]], use_container_width=True)
 
 # ==========================================
-# 3. VISTA ADMINISTRADOR (TIEMPO REAL + ALARMA)
+# 3. VISTA ADMINISTRADOR (TIEMPO REAL + ALARMA SONORA)
 # ==========================================
 elif rol == "⚙️ Administrador":
     st.title("⚙️ Panel de Control Gerencial (Tiempo Real)")
     
-    # Auto-refresh cada 5 segundos (5000 milisegundos) para buscar nuevos pedidos automáticamente
-    st_autorefresh(interval=5000, key="datarefresh")
+    # Auto-refresh nativo en JavaScript cada 5 segundos
+    auto_refresh_html = """
+        <script>
+            setTimeout(function(){
+                window.location.reload();
+            }, 5000);
+        </script>
+    """
+    components.html(auto_refresh_html, height=0)
     
     # Comprobar si hay solicitudes nuevas pendientes para emitir el pitido de alerta
     pendientes_alarma = df[df["Estado"].isin(["Solicitado", "Pendiente"])]
