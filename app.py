@@ -4,6 +4,8 @@ import os
 import requests
 from datetime import datetime
 import urllib.parse
+import streamlit.components.v1 as components
+from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="App de Movilidad y Servicios", page_icon="🚖", layout="wide")
 
@@ -35,12 +37,15 @@ DATOS_PAGO_MOVIL = {
 
 def cargar_datos():
     if os.path.exists(DB_FILE):
-        return pd.read_excel(DB_FILE, dtype={"Ref_Pago_Movil": str, "Telefono_Cliente": str})
+        df_temp = pd.read_excel(DB_FILE, dtype={"Ref_Pago_Movil": str, "Telefono_Cliente": str})
+        if "Pago_Verificado" not in df_temp.columns:
+            df_temp["Pago_Verificado"] = "No"
+        return df_temp
     else:
         df_inicial = pd.DataFrame(columns=[
             "ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Cliente", 
             "Telefono_Cliente", "Origen", "Destino", "Conductor", 
-            "Monto_USD", "Metodo_Pago", "Ref_Pago_Movil", "Estado", "Notas"
+            "Monto_USD", "Metodo_Pago", "Ref_Pago_Movil", "Pago_Verificado", "Estado", "Notas"
         ])
         df_inicial.to_excel(DB_FILE, index=False)
         return df_inicial
@@ -111,6 +116,7 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
                         "Monto_USD": 0.0,
                         "Metodo_Pago": metodo_pago,
                         "Ref_Pago_Movil": "",
+                        "Pago_Verificado": "No",
                         "Estado": "Solicitado",
                         "Notas": notas
                     }
@@ -147,6 +153,7 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
                     st.error("⚠️ Este servicio ha sido cancelado.")
                 else:
                     ref_actual = "" if pd.isna(serv['Ref_Pago_Movil']) or str(serv['Ref_Pago_Movil']) == "nan" else str(serv['Ref_Pago_Movil']).strip()
+                    pago_verif = str(serv.get('Pago_Verificado', 'No')).strip()
                     
                     if str(serv['Metodo_Pago']).strip().lower() == "pago móvil" and monto_usd > 0:
                         st.markdown("---")
@@ -162,19 +169,19 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
                             st.write(f"👤 **Titular:** {DATOS_PAGO_MOVIL['Titular']}")
                         
                         ref_ingresada = st.text_input("📝 Ingresa los dígitos de tu referencia bancaria:", value=ref_actual)
-                        if st.button("Confirmar y Reportar Pago"):
+                        if st.button("Reportar Referencia de Pago"):
                             if ref_ingresada:
                                 idx = df[df["ID_Servicio"] == id_busqueda].index
                                 df.at[idx[0], "Ref_Pago_Movil"] = str(ref_ingresada)
                                 guardar_datos(df)
-                                st.success("¡Referencia de pago registrada con éxito!")
+                                st.success("¡Referencia reportada! Esperando confirmación bancaria del administrador.")
                                 st.rerun()
                             else:
                                 st.error("Ingresa la referencia de pago.")
                     
-                    if ref_actual != "" or str(serv['Metodo_Pago']).strip().lower() != "pago móvil":
+                    if pago_verif.lower() == "sí" or pago_verif.lower() == "si" or str(serv['Metodo_Pago']).strip().lower() != "pago móvil":
                         st.markdown("---")
-                        st.success("✅ **¡Pago verificado / Registrado con éxito!**")
+                        st.success("✅ **¡Pago Confirmado por la Empresa!**")
                         st.markdown(f"### 👨‍✈️ Tu Prestador de Servicio Asignado es: **{serv['Conductor']}**")
                         
                         info_cond = df_prestadores[df_prestadores["Nombre"].str.lower() == str(serv['Conductor']).lower()]
@@ -184,7 +191,7 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
                             url_wa_cond = f"https://wa.me/{tlf_cond}?text={urllib.parse.quote(msg_c)}"
                             st.link_button("💬 Contactar a mi Conductor por WhatsApp", url_wa_cond)
                     else:
-                        st.info("⚠️ Para ver los datos y contacto de tu conductor asignado, por favor reporta el número de referencia de tu pago móvil.")
+                        st.info("⏳ **Pago en proceso de verificación por el administrador.** Una vez confirmado, verás aquí los datos de tu conductor.")
             else:
                 st.warning("No se encontró ningún servicio con ese ID.")
 
@@ -220,7 +227,7 @@ elif rol == "🚗 Prestador de Servicios":
                             st.write(f"**Cliente:** {serv['Cliente']} | **Teléfono:** {serv['Telefono_Cliente']}")
                             st.write(f"**Monto Cobrar:** ${monto_usd:.2f} USD (Bs. {monto_ves:,.2f})")
                             st.write(f"**Tu Ganancia ({st.session_state.porcentaje_prestador}%):** **${ganancia_usd:.2f} USD** (Bs. {ganancia_ves:,.2f})")
-                            st.write(f"**Ref. Pago Móvil del Cliente:** {serv['Ref_Pago_Movil']}")
+                            st.write(f"**Ref. Pago Móvil:** {serv['Ref_Pago_Movil']} | **Pago Verificado:** {serv.get('Pago_Verificado', 'No')}")
                             
                             estados_posibles = ["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto", "Completado", "Cancelado"]
                             idx_est = estados_posibles.index(serv['Estado']) if serv['Estado'] in estados_posibles else 0
@@ -262,11 +269,37 @@ elif rol == "🚗 Prestador de Servicios":
                     st.dataframe(completados[["ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Monto_USD", "Metodo_Pago"]], use_container_width=True)
 
 # ==========================================
-# 3. VISTA ADMINISTRADOR
+# 3. VISTA ADMINISTRADOR (TIEMPO REAL + ALARMA)
 # ==========================================
 elif rol == "⚙️ Administrador":
-    st.title("⚙️ Panel de Control Gerencial")
+    st.title("⚙️ Panel de Control Gerencial (Tiempo Real)")
     
+    # Auto-refresh cada 5 segundos (5000 milisegundos) para buscar nuevos pedidos automáticamente
+    st_autorefresh(interval=5000, key="datarefresh")
+    
+    # Comprobar si hay solicitudes nuevas pendientes para emitir el pitido de alerta
+    pendientes_alarma = df[df["Estado"].isin(["Solicitado", "Pendiente"])]
+    if len(pendientes_alarma) > 0:
+        audio_html = """
+            <script>
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                function playBeep() {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = 880; 
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.5);
+                }
+                playBeep();
+            </script>
+        """
+        components.html(audio_html, height=0)
+        st.warning(f"🚨 ¡Atención! Tienes **{len(pendientes_alarma)}** solicitud(es) entrante(s) esperando asignación.")
+
     with st.expander("⚙️ Configuración General del Sistema", expanded=False):
         col_adm1, col_adm2 = st.columns(2)
         with col_adm1:
@@ -278,7 +311,7 @@ elif rol == "⚙️ Administrador":
     
     opcion_admin = st.selectbox("Seleccione una sección de administración:", [
         "👥 Autorizar Prestadores", 
-        "📥 Asignar Solicitudes y Tarifas", 
+        "📥 Asignar y Confirmar Pagos", 
         "📋 Control General y Cancelaciones", 
         "📊 Finanzas", 
         "📁 Excel"
@@ -317,8 +350,8 @@ elif rol == "⚙️ Administrador":
         else:
             st.info("No hay prestadores registrados.")
 
-    elif opcion_admin == "📥 Asignar Solicitudes y Tarifas":
-        st.subheader("📥 Solicitudes Entrantes - Asignación de Conductor y Tarifa")
+    elif opcion_admin == "📥 Asignar y Confirmar Pagos":
+        st.subheader("📥 Asignación de Solicitudes y Verificación Bancaria de Pagos")
         pendientes = df[df["Estado"].isin(["Solicitado", "Pendiente", "Asignado"])]
         
         if len(pendientes) > 0:
@@ -327,24 +360,29 @@ elif rol == "⚙️ Administrador":
                 st.warning("⚠️ Debes autorizar al menos un prestador en la pestaña 'Autorizar Prestadores' antes de asignar servicios.")
             
             for idx, serv in pendientes.iterrows():
-                with st.expander(f"Solicitud #{serv['ID_Servicio']} - {serv['Cliente']} ({serv['Tipo_Servicio']}) | Estado: {serv['Estado']}"):
+                with st.expander(f"Solicitud #{serv['ID_Servicio']} - {serv['Cliente']} ({serv['Tipo_Servicio']}) | Ref. Pago: {serv['Ref_Pago_Movil']}"):
                     st.write(f"**Origen:** {serv['Origen']} ➡️ **Destino:** {serv['Destino']}")
-                    st.write(f"**Teléfono:** {serv['Telefono_Cliente']} | **Pago:** {serv['Metodo_Pago']}")
+                    st.write(f"**Teléfono:** {serv['Telefono_Cliente']} | **Método de Pago:** {serv['Metodo_Pago']}")
+                    st.write(f"**Referencia Reportada por Cliente:** `{serv['Ref_Pago_Movil']}`")
+                    st.write(f"**Estatus de Pago Actual:** `{serv.get('Pago_Verificado', 'No')}`")
                     
                     c_asig1, c_asig2 = st.columns(2)
                     with c_asig1:
-                        cond_asignado = st.selectbox(f"Seleccionar Prestador Autorizado", prestadores_activos, key=f"cond_{serv['ID_Servicio']}")
+                        cond_asignado = st.selectbox(f"Seleccionar Prestador", prestadores_activos, key=f"cond_{serv['ID_Servicio']}")
                     with c_asig2:
                         tarifa_usd = st.number_input(f"Asignar Tarifa USD", min_value=0.0, step=0.5, value=float(serv['Monto_USD']) if pd.notna(serv['Monto_USD']) else 0.0, key=f"tar_{serv['ID_Servicio']}")
                         
+                    verif_pago = st.selectbox(f"¿Pago verificado en el banco?", ["No", "Sí"], index=1 if str(serv.get('Pago_Verificado', 'No')).lower() == "sí" else 0, key=f"ver_{serv['ID_Servicio']}")
+                        
                     col_act1, col_act2 = st.columns(2)
                     with col_act1:
-                        if st.button(f"Confirmar Asignación #{serv['ID_Servicio']}", key=f"btn_asig_{serv['ID_Servicio']}"):
+                        if st.button(f"💾 Guardar Cambios #{serv['ID_Servicio']}", key=f"btn_asig_{serv['ID_Servicio']}"):
                             df.at[idx, "Conductor"] = cond_asignado
                             df.at[idx, "Monto_USD"] = tarifa_usd
+                            df.at[idx, "Pago_Verificado"] = verif_pago
                             df.at[idx, "Estado"] = "Asignado"
                             guardar_datos(df)
-                            st.success(f"¡Servicio #{serv['ID_Servicio']} asignado a {cond_asignado}!")
+                            st.success(f"¡Servicio #{serv['ID_Servicio']} actualizado correctamente!")
                             st.rerun()
                     with col_act2:
                         if st.button(f"❌ Cancelar Servicio #{serv['ID_Servicio']}", key=f"btn_canc_{serv['ID_Servicio']}"):
@@ -353,7 +391,7 @@ elif rol == "⚙️ Administrador":
                             st.warning(f"Servicio #{serv['ID_Servicio']} cancelado.")
                             st.rerun()
         else:
-            st.info("No hay solicitudes pendientes por asignar.")
+            st.info("No hay solicitudes pendientes.")
 
     elif opcion_admin == "📋 Control General y Cancelaciones":
         st.subheader("📋 Control General de Servicios y Cancelaciones")
