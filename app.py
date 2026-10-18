@@ -135,6 +135,34 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
             resultados = df[df["Telefono_Cliente"].astype(str).str.strip() == t_busq_clean]
             
             if len(resultados) > 0:
+                # Comprobar si alguno de los viajes del cliente ya fue aprobado por pago
+                pagos_aprobados_cliente = any(
+                    (str(row.get('Pago_Verificado', 'No')).lower() in ["sí", "si"] or str(row['Metodo_Pago']).strip().lower() != "pago móvil")
+                    and row['Estado'] not in ["Cancelado", "Completado"]
+                    for _, row in resultados.iterrows()
+                )
+                
+                if pagos_aprobados_cliente:
+                    audio_confirmacion_cliente = """
+                        <script>
+                            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                            function playConfirmSound() {
+                                const osc = audioCtx.createOscillator();
+                                const gain = audioCtx.createGain();
+                                osc.type = 'triangle';
+                                osc.frequency.value = 600; 
+                                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                                osc.connect(gain);
+                                gain.connect(audioCtx.destination);
+                                osc.start();
+                                osc.stop(audioCtx.currentTime + 0.4);
+                            }
+                            playConfirmSound();
+                        </script>
+                    """
+                    components.html(audio_confirmacion_cliente, height=0)
+                    st.toast("🎉 ¡Tu pago ha sido verificado y confirmado por la empresa!", icon="✅")
+
                 for idx_res, serv in resultados.iterrows():
                     monto_usd = float(serv['Monto_USD'])
                     monto_ves = monto_usd * st.session_state.tasa_bcv
@@ -196,11 +224,20 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
                 st.warning("No se encontró ningún servicio registrado con ese número de teléfono.")
 
 # ==========================================
-# 2. VISTA PRESTADOR DE SERVICIOS
+# 2. VISTA PRESTADOR DE SERVICIOS (TIEMPO REAL + ALARMA DE NUEVO VIAJE)
 # ==========================================
 elif rol == "🚗 Prestador de Servicios":
-    st.title("🚗 Panel del Prestador de Servicios")
-    st.markdown("---")
+    st.title("🚗 Panel del Prestador de Servicios (Tiempo Real)")
+    
+    # Auto-refresh cada 5 segundos para mantener el panel en tiempo real
+    auto_refresh_prestador = """
+        <script>
+            setTimeout(function(){
+                window.location.reload();
+            }, 5000);
+        </script>
+    """
+    components.html(auto_refresh_prestador, height=0)
     
     nom_prestador = st.text_input("Ingresa tu Nombre exacto (autorizado por admin) para acceder:")
     
@@ -213,6 +250,31 @@ elif rol == "🚗 Prestador de Servicios":
             st.success("✅ ¡Acceso Autorizado!")
             servicios_cond = df[df["Conductor"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
             
+            # Filtrar servicios activos asignados al prestador
+            viajes_activos_cond = servicios_cond[servicios_cond["Estado"].isin(["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto"])]
+            
+            if len(viajes_activos_cond) > 0:
+                # ALARMA SONORA PARA EL PRESTADOR
+                audio_prestador = """
+                    <script>
+                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        function playDriverAlert() {
+                            const osc = audioCtx.createOscillator();
+                            const gain = audioCtx.createGain();
+                            osc.type = 'square';
+                            osc.frequency.value = 750; 
+                            gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                            osc.connect(gain);
+                            gain.connect(audioCtx.destination);
+                            osc.start();
+                            osc.stop(audioCtx.currentTime + 0.6);
+                        }
+                        playDriverAlert();
+                    </script>
+                """
+                components.html(audio_prestador, height=0)
+                st.warning(f"🚨 ¡Tienes **{len(viajes_activos_cond)}** servicio(s) activo(s) asignado(s) pendiente(s)!")
+
             tab_viajes, tab_finanzas = st.tabs(["📋 Mis Viajes y Estatus", "💰 Mis Ganancias y Porcentaje"])
             
             with tab_viajes:
