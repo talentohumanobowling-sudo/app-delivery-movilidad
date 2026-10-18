@@ -28,7 +28,6 @@ st.markdown("""
             color: #0F5132;
             font-family: 'Helvetica Neue', sans-serif;
         }
-        /* Botones en tonos verdes corporativos */
         .stButton>button {
             background-color: #198754;
             color: white;
@@ -144,7 +143,7 @@ st.sidebar.metric("💵 Tasa BCV Oficial", f"Bs. {st.session_state.tasa_bcv:,.2f
 # ==========================================
 # 1. VISTA CLIENTE
 # ==========================================
-if rol == "👤 Portal de Cliente":
+if "Cliente" in rol:
     st.markdown("<h2 style='color: #198754;'>🚀 LLEGANDO - Solicitud y Estatus</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
@@ -289,7 +288,7 @@ if rol == "👤 Portal de Cliente":
 # ==========================================
 # 2. VISTA PRESTADOR DE SERVICIOS
 # ==========================================
-elif rol == "🚗 Portal de Prestador":
+elif "Prestador" in rol:
     st.markdown("<h2 style='color: #198754;'>🚗 Panel Profesional del Prestador - LLEGANDO</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
@@ -310,4 +309,14 @@ elif rol == "🚗 Portal de Prestador":
         if len(prestador_valido) == 0:
             st.warning("⚠️ Tu nombre no se encuentra registrado o aún no ha sido autorizado.")
         else:
-            st
+            st.success("✅ ¡Acceso Autorizado!")
+            servicios_cond = df[df["Conductor"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
+            viajes_activos_cond = servicios_cond[servicios_cond["Estado"].isin(["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto"])]
+            
+            conteo_actual_prestador = len(viajes_activos_cond)
+            
+            if st.session_state.ultimo_conteo_prestador is not None and conteo_actual_prestador > st.session_state.ultimo_conteo_prestador:
+                audio_prestador = """
+                    <script>
+                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        function playDriverAlert()
