@@ -6,14 +6,44 @@ from datetime import datetime
 import urllib.parse
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="App de Movilidad y Servicios", page_icon="🚖", layout="wide")
+st.set_page_config(page_title="Movilidad & Delivery Pro", page_icon="🚖", layout="wide")
+
+# ==========================================
+# ESTILOS CSS PROFESIONALES Y MODERNOS
+# ==========================================
+st.markdown("""
+    <style>
+        /* Estilo general de fondo y tipografía */
+        .main {
+            background-color: #F8F9FA;
+        }
+        /* Tarjetas métricas profesionales */
+        .metric-card {
+            background-color: #FFFFFF;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid #1E88E5;
+            margin-bottom: 15px;
+        }
+        /* Encabezados y títulos */
+        h1, h2, h3 {
+            color: #1F2937;
+            font-family: 'Helvetica Neue', sans-serif;
+        }
+        /* Botones personalizados */
+        .stButton>button {
+            border-radius: 6px;
+            font-weight: 600;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 DB_FILE = "base_datos_servicios.xlsx"
 DB_PRESTADORES = "prestadores_autorizados.xlsx"
 DB_LIQUIDACIONES = "liquidaciones_prestadores.xlsx"
 
-# CLAVE SECRETA DEL ADMINISTRADOR (puedes cambiarla aquí cuando desees)
-CLAVE_ADMIN_SECRETA = "Sky1012#"
+CLAVE_ADMIN_SECRETA = "admin123"
 
 @st.cache_data(ttl=3600)
 def obtener_tasa_bcv():
@@ -91,22 +121,28 @@ df = cargar_datos()
 df_prestadores = cargar_prestadores()
 df_liquidaciones = cargar_liquidaciones()
 
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3097/3097180.png", width=90)
-st.sidebar.title("Menú Principal")
-rol = st.sidebar.radio("Selecciona tu Rol:", [
-    "👤 Cliente (Solicitar y Consultar)", 
-    "🚗 Prestador de Servicios", 
-    "⚙️ Administrador"
+# ==========================================
+# BARRA LATERAL PROFESIONAL
+# ==========================================
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3097/3097180.png", width=80)
+st.sidebar.markdown("### 🚖 Movilidad & Delivery")
+st.sidebar.markdown("---")
+
+rol = st.sidebar.radio("Selecciona tu Panel:", [
+    "👤 Portal de Cliente", 
+    "🚗 Portal de Prestador", 
+    "⚙️ Panel Gerencial (Admin)"
 ])
 
 st.sidebar.markdown("---")
-st.sidebar.metric("💵 Tasa BCV del Día", f"Bs. {st.session_state.tasa_bcv:,.2f}")
+st.sidebar.metric("💵 Tasa BCV Oficial", f"Bs. {st.session_state.tasa_bcv:,.2f}")
 
 # ==========================================
 # 1. VISTA CLIENTE
 # ==========================================
-if rol == "👤 Cliente (Solicitar y Consultar)":
-    st.markdown("<h2 style='color: #1E88E5;'>📱 Portal de Cliente</h2>", unsafe_allow_html=True)
+if rol == "👤 Portal de Cliente":
+    st.markdown("<h2 style='color: #0D6EFD;'>📱 Portal de Clientes - Solicitud y Estatus</h2>", unsafe_allow_html=True)
+    st.markdown("---")
     
     tab_solicitar, tab_consultar = st.tabs(["📝 Solicitar Nuevo Servicio", "🔍 Consultar Mis Viajes por Teléfono"])
     
@@ -124,7 +160,7 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
             
             notas = st.text_area("Detalles adicionales (Opcional)")
             
-            if st.form_submit_button("🚀 Enviar Solicitud"):
+            if st.form_submit_button("🚀 Enviar Solicitud Ahora"):
                 if nombre and telefono and origen and destino:
                     nuevo_id = 1001 if len(df) == 0 else int(pd.to_numeric(df["ID_Servicio"], errors='coerce').max()) + 1
                     nuevo_registro = {
@@ -151,7 +187,7 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
                     
     with tab_consultar:
         st.subheader("🔍 Mis Servicios Activos e Historial")
-        telefono_busqueda = st.text_input("Ingresa tu número de teléfono registrado para ver tus servicios:")
+        telefono_busqueda = st.text_input("Ingresa tu número de teléfono registrado:")
         
         if telefono_busqueda:
             t_busq_clean = telefono_busqueda.strip()
@@ -233,24 +269,25 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
                             if pago_verif.lower() == "sí" or pago_verif.lower() == "si" or str(serv['Metodo_Pago']).strip().lower() != "pago móvil":
                                 st.markdown("---")
                                 st.success("✅ **¡Pago Confirmado por la Empresa!**")
-                                st.markdown(f"### 👨‍✈️ Tu Prestador de Servicio Asignado es: **{serv['Conductor']}**")
+                                st.markdown(f"### 👨‍✈️ Tu Prestador Asignado es: **{serv['Conductor']}**")
                                 
                                 info_cond = df_prestadores[df_prestadores["Nombre"].str.lower() == str(serv['Conductor']).lower()]
                                 if len(info_cond) > 0:
                                     tlf_cond = info_cond.iloc[0]["Telefono"].strip().replace(" ", "").replace("+", "")
-                                    msg_c = f"Hola {serv['Conductor']}, le escribo desde la app respecto al servicio #{serv['ID_Servicio']}."
+                                    msg_c = f"Hola {serv['Conductor']}, le escribo desde la app respecto a mi servicio #{serv['ID_Servicio']}."
                                     url_wa_cond = f"https://wa.me/{tlf_cond}?text={urllib.parse.quote(msg_c)}"
-                                    st.link_button("💬 Contactar a mi Conductor por WhatsApp", url_wa_cond)
+                                    st.link_button("💬 Contactar Conductor por WhatsApp", url_wa_cond)
                             else:
-                                st.info("⏳ **Pago en proceso de verificación por el administrador.** Una vez confirmado, verás aquí los datos de tu conductor.")
+                                st.info("⏳ **Pago en proceso de verificación por el administrador.**")
             else:
                 st.warning("No se encontró ningún servicio registrado con ese número de teléfono.")
 
 # ==========================================
 # 2. VISTA PRESTADOR DE SERVICIOS
 # ==========================================
-elif rol == "🚗 Prestador de Servicios":
-    st.title("🚗 Panel del Prestador de Servicios (Tiempo Real)")
+elif rol == "🚗 Portal de Prestador":
+    st.markdown("<h2 style='color: #198754;'>🚗 Panel Profesional del Prestador</h2>", unsafe_allow_html=True)
+    st.markdown("---")
     
     auto_refresh_prestador = """
         <script>
@@ -261,13 +298,13 @@ elif rol == "🚗 Prestador de Servicios":
     """
     components.html(auto_refresh_prestador, height=0)
     
-    nom_prestador = st.text_input("Ingresa tu Nombre exacto (autorizado por admin) para acceder:")
+    nom_prestador = st.text_input("Ingresa tu Nombre exacto autorizado para acceder:")
     
     if nom_prestador:
         prestador_valido = df_prestadores[(df_prestadores["Nombre"].str.lower() == nom_prestador.lower()) & (df_prestadores["Estatus"] == "Autorizado")]
         
         if len(prestador_valido) == 0:
-            st.warning("⚠️ Tu nombre no se encuentra registrado o aún no ha sido autorizado por el Administrador.")
+            st.warning("⚠️ Tu nombre no se encuentra registrado o aún no ha sido autorizado.")
         else:
             st.success("✅ ¡Acceso Autorizado!")
             servicios_cond = df[df["Conductor"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
@@ -298,9 +335,9 @@ elif rol == "🚗 Prestador de Servicios":
             st.session_state.ultimo_conteo_prestador = conteo_actual_prestador
 
             if len(viajes_activos_cond) > 0:
-                st.warning(f"🚨 ¡Tienes **{conteo_actual_prestador}** servicio(s) activo(s) asignado(s) pendiente(s)!")
+                st.warning(f"🚨 ¡Tienes **{conteo_actual_prestador}** servicio(s) activo(s) asignado(s)!")
 
-            tab_viajes, tab_finanzas, tab_liquidaciones = st.tabs(["📋 Mis Viajes y Estatus", "💰 Mis Ganancias", "🤝 Liquidaciones y Pagos"])
+            tab_viajes, tab_finanzas, tab_liquidaciones = st.tabs(["📋 Mis Viajes Activos", "💰 Mis Ganancias", "🤝 Liquidaciones y Pagos"])
             
             with tab_viajes:
                 if len(servicios_cond) > 0:
@@ -329,7 +366,7 @@ elif rol == "🚗 Prestador de Servicios":
                                     st.rerun()
                             with col_b2:
                                 tlf_cliente = str(serv['Telefono_Cliente']).strip().replace(" ", "").replace("+", "")
-                                msg = f"Hola {serv['Cliente']}, le escribe su conductor {nom_prestador} respecto al servicio #{serv['ID_Servicio']}. Estatus actual: {nuevo_estado}."
+                                msg = f"Hola {serv['Cliente']}, le escribe su conductor {nom_prestador} respecto al servicio #{serv['ID_Servicio']}."
                                 url_wa = f"https://wa.me/{tlf_cliente}?text={urllib.parse.quote(msg)}"
                                 st.link_button("💬 WhatsApp", url_wa)
                             with col_b3:
@@ -371,7 +408,7 @@ elif rol == "🚗 Prestador de Servicios":
                         st.write(f"🚦 **Estatus de Confirmación:** `{estatus_conf}`")
                         
                         if estatus_conf.lower() != "confirmado":
-                            if st.button(f"✅ Confirmar Recepción de Liquidación #{liq['ID_Liquidacion']}", key=f"conf_liq_{liq['ID_Liquidacion']}"):
+                            if st.button(f"✅ Confirmar Recepción #{liq['ID_Liquidacion']}", key=f"conf_liq_{liq['ID_Liquidacion']}"):
                                 df_liquidaciones.at[idx_l, "Estatus_Confirmacion"] = "Confirmado"
                                 guardar_liquidaciones(df_liquidaciones)
                                 st.success("¡Has confirmado la recepción del pago con éxito!")
@@ -383,15 +420,16 @@ elif rol == "🚗 Prestador de Servicios":
                     st.info("No tienes liquidaciones registradas todavía.")
 
 # ==========================================
-# 3. VISTA ADMINISTRADOR (PROTEGIDA POR CLAVE)
+# 3. VISTA ADMINISTRADOR (PANEL GERENCIAL PROFESIONAL)
 # ==========================================
-elif rol == "⚙️ Administrador":
-    st.title("🔒 Acceso Restringido al Administrador")
+elif rol == "⚙️ Panel Gerencial (Admin)":
+    st.markdown("<h2 style='color: #212529;'>⚙️ Panel de Control Gerencial (Seguro)</h2>", unsafe_allow_html=True)
+    st.markdown("---")
     
-    clave_ingresada = st.text_input("Ingresa tu Contraseña de Administrador:", type="password")
+    clave_ingresada = st.text_input("🔑 Ingresa tu Contraseña de Administrador:", type="password")
     
     if clave_ingresada == CLAVE_ADMIN_SECRETA:
-        st.success("✅ ¡Contraseña correcta! Bienvenido al Panel de Control.")
+        st.success("✅ ¡Acceso Gerencial Autorizado!")
         st.markdown("---")
         
         auto_refresh_html = """
@@ -429,18 +467,18 @@ elif rol == "⚙️ Administrador":
         st.session_state.ultimo_conteo_admin = conteo_actual_admin
 
         if conteo_actual_admin > 0:
-            st.warning(f"🚨 ¡Atención! Tienes **{conteo_actual_admin}** solicitud(es) entrante(s) esperando asignación.")
+            st.warning(f"🚨 ¡Atención Gerente! Tienes **{conteo_actual_admin}** solicitud(es) entrante(s) en tiempo real.")
 
         with st.expander("⚙️ Configuración General del Sistema", expanded=False):
             col_adm1, col_adm2 = st.columns(2)
             with col_adm1:
-                st.session_state.tasa_bcv = st.number_input("Tasa BCV (Bs. / USD)", value=float(st.session_state.tasa_bcv), step=0.10)
+                st.session_state.tasa_bcv = st.number_input("Tasa BCV Oficial (Bs. / USD)", value=float(st.session_state.tasa_bcv), step=0.10)
             with col_adm2:
                 st.session_state.porcentaje_prestador = st.number_input("% Ganancia Prestador", value=float(st.session_state.porcentaje_prestador), step=5.0)
                 
         st.markdown("---")
         
-        opcion_admin = st.selectbox("Seleccione una sección de administración:", [
+        opcion_admin = st.selectbox("Seleccione la sección de administración:", [
             "👥 Autorizar Prestadores", 
             "📥 Asignar y Confirmar Pagos", 
             "💰 Liquidaciones a Prestadores", 
@@ -483,13 +521,13 @@ elif rol == "⚙️ Administrador":
                 st.info("No hay prestadores registrados.")
 
         elif opcion_admin == "📥 Asignar y Confirmar Pagos":
-            st.subheader("📥 Asignación de Solicitudes y Verificación Bancaria de Pagos")
+            st.subheader("📥 Asignación Inteligente y Verificación Bancaria de Pagos")
             pendientes = df[df["Estado"].isin(["Solicitado", "Pendiente", "Asignado"])]
             
             if len(pendientes) > 0:
                 prestadores_autorizados = df_prestadores[df_prestadores["Estatus"] == "Autorizado"]
                 if len(prestadores_autorizados) == 0:
-                    st.warning("⚠️ Debes autorizar al menos un prestador en la pestaña 'Autorizar Prestadores' antes de asignar servicios.")
+                    st.warning("⚠️ Debes autorizar al menos un prestador antes de asignar servicios.")
                 
                 for idx, serv in pendientes.iterrows():
                     tipo_solicitud = str(serv['Tipo_Servicio']).strip().lower()
@@ -578,7 +616,7 @@ elif rol == "⚙️ Administrador":
                             }])
                             df_liquidaciones = pd.concat([df_liquidaciones, nueva_liq], ignore_index=True)
                             guardar_liquidaciones(df_liquidaciones)
-                            st.success("¡Liquidación registrada con éxito! El prestador podrá verla y confirmarla en su panel.")
+                            st.success("¡Liquidación registrada con éxito!")
                             st.rerun()
                         else:
                             st.error("Por favor ingresa la referencia de pago.")
@@ -638,4 +676,4 @@ elif rol == "⚙️ Administrador":
     elif clave_ingresada != "":
         st.error("❌ Contraseña incorrecta. Acceso denegado.")
     else:
-        st.info("🔒 Ingresa tu contraseña en el campo superior para desbloquear el panel de administración.")
+        st.info("🔒 Ingresa tu contraseña en el campo superior para desbloquear el panel gerencial.")
