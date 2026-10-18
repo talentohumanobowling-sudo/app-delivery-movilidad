@@ -7,17 +7,17 @@ st.set_page_config(page_title="Plataforma de Movilidad y Delivery", page_icon="�
 
 DB_FILE = "base_datos_servicios.xlsx"
 
-# Datos de Pago Móvil de la Empresa
+# Configuración de Datos de Pago Móvil y Tasa BCV (Puedes actualizar la tasa aquí cuando lo necesites)
 DATOS_PAGO_MOVIL = {
     "Banco": "BDV (0102)",
     "Telefono": "0412-3349463",
     "Cedula_RIF": "V-13609424",
-    "Titular": "Servicios de Movilidad"
+    "Titular": "Servicios de Movilidad",
+    "Tasa_BCV": 36.50  # <-- Actualiza aquí la tasa del dólar oficial cuando lo requieras
 }
 
 def cargar_datos():
     if os.path.exists(DB_FILE):
-        # Cargar convirtiendo explícitamente las columnas clave a texto para evitar conflictos de tipo
         df_temp = pd.read_excel(DB_FILE, dtype={"Ref_Pago_Movil": str, "Telefono_Cliente": str})
         return df_temp
     else:
@@ -30,13 +30,12 @@ def cargar_datos():
         return df_inicial
 
 def guardar_datos(df):
-    # Asegurar que la columna de referencia sea texto antes de guardar
     df["Ref_Pago_Movil"] = df["Ref_Pago_Movil"].astype(str)
     df.to_excel(DB_FILE, index=False)
 
 df = cargar_datos()
 
-# MENU SUPERIOR / SELECCIÓN DE ROL
+# MENU LATERAL / SELECCIÓN DE ROL
 st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3097/3097180.png", width=100)
 st.sidebar.title("Bienvenido")
 rol = st.sidebar.radio("¿Cómo deseas ingresar?", [
@@ -50,7 +49,7 @@ rol = st.sidebar.radio("¿Cómo deseas ingresar?", [
 # ==========================================
 if rol == "👤 Soy Cliente":
     st.markdown("<h2 style='text-align: center; color: #1E88E5;'>📱 Portal de Atención al Cliente</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center;'>Consulta el estado de tu servicio, asignación de unidad y realiza tu pago.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>Consulta el estado de tu servicio, asignación de unidad y realiza tu pago en Bolívares.</p>", unsafe_allow_html=True)
     st.markdown("---")
     
     if len(df) == 0:
@@ -62,7 +61,6 @@ if rol == "👤 Soy Cliente":
         if len(resultado) > 0:
             serv = resultado.iloc[0]
             
-            # Tarjeta resumen del cliente
             st.success(f"### 📍 Servicio #{serv['ID_Servicio']}")
             
             col1, col2 = st.columns(2)
@@ -74,13 +72,19 @@ if rol == "👤 Soy Cliente":
             with col2:
                 st.markdown(f"**🚦 Estatus:** `{serv['Estado']}`")
                 st.markdown(f"**👨‍✈️ Conductor:** **{serv['Conductor']}**")
-                st.markdown(f"**💵 Total a Pagar:** **${serv['Monto_USD']:,.2f} USD**")
+                st.markdown(f"**💵 Tarifa:** **${serv['Monto_USD']:,.2f} USD**")
             
             st.markdown("---")
             
-            # Sección de Pago Móvil para el Cliente
+            # Sección de Pago Móvil con cálculo en Bolívares
             if str(serv['Metodo_Pago']).strip().lower() == "pago móvil":
-                st.info("📲 **Datos para realizar tu Pago Móvil:**")
+                monto_ves = float(serv['Monto_USD']) * DATOS_PAGO_MOVIL["Tasa_BCV"]
+                
+                st.info("📲 **Datos y Monto Exacto para tu Pago Móvil:**")
+                
+                # Alerta destacada con el monto en Bolívares calculado
+                st.warning(f"💱 **Monto a pagar:** **Bs. {monto_ves:,.2f}** *(Calculado a Tasa BCV: {DATOS_PAGO_MOVIL['Tasa_BCV']})*")
+                
                 col_p1, col_p2 = st.columns(2)
                 with col_p1:
                     st.write(f"🏦 **Banco:** {DATOS_PAGO_MOVIL['Banco']}")
@@ -94,7 +98,6 @@ if rol == "👤 Soy Cliente":
                 
                 if st.button("Confirmar y Reportar Pago"):
                     idx = df[df["ID_Servicio"] == id_busqueda].index
-                    # Convertir explícitamente a cadena de texto para evitar el error LossySetitemError
                     df.at[idx[0], "Ref_Pago_Movil"] = str(ref_ingresada)
                     guardar_datos(df)
                     st.success("¡Referencia registrada correctamente! Gracias por tu pago.")
@@ -117,9 +120,11 @@ elif rol == "🚗 Soy Conductor / Repartidor":
         if len(servicios_cond) > 0:
             st.subheader(f"Servicios Asignados a: {nom_cond}")
             for idx, serv in servicios_cond.iterrows():
+                monto_v = float(serv['Monto_USD']) * DATOS_PAGO_MOVIL["Tasa_BCV"]
                 with st.expander(f"Servicio #{serv['ID_Servicio']} - {serv['Origen']} ➡️ {serv['Destino']} [{serv['Estado']}]"):
                     st.write(f"**Cliente:** {serv['Cliente']} ({serv['Telefono_Cliente']})")
-                    st.write(f"**Monto Cobrar:** ${serv['Monto_USD']} USD - ({serv['Metodo_Pago']})")
+                    st.write(f"**Monto Cobrar:** ${serv['Monto_USD']} USD (Equivalente a **Bs. {monto_v:,.2f}**) - [{serv['Metodo_Pago']}]")
+                    st.write(f"**Ref. Pago Móvil del Cliente:** {serv['Ref_Pago_Movil']}")
                     st.write(f"**Notas:** {serv['Notas']}")
                     
                     nuevo_estado = st.selectbox(f"Actualizar Estado (#{serv['ID_Servicio']})", ["Pendiente", "En Camino", "Completado", "Cancelado"], key=f"est_{serv['ID_Servicio']}")
@@ -177,7 +182,11 @@ elif rol == "⚙️ Administrador":
     elif opcion_admin == "📊 Finanzas":
         st.subheader("📊 Métricas de Ingresos")
         if len(df) > 0:
-            st.metric("Total Recaudado", f"${pd.to_numeric(df['Monto_USD'], errors='coerce').sum():,.2f} USD")
+            total_usd = pd.to_numeric(df['Monto_USD'], errors='coerce').sum()
+            total_ves = total_usd * DATOS_PAGO_MOVIL["Tasa_BCV"]
+            col_f1, col_f2 = st.columns(2)
+            col_f1.metric("Total Recaudado (USD)", f"${total_usd:,.2f} USD")
+            col_f2.metric("Total Equivalente (VES)", f"Bs. {total_ves:,.2f}")
             st.bar_chart(df.groupby("Tipo_Servicio")["Monto_USD"].sum())
 
     elif opcion_admin == "📁 Archivo Excel":
