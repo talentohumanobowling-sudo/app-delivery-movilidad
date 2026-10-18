@@ -182,15 +182,4 @@ if rol == "👤 Cliente (Solicitar y Consultar)":
                             tlf_cond = info_cond.iloc[0]["Telefono"].strip().replace(" ", "").replace("+", "")
                             msg_c = f"Hola {serv['Conductor']}, le escribo desde la app respecto a mi servicio #{serv['ID_Servicio']}."
                             url_wa_cond = f"https://wa.me/{tlf_cond}?text={urllib.parse.quote(msg_c)}"
-                            st.markdown(f'<a href="{url_wa_cond}" target="_blank"><button style="background-color:#25D366; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">💬 Contactar a mi Conductor por WhatsApp</button></a>', unsafe_allow_html=True)
-                    else:
-                        st.info("⚠️ Para ver los datos y contacto de tu conductor asignado, por favor reporta el número de referencia de tu pago móvil.")
-            else:
-                st.warning("No se encontró ningún servicio con ese ID.")
-
-# ==========================================
-# 2. VISTA PRESTADOR DE SERVICIOS
-# ==========================================
-elif rol == "🚗 Prestador de Servicios":
-    st.title("🚗 Panel del Prestador de Servicios")
-    st.
+                            st.markdown(f'<a href="{url_wa_cond}" target="_blank"><button style="background-color:#25D366; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:
