@@ -13,7 +13,7 @@ DB_PRESTADORES = "prestadores_autorizados.xlsx"
 DB_LIQUIDACIONES = "liquidaciones_prestadores.xlsx"
 
 # CLAVE SECRETA DEL ADMINISTRADOR (puedes cambiarla aquí cuando desees)
-CLAVE_ADMIN_SECRETA = "admin123"
+CLAVE_ADMIN_SECRETA = "Sky1012#"
 
 @st.cache_data(ttl=3600)
 def obtener_tasa_bcv():
