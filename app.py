@@ -10,6 +10,7 @@ st.set_page_config(page_title="App de Movilidad y Servicios", page_icon="🚖", 
 
 DB_FILE = "base_datos_servicios.xlsx"
 DB_PRESTADORES = "prestadores_autorizados.xlsx"
+DB_LIQUIDACIONES = "liquidaciones_prestadores.xlsx"
 
 @st.cache_data(ttl=3600)
 def obtener_tasa_bcv():
@@ -72,8 +73,20 @@ def cargar_prestadores():
 def guardar_prestadores(df_p):
     df_p.to_excel(DB_PRESTADORES, index=False)
 
+def cargar_liquidaciones():
+    if os.path.exists(DB_LIQUIDACIONES):
+        return pd.read_excel(DB_LIQUIDACIONES, dtype=str)
+    else:
+        df_l = pd.DataFrame(columns=["ID_Liquidacion", "Fecha", "Prestador", "Monto_USD", "Referencia_Pago", "Estatus_Confirmacion"])
+        df_l.to_excel(DB_LIQUIDACIONES, index=False)
+        return df_l
+
+def guardar_liquidaciones(df_l):
+    df_l.to_excel(DB_LIQUIDACIONES, index=False)
+
 df = cargar_datos()
 df_prestadores = cargar_prestadores()
+df_liquidaciones = cargar_liquidaciones()
 
 st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3097/3097180.png", width=90)
 st.sidebar.title("Menú Principal")
@@ -284,7 +297,7 @@ elif rol == "🚗 Prestador de Servicios":
             if len(viajes_activos_cond) > 0:
                 st.warning(f"🚨 ¡Tienes **{conteo_actual_prestador}** servicio(s) activo(s) asignado(s) pendiente(s)!")
 
-            tab_viajes, tab_finanzas = st.tabs(["📋 Mis Viajes y Estatus", "💰 Mis Ganancias y Porcentaje"])
+            tab_viajes, tab_finanzas, tab_liquidaciones = st.tabs(["📋 Mis Viajes y Estatus", "💰 Mis Ganancias", "🤝 Liquidaciones y Pagos"])
             
             with tab_viajes:
                 if len(servicios_cond) > 0:
@@ -338,6 +351,33 @@ elif rol == "🚗 Prestador de Servicios":
                 
                 if len(completados) > 0:
                     st.dataframe(completados[["ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Monto_USD", "Metodo_Pago"]], use_container_width=True)
+
+            with tab_liquidaciones:
+                st.subheader("🤝 Liquidaciones y Pagos Realizados por la Empresa")
+                liq_prestador = df_liquidaciones[df_liquidaciones["Prestador"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
+                
+                if len(liq_prestador) > 0:
+                    for idx_l, liq in liq_prestador.iterrows():
+                        monto_liq_usd = float(liq['Monto_USD'])
+                        monto_liq_ves = monto_liq_usd * st.session_state.tasa_bcv
+                        estatus_conf = str(liq['Estatus_Confirmacion']).strip()
+                        
+                        st.markdown(f"### Liquidación #{liq['ID_Liquidacion']} - Fecha: {liq['Fecha']}")
+                        st.write(f"💵 **Monto Pagado:** ${monto_liq_usd:,.2f} USD (Bs. {monto_liq_ves:,.2f})")
+                        st.write(f"📝 **Referencia / Detalle:** `{liq['Referencia_Pago']}`")
+                        st.write(f"🚦 **Estatus de Confirmación:** `{estatus_conf}`")
+                        
+                        if estatus_conf.lower() != "confirmado":
+                            if st.button(f"✅ Confirmar Recepción de Liquidación #{liq['ID_Liquidacion']}", key=f"conf_liq_{liq['ID_Liquidacion']}"):
+                                df_liquidaciones.at[idx_l, "Estatus_Confirmacion"] = "Confirmado"
+                                guardar_liquidaciones(df_liquidaciones)
+                                st.success("¡Has confirmado la recepción del pago con éxito!")
+                                st.rerun()
+                        else:
+                            st.success("✅ Pago confirmado por ti.")
+                        st.markdown("---")
+                else:
+                    st.info("No tienes liquidaciones registradas todavía.")
 
 # ==========================================
 # 3. VISTA ADMINISTRADOR
@@ -394,6 +434,7 @@ elif rol == "⚙️ Administrador":
     opcion_admin = st.selectbox("Seleccione una sección de administración:", [
         "👥 Autorizar Prestadores", 
         "📥 Asignar y Confirmar Pagos", 
+        "💰 Liquidaciones a Prestadores", 
         "📋 Control General y Cancelaciones", 
         "📊 Finanzas", 
         "📁 Excel"
@@ -492,6 +533,57 @@ elif rol == "⚙️ Administrador":
         else:
             st.info("No hay solicitudes pendientes.")
 
+    elif opcion_admin == "💰 Liquidaciones a Prestadores":
+        st.subheader("💰 Control de Liquidación y Pagos por Prestador")
+        prestadores_activos = df_prestadores[df_prestadores["Estatus"] == "Autorizado"]["Nombre"].tolist()
+        
+        if prestadores_activos:
+            prestador_sel = st.selectbox("Selecciona al Prestador de Servicio:", prestadores_activos)
+            
+            servicios_p = df[(df["Conductor"].astype(str).str.strip().str.lower() == prestador_sel.strip().lower()) & (df["Estado"] == "Completado")]
+            total_recaudado_p = pd.to_numeric(servicios_p["Monto_USD"], errors='coerce').sum()
+            ganancia_prestador_usd = total_recaudado_p * (st.session_state.porcentaje_prestador / 100)
+            ganancia_prestador_ves = ganancia_prestador_usd * st.session_state.tasa_bcv
+            
+            st.markdown(f"### Resumen Financiero para: **{prestador_sel}**")
+            c_l1, c_l2, c_l3 = st.columns(3)
+            c_l1.metric("Servicios Completados", len(servicios_p))
+            c_l2.metric("Total a Liquidar (USD)", f"${ganancia_prestador_usd:,.2f} USD")
+            c_l3.metric("Total a Liquidar (VES)", f"Bs. {ganancia_prestador_ves:,.2f}")
+            
+            with st.form("form_registrar_liquidacion"):
+                st.markdown("#### Registrar Pago de Liquidación al Prestador")
+                monto_liq = st.number_input("Monto a Liquidar USD", value=float(ganancia_prestador_usd), min_value=0.0, step=1.0)
+                ref_liq = st.text_input("Referencia de Pago o Nota de Transferencia / Efectivo *")
+                
+                if st.form_submit_button("📤 Registrar y Enviar Liquidación"):
+                    if ref_liq:
+                        nuevo_id_liq = 1 if len(df_liquidaciones) == 0 else int(pd.to_numeric(df_liquidaciones["ID_Liquidacion"], errors='coerce').max()) + 1
+                        nueva_liq = pd.DataFrame([{
+                            "ID_Liquidacion": nuevo_id_liq,
+                            "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "Prestador": prestador_sel,
+                            "Monto_USD": monto_liq,
+                            "Referencia_Pago": ref_liq,
+                            "Estatus_Confirmacion": "Pendiente de Confirmación"
+                        }])
+                        df_liquidaciones = pd.concat([df_liquidaciones, nueva_liq], ignore_index=True)
+                        guardar_liquidaciones(df_liquidaciones)
+                        st.success("¡Liquidación registrada con éxito! El prestador podrá verla y confirmarla en su panel.")
+                        st.rerun()
+                    else:
+                        st.error("Por favor ingresa la referencia de pago.")
+            
+            st.markdown("---")
+            st.markdown("#### Historial de Liquidaciones Registradas:")
+            liq_hist = df_liquidaciones[df_liquidaciones["Prestador"].astype(str).str.strip().str.lower() == prestador_sel.strip().lower()]
+            if len(liq_hist) > 0:
+                st.dataframe(liq_hist, use_container_width=True)
+            else:
+                st.info("No hay liquidaciones registradas para este prestador.")
+        else:
+            st.warning("No hay prestadores autorizados disponibles.")
+
     elif opcion_admin == "📋 Control General y Cancelaciones":
         st.subheader("📋 Control General de Servicios y Cancelaciones")
         if len(df) > 0:
@@ -531,3 +623,6 @@ elif rol == "⚙️ Administrador":
         if os.path.exists(DB_PRESTADORES):
             with open(DB_PRESTADORES, "rb") as file:
                 st.download_button("⬇️ Descargar Base de Prestadores", file, file_name="prestadores_autorizados.xlsx")
+        if os.path.exists(DB_LIQUIDACIONES):
+            with open(DB_LIQUIDACIONES, "rb") as file:
+                st.download_button("⬇️ Descargar Base de Liquidaciones", file, file_name="liquidaciones_prestadores.xlsx")
