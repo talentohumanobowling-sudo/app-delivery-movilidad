@@ -17,7 +17,9 @@ DATOS_PAGO_MOVIL = {
 
 def cargar_datos():
     if os.path.exists(DB_FILE):
-        return pd.read_excel(DB_FILE)
+        # Cargar convirtiendo explícitamente las columnas clave a texto para evitar conflictos de tipo
+        df_temp = pd.read_excel(DB_FILE, dtype={"Ref_Pago_Movil": str, "Telefono_Cliente": str})
+        return df_temp
     else:
         df_inicial = pd.DataFrame(columns=[
             "ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Cliente", 
@@ -28,6 +30,8 @@ def cargar_datos():
         return df_inicial
 
 def guardar_datos(df):
+    # Asegurar que la columna de referencia sea texto antes de guardar
+    df["Ref_Pago_Movil"] = df["Ref_Pago_Movil"].astype(str)
     df.to_excel(DB_FILE, index=False)
 
 df = cargar_datos()
@@ -75,7 +79,7 @@ if rol == "👤 Soy Cliente":
             st.markdown("---")
             
             # Sección de Pago Móvil para el Cliente
-            if serv['Metodo_Pago'] == "Pago Móvil":
+            if str(serv['Metodo_Pago']).strip().lower() == "pago móvil":
                 st.info("📲 **Datos para realizar tu Pago Móvil:**")
                 col_p1, col_p2 = st.columns(2)
                 with col_p1:
@@ -85,10 +89,13 @@ if rol == "👤 Soy Cliente":
                     st.write(f"🪪 **Cédula / RIF:** {DATOS_PAGO_MOVIL['Cedula_RIF']}")
                     st.write(f"👤 **Titular:** {DATOS_PAGO_MOVIL['Titular']}")
                 
-                ref_ingresada = st.text_input("📝 Ingresa los dígitos de tu referencia bancaria:", value=str(serv['Ref_Pago_Movil']) if pd.notna(serv['Ref_Pago_Movil']) else "")
+                val_actual = "" if pd.isna(serv['Ref_Pago_Movil']) or str(serv['Ref_Pago_Movil']) == "nan" else str(serv['Ref_Pago_Movil'])
+                ref_ingresada = st.text_input("📝 Ingresa los dígitos de tu referencia bancaria:", value=val_actual)
+                
                 if st.button("Confirmar y Reportar Pago"):
                     idx = df[df["ID_Servicio"] == id_busqueda].index
-                    df.loc[idx, "Ref_Pago_Movil"] = ref_ingresada
+                    # Convertir explícitamente a cadena de texto para evitar el error LossySetitemError
+                    df.at[idx[0], "Ref_Pago_Movil"] = str(ref_ingresada)
                     guardar_datos(df)
                     st.success("¡Referencia registrada correctamente! Gracias por tu pago.")
                     st.rerun()
@@ -155,9 +162,9 @@ elif rol == "⚙️ Administrador":
                     nuevo_id = 1001 if len(df) == 0 else int(df["ID_Servicio"].max()) + 1
                     nuevo_reg = {
                         "ID_Servicio": nuevo_id, "Fecha_Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "Tipo_Servicio": tipo, "Cliente": cliente, "Telefono_Cliente": telefono,
+                        "Tipo_Servicio": tipo, "Cliente": cliente, "Telefono_Cliente": str(telefono),
                         "Origen": origen, "Destino": destino, "Conductor": conductor if conductor else "Por Asignar",
-                        "Monto_USD": monto, "Metodo_Pago": metodo, "Ref_Pago_Movil": ref_pm, "Estado": estado, "Notas": notas
+                        "Monto_USD": monto, "Metodo_Pago": metodo, "Ref_Pago_Movil": str(ref_pm), "Estado": estado, "Notas": notas
                     }
                     df = pd.concat([df, pd.DataFrame([nuevo_reg])], ignore_index=True)
                     guardar_datos(df)
@@ -165,12 +172,12 @@ elif rol == "⚙️ Administrador":
 
     elif opcion_admin == "📋 Control General":
         st.subheader("📋 Todos los Servicios")
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df.astype(str), use_container_width=True)
 
     elif opcion_admin == "📊 Finanzas":
         st.subheader("📊 Métricas de Ingresos")
         if len(df) > 0:
-            st.metric("Total Recaudado", f"${df['Monto_USD'].sum():,.2f} USD")
+            st.metric("Total Recaudado", f"${pd.to_numeric(df['Monto_USD'], errors='coerce').sum():,.2f} USD")
             st.bar_chart(df.groupby("Tipo_Servicio")["Monto_USD"].sum())
 
     elif opcion_admin == "📁 Archivo Excel":
