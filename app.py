@@ -46,7 +46,7 @@ DB_FILE = "base_datos_servicios.xlsx"
 DB_PRESTADORES = "prestadores_autorizados.xlsx"
 DB_LIQUIDACIONES = "liquidaciones_prestadores.xlsx"
 
-CLAVE_ADMIN_SECRETA = "Sky1012#"
+CLAVE_ADMIN_SECRETA = "admin123"
 
 @st.cache_data(ttl=3600)
 def obtener_tasa_bcv():
@@ -204,7 +204,7 @@ if "Cliente" in rol:
                     
                     pago_previo = st.session_state.ultimo_pago_verificado.get(id_s, "No")
                     if pago_previo != "sí" and pago_verif_actual in ["sí", "si"] and estado_actual not in ["Cancelado", "Completado"]:
-                        audio_confirmacion_cliente = "<script>const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='triangle'; osc.frequency.value=600; g.gain.setValueAtTime(0.15, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.4);</script>"
+                        audio_confirmacion_cliente = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='triangle'; osc.frequency.value=600; g.gain.setValueAtTime(0.15, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.4); } catch(e){}</script>"
                         components.html(audio_confirmacion_cliente, height=0)
                         st.toast("🎉 ¡Tu pago ha sido verificado y confirmado por la empresa!", icon="✅")
                     
@@ -300,7 +300,7 @@ elif "Prestador" in rol:
             conteo_actual_prestador = len(viajes_activos_cond)
             
             if st.session_state.ultimo_conteo_prestador is not None and conteo_actual_prestador > st.session_state.ultimo_conteo_prestador:
-                audio_prestador = "<script>const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='square'; osc.frequency.value=750; g.gain.setValueAtTime(0.12, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.6);</script>"
+                audio_prestador = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='square'; osc.frequency.value=750; g.gain.setValueAtTime(0.12, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.6); } catch(e){}</script>"
                 components.html(audio_prestador, height=0)
             
             st.session_state.ultimo_conteo_prestador = conteo_actual_prestador
@@ -416,13 +416,19 @@ elif "Admin" in rol or "Gerencial" in rol:
         conteo_actual_admin = len(pendientes_alarma)
         
         if st.session_state.ultimo_conteo_admin is not None and conteo_actual_admin > st.session_state.ultimo_conteo_admin:
-            audio_html = "<script>const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='sine'; osc.frequency.value=880; g.gain.setValueAtTime(0.1, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.5);</script>"
+            audio_html = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='sine'; osc.frequency.value=880; g.gain.setValueAtTime(0.1, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.5); } catch(e){}</script>"
             components.html(audio_html, height=0)
         
         st.session_state.ultimo_conteo_admin = conteo_actual_admin
 
         if conteo_actual_admin > 0:
             st.warning(f"🚨 ¡Atención Gerente! Tienes **{conteo_actual_admin}** solicitud(es) entrante(s) en tiempo real.")
+
+        # Botón de prueba manual de alarma por si el navegador bloquea el autoplay inicial
+        if st.button("🔔 Probar Sonido de Alarma Manual"):
+            audio_prueba = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='sine'; osc.frequency.value=880; g.gain.setValueAtTime(0.1, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.5); } catch(e){}</script>"
+            components.html(audio_prueba, height=0)
+            st.success("¡Sonido de prueba reproducido!")
 
         with st.expander("⚙️ Configuración General del Sistema", expanded=False):
             col_adm1, col_adm2 = st.columns(2)
