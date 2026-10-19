@@ -46,7 +46,7 @@ DB_FILE = "base_datos_servicios.xlsx"
 DB_PRESTADORES = "prestadores_autorizados.xlsx"
 DB_LIQUIDACIONES = "liquidaciones_prestadores.xlsx"
 
-CLAVE_ADMIN_SECRETA = "Sky1012#"
+CLAVE_ADMIN_SECRETA = "admin123"
 
 @st.cache_data(ttl=3600)
 def obtener_tasa_bcv():
@@ -282,7 +282,13 @@ elif "Prestador" in rol:
         else:
             st.success("✅ ¡Acceso Autorizado!")
             
-            # Script de Alarma en Tiempo Real para el Prestador
+            # Botón interactivo obligatorio para desbloquear audio en móviles/PC por políticas de navegador
+            if st.button("🔊 Activar Alarma Sonora en Tiempo Real"):
+                audio_init = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='square'; osc.frequency.value=750; g.gain.setValueAtTime(0.12, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
+                components.html(audio_init, height=0)
+                st.success("¡Alarma activada con éxito en tu dispositivo!")
+
+            # Script de sondeo en segundo plano (Polling JS cada 5s)
             realtime_prestador_js = """
                 <script>
                     setInterval(async () => {
@@ -299,7 +305,7 @@ elif "Prestador" in rol:
                                 osc.start(); osc.stop(ac.currentTime + 0.6);
                             }
                         } catch (e) {}
-                    }, 6000);
+                    }, 5000);
                 </script>
             """
             components.html(realtime_prestador_js, height=0)
@@ -405,7 +411,13 @@ elif "Admin" in rol or "Gerencial" in rol:
         st.success("✅ ¡Acceso Gerencial Autorizado!")
         st.markdown("---")
         
-        # Script de Alarma en Tiempo Real para el Administrador
+        # Botón interactivo para desbloquear audio en el panel de administración
+        if st.button("🔊 Activar Alarma Gerencial en Tiempo Real"):
+            audio_init_adm = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='sine'; osc.frequency.value=880; g.gain.setValueAtTime(0.1, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
+            components.html(audio_init_adm, height=0)
+            st.success("¡Alarma gerencial activada en tiempo real!")
+
+        # Script de sondeo en segundo plano para el Administrador (cada 5s)
         realtime_admin_js = """
             <script>
                 setInterval(async () => {
@@ -422,7 +434,7 @@ elif "Admin" in rol or "Gerencial" in rol:
                             osc.start(); osc.stop(ac.currentTime + 0.5);
                         }
                     } catch (e) {}
-                }, 6000);
+                }, 5000);
             </script>
         """
         components.html(realtime_admin_js, height=0)
@@ -432,11 +444,6 @@ elif "Admin" in rol or "Gerencial" in rol:
 
         if conteo_actual_admin > 0:
             st.warning(f"🚨 ¡Atención Gerente! Tienes **{conteo_actual_admin}** solicitud(es) entrante(s) en tiempo real.")
-
-        if st.button("🔔 Probar Sonido de Alarma Manual"):
-            audio_prueba = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='sine'; osc.frequency.value=880; g.gain.setValueAtTime(0.1, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.5); } catch(e){}</script>"
-            components.html(audio_prueba, height=0)
-            st.success("¡Sonido de prueba reproducido!")
 
         with st.expander("⚙️ Configuración General del Sistema", expanded=False):
             col_adm1, col_adm2 = st.columns(2)
