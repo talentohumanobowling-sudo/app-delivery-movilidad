@@ -4,6 +4,7 @@ import os
 import requests
 from datetime import datetime
 import urllib.parse
+import time
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="LLEGANDO - Movilidad & Delivery", page_icon="🚀", layout="wide")
@@ -210,11 +211,6 @@ if "Cliente" in rol:
         telefono_busqueda = st.text_input("Ingresa tu número de teléfono registrado:")
         
         if telefono_busqueda:
-            # Auto-actualización cada 6 segundos para verificar cambios en tiempo real
-            components.html("""
-                <meta http-equiv="refresh" content="6">
-            """, height=0)
-
             t_busq_clean = telefono_busqueda.strip()
             resultados = df[df["Telefono_Cliente"].astype(str).str.strip() == t_busq_clean]
             
@@ -268,7 +264,7 @@ if "Cliente" in rol:
                                         idx = df[df["ID_Servicio"] == serv['ID_Servicio']].index
                                         df.at[idx[0], "Ref_Pago_Movil"] = str(ref_ingresada)
                                         guardar_datos(df)
-                                        st.success("¡Referencia reportada! El administrador ha recibido la notificación flotante.")
+                                        st.success("¡Referencia reportada! El administrador ha recibido la notificación en tiempo real.")
                                         st.rerun()
                                     else:
                                         st.error("Ingresa la referencia de pago.")
@@ -290,6 +286,10 @@ if "Cliente" in rol:
                 st.warning("No se encontró ningún servicio registrado con ese número de teléfono.")
         else:
             st.info("💡 Ingresa tu número de teléfono arriba para consultar tus viajes activos.")
+            
+        # Actualización automática en segundo plano cada 3 segundos sin recargar la página completa
+        time.sleep(3)
+        st.rerun()
 
 # ==========================================
 # 2. VISTA PRESTADOR DE SERVICIOS
@@ -301,7 +301,7 @@ elif "Prestador" in rol:
     nom_prestador = st.text_input("Ingresa tu Nombre exacto autorizado para acceder:")
     
     if not nom_prestador:
-        st.info("💡 Por favor ingresa tu nombre exacto autorizado para ver tus viajes asignados y recibir alertas.")
+        st.info("💡 Por favor ingresa tu nombre exacto autorizado para ver tus viajes asignados y recibir alertas automáticas.")
     else:
         prestador_valido = df_prestadores[(df_prestadores["Nombre"].str.lower() == nom_prestador.strip().lower()) & (df_prestadores["Estatus"] == "Autorizado")]
         
@@ -309,11 +309,6 @@ elif "Prestador" in rol:
             st.warning("⚠️ Tu nombre no se encuentra registrado o aún no ha sido autorizado por la administración.")
         else:
             st.success("✅ ¡Acceso Autorizado!")
-            
-            # Auto-actualización para el Prestador
-            components.html("""
-                <meta http-equiv="refresh" content="6">
-            """, height=0)
 
             servicios_cond = df[df["Conductor"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
             viajes_activos_cond = servicios_cond[servicios_cond["Estado"].isin(["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto"])]
@@ -352,7 +347,7 @@ elif "Prestador" in rol:
                                 if st.button(f"Guardar Estatus #{serv['ID_Servicio']}", key=f"btn_{serv['ID_Servicio']}"):
                                     df.at[idx, "Estado"] = nuevo_estado
                                     guardar_datos(df)
-                                    st.success("¡Estatus actualizado y notificado a la empresa!")
+                                    st.success("¡Estatus actualizado y notificado!")
                                     st.rerun()
                             with col_b2:
                                 tlf_cliente = str(serv['Telefono_Cliente']).strip().replace(" ", "").replace("+", "")
@@ -409,6 +404,10 @@ elif "Prestador" in rol:
                 else:
                     st.info("No tienes liquidaciones registradas todavía.")
 
+        # Actualización automática en segundo plano cada 3 segundos
+        time.sleep(3)
+        st.rerun()
+
 # ==========================================
 # 3. VISTA ADMINISTRADOR (PANEL GERENCIAL)
 # ==========================================
@@ -421,11 +420,6 @@ elif "Admin" in rol or "Gerencial" in rol:
     if clave_ingresada == CLAVE_ADMIN_SECRETA:
         st.success("✅ ¡Acceso Gerencial Autorizado!")
         st.markdown("---")
-        
-        # Auto-actualización para el Administrador
-        components.html("""
-            <meta http-equiv="refresh" content="6">
-        """, height=0)
         
         pendientes_alarma = df[df["Estado"].isin(["Solicitado", "Pendiente"])]
         conteo_actual_admin = len(pendientes_alarma)
@@ -539,7 +533,7 @@ elif "Admin" in rol or "Gerencial" in rol:
                                 df.at[idx, "Pago_Verificado"] = verif_pago
                                 df.at[idx, "Estado"] = "Asignado"
                                 guardar_datos(df)
-                                st.success(f"¡Servicio #{serv['ID_Servicio']} actualizado y notificado!")
+                                st.success(f"¡Servicio #{serv['ID_Servicio']} actualizado!")
                                 st.rerun()
                         with col_act2:
                             if st.button(f"❌ Cancelar Servicio #{serv['ID_Servicio']}", key=f"btn_canc_{serv['ID_Servicio']}"):
@@ -643,6 +637,11 @@ elif "Admin" in rol or "Gerencial" in rol:
             if os.path.exists(DB_LIQUIDACIONES):
                 with open(DB_LIQUIDACIONES, "rb") as file:
                     st.download_button("⬇️ Descargar Base de Liquidaciones", file, file_name="liquidaciones_prestadores.xlsx")
+                    
+        # Actualización automática en segundo plano para el Administrador
+        time.sleep(3)
+        st.rerun()
+        
     elif clave_ingresada != "":
         st.error("❌ Contraseña incorrecta. Acceso denegado.")
     else:
