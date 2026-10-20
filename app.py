@@ -9,26 +9,6 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="LLEGANDO - Movilidad & Delivery", page_icon="🚀", layout="wide")
 
 # ==========================================
-# CONFIGURACIÓN PWA Y MANIFIESTO NATIVO
-# ==========================================
-pwa_header = """
-    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,{
-        'name': 'LLEGANDO - Movilidad & Delivery',
-        'short_name': 'LLEGANDO',
-        'start_url': '.',
-        'display': 'standalone',
-        'background_color': '#F4FBF7',
-        'theme_color': '#198754',
-        'icons': [{
-            'src': 'https://cdn-icons-png.flaticon.com/512/7541/7541900.png',
-            'sizes': '512x512',
-            'type': 'image/png'
-        }]
-    }">
-"""
-st.markdown(pwa_header, unsafe_allow_html=True)
-
-# ==========================================
 # ESTILOS CSS 100% VERDES Y PROFESIONALES
 # ==========================================
 st.markdown("""
@@ -207,13 +187,12 @@ if "Cliente" in rol:
     with tab_consultar:
         st.subheader("🔍 Mis Servicios Activos e Historial")
         
-        # Componente para registro de identidad y activación de notificaciones estilo app nativa
+        # Registro automático de identidad por dispositivo
         components.html("""
             <div style="background:#E8F5E9; padding:12px; border-radius:8px; border:1px solid #198754; margin-bottom:15px; font-family:sans-serif;">
-                <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">📱 Tu Identidad y Cintillo de Alertas Nativo:</p>
-                <input type="text" id="tel_reg" placeholder="Ingresa tu número (ej: 04141234567)" style="width:60%; padding:6px; border-radius:4px; border:1px solid #ccc;">
-                <button onclick="guardarTel()" style="background:#198754; color:white; border:none; padding:7px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar</button>
-                <button onclick="pedirPermiso()" style="background:#0F5132; color:white; border:none; padding:7px 10px; border-radius:4px; font-weight:bold; cursor:pointer; margin-left:5px;">🔔 Activar Cintillo</button>
+                <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">📱 Tu Identidad en este Dispositivo:</p>
+                <input type="text" id="tel_reg" placeholder="Ingresa tu número (ej: 04141234567)" style="width:70%; padding:6px; border-radius:4px; border:1px solid #ccc;">
+                <button onclick="guardarTel()" style="background:#198754; color:white; border:none; padding:7px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar y Recordar</button>
                 <p id="msg_reg" style="margin:5px 0 0 0; color:#146c43; font-size:0.9em; font-weight:bold;"></p>
             </div>
             <script>
@@ -222,59 +201,40 @@ if "Cliente" in rol:
                 const guardado = localStorage.getItem('llegando_telefono_cliente');
                 if (guardado) {
                     input.value = guardado;
-                    msg.innerText = "✅ Teléfono vinculado: " + guardado;
+                    msg.innerText = "✅ Teléfono vinculado a este dispositivo: " + guardado;
                 }
                 function guardarTel() {
                     if(input.value.trim() !== "") {
                         localStorage.setItem('llegando_telefono_cliente', input.value.trim());
-                        msg.innerText = "✅ ¡Teléfono guardado!";
+                        msg.innerText = "✅ ¡Teléfono guardado con éxito!";
                         setTimeout(() => { window.location.reload(); }, 800);
                     }
                 }
-                function pedirPermiso() {
-                    if ("Notification" in window) {
-                        Notification.requestPermission().then(permission => {
-                            if (permission === "granted") {
-                                alert("¡Cintillo flotante activado correctamente!");
-                            } else {
-                                alert("Permiso de notificaciones denegado.");
-                            }
-                        });
-                    }
-                }
             </script>
-        """, height=130)
+        """, height=120)
 
         telefono_busqueda = st.text_input("Confirma tu número de teléfono registrado:")
         
         if telefono_busqueda:
-            if st.button("🔊 Activar Alerta Sonora y Notificación Nativa"):
+            if st.button("🔊 Activar Alerta Sonora y Cintillo en Tiempo Real"):
                 audio_init_cli = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='triangle'; osc.frequency.value=600; g.gain.setValueAtTime(0.15, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
                 components.html(audio_init_cli, height=0)
-                st.toast("🎉 ¡Sistema de notificaciones nativas activo!", icon="🚀")
+                st.success("¡Cintillo y sonido activados!")
 
-            # Sondeo en segundo plano que genera la notificación flotante estilo app
+            # Cintillo flotante dinámico superior en tiempo real
             realtime_cliente_js = """
+                <div id="cintillo-alerta" style="display:none; position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:999999; background:#0F5132; color:white; padding:14px 22px; border-radius:10px; box-shadow:0 6px 15px rgba(0,0,0,0.3); font-family:sans-serif; text-align:center; width:90%; max-width:500px; border:2px solid #198754;">
+                    <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">🚀 LLEGANDO • Notificación</div>
+                    <div id="texto-alerta" style="font-size:0.95em;">¡Tu pago ha sido verificado y confirmado!</div>
+                </div>
                 <script>
                     setInterval(async () => {
                         try {
                             const res = await fetch(window.location.href);
                             const html = await res.text();
                             if (html.includes("Pago Confirmado") || html.includes("✅")) {
-                                if (Notification.permission === "granted") {
-                                    navigator.serviceWorker.ready.then(reg => {
-                                        reg.showNotification("LLEGANDO • Servicio al Cliente", {
-                                            body: "¡Tu pago ha sido verificado y confirmado por la empresa!",
-                                            icon: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png",
-                                            badge: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png",
-                                            vibrate: [200, 100, 200],
-                                            actions: [
-                                                { action: 'abrir', title: '📂 Abrir App' },
-                                                { action: 'contacto', title: '💬 Soporte' }
-                                            ]
-                                        });
-                                    });
-                                }
+                                const cintillo = document.getElementById('cintillo-alerta');
+                                if(cintillo) { cintillo.style.display = 'block'; }
                                 const ac = new (window.AudioContext || window.webkitAudioContext)();
                                 const osc = ac.createOscillator();
                                 const g = ac.createGain();
@@ -345,7 +305,7 @@ if "Cliente" in rol:
                                 info_cond = df_prestadores[df_prestadores["Nombre"].str.lower() == str(serv['Conductor']).lower()]
                                 if len(info_cond) > 0:
                                     tlf_cond = info_cond.iloc[0]["Telefono"].strip().replace(" ", "").replace("+", "")
-                                    msg_c = f"Hola {serv['Conductor']}, le escribo desde LLEGANDO respecto al servicio #{serv['ID_Servicio']}."
+                                    msg_c = f"Hola {serv['Conductor']}, le escribo desde LLEGANDO respecto a mi servicio #{serv['ID_Servicio']}."
                                     url_wa_cond = f"https://wa.me/{tlf_cond}?text={urllib.parse.quote(msg_c)}"
                                     st.link_button("💬 Contactar Conductor por WhatsApp", url_wa_cond)
                             else:
@@ -362,10 +322,9 @@ elif "Prestador" in rol:
     
     components.html("""
         <div style="background:#E8F5E9; padding:12px; border-radius:8px; border:1px solid #198754; margin-bottom:15px; font-family:sans-serif;">
-            <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">🚗 Tu Nombre Autorizado y Cintillo de Alertas:</p>
-            <input type="text" id="prest_reg" placeholder="Tu Nombre Exacto" style="width:60%; padding:6px; border-radius:4px; border:1px solid #ccc;">
-            <button onclick="guardarPrest()" style="background:#198754; color:white; border:none; padding:7px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar</button>
-            <button onclick="pedirPermiso()" style="background:#0F5132; color:white; border:none; padding:7px 10px; border-radius:4px; font-weight:bold; cursor:pointer; margin-left:5px;">🔔 Activar Cintillo</button>
+            <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">🚗 Tu Nombre Autorizado en este Dispositivo:</p>
+            <input type="text" id="prest_reg" placeholder="Tu Nombre Exacto" style="width:70%; padding:6px; border-radius:4px; border:1px solid #ccc;">
+            <button onclick="guardarPrest()" style="background:#198754; color:white; border:none; padding:7px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar y Recordar</button>
             <p id="msg_prest" style="margin:5px 0 0 0; color:#146c43; font-size:0.9em; font-weight:bold;"></p>
         </div>
         <script>
@@ -383,17 +342,8 @@ elif "Prestador" in rol:
                     setTimeout(() => { window.location.reload(); }, 800);
                 }
             }
-            function pedirPermiso() {
-                if ("Notification" in window) {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === "granted") {
-                            alert("¡Cintillo de notificaciones activo para nuevos viajes!");
-                        }
-                    });
-                }
-            }
         </script>
-    """, height=130)
+    """, height=120)
 
     nom_prestador = st.text_input("Ingresa tu Nombre exacto autorizado para acceder:")
     
@@ -405,37 +355,30 @@ elif "Prestador" in rol:
         else:
             st.success("✅ ¡Acceso Autorizado!")
             
-            if st.button("🔊 Activar Alarma de Nuevos Viajes"):
+            if st.button("🔊 Activar Alarma y Cintillo de Nuevos Viajes"):
                 audio_init_prest = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='square'; osc.frequency.value=750; g.gain.setValueAtTime(0.12, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
                 components.html(audio_init_prest, height=0)
-                st.toast("🚀 ¡Alarma y cintillo de prestador activos!", icon="🚗")
+                st.success("¡Alarma y cintillo activados!")
 
             realtime_prestador_js = """
+                <div id="cintillo-prestador" style="display:none; position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:999999; background:#0F5132; color:white; padding:14px 22px; border-radius:10px; box-shadow:0 6px 15px rgba(0,0,0,0.3); font-family:sans-serif; text-align:center; width:90%; max-width:500px; border:2px solid #198754;">
+                    <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">🚗 LLEGANDO • Nuevo Viaje</div>
+                    <div style="font-size:0.95em;">¡Se te ha asignado un nuevo servicio en la plataforma!</div>
+                </div>
                 <script>
                     setInterval(async () => {
                         try {
                             const res = await fetch(window.location.href);
                             const html = await res.text();
                             if (html.includes("Servicio #") || html.includes("Asignado")) {
-                                if (Notification.permission === "granted") {
-                                    navigator.serviceWorker.ready.then(reg => {
-                                        reg.showNotification("LLEGANDO • Nuevo Viaje", {
-                                            body: "¡Se te ha asignado un nuevo servicio en la plataforma!",
-                                            icon: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png",
-                                            badge: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png",
-                                            vibrate: [200, 100, 200],
-                                            actions: [
-                                                { action: 'ver', title: '👀 Ver Viaje' }
-                                            ]
-                                        });
-                                    });
-                                }
+                                const cintillo = document.getElementById('cintillo-prestador');
+                                if(cintillo) { cintillo.style.display = 'block'; }
                                 const ac = new (window.AudioContext || window.webkitAudioContext)();
                                 const osc = ac.createOscillator();
                                 const g = ac.createGain();
                                 osc.type='square'; osc.frequency.value=750;
                                 g.gain.setValueAtTime(0.12, ac.currentTime);
-                                osc.connect(g); g.connect(ac.destination);
+                                osc.connect(g); osc.connect(ac.destination);
                                 osc.start(); osc.stop(ac.currentTime + 0.6);
                             }
                         } catch (e) {}
@@ -545,47 +488,24 @@ elif "Admin" in rol or "Gerencial" in rol:
         st.success("✅ ¡Acceso Gerencial Autorizado!")
         st.markdown("---")
         
-        col_adm_btn1, col_adm_btn2 = st.columns(2)
-        with col_adm_btn1:
-            if st.button("🔊 Activar Alarma Gerencial"):
-                audio_init_adm = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='sine'; osc.frequency.value=880; g.gain.setValueAtTime(0.1, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
-                components.html(audio_init_adm, height=0)
-                st.toast("🚀 ¡Alarma gerencial activa!", icon="⚙️")
-        with col_adm_btn2:
-            if st.button("🔔 Activar Permiso de Cintillo Push"):
-                components.html("""
-                    <script>
-                        if ("Notification" in window) {
-                            Notification.requestPermission().then(permission => {
-                                if (permission === "granted") {
-                                    alert("¡Cintillo de nuevos pedidos activado!");
-                                }
-                            });
-                        }
-                    </script>
-                """, height=0)
-                st.success("¡Solicitud de permiso enviada!")
+        if st.button("🔊 Activar Alarma y Cintillo Gerencial"):
+            audio_init_adm = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='sine'; osc.frequency.value=880; g.gain.setValueAtTime(0.1, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
+            components.html(audio_init_adm, height=0)
+            st.success("¡Alarma y cintillo gerencial activados!")
 
         realtime_admin_js = """
+            <div id="cintillo-admin" style="display:none; position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:999999; background:#0F5132; color:white; padding:14px 22px; border-radius:10px; box-shadow:0 6px 15px rgba(0,0,0,0.3); font-family:sans-serif; text-align:center; width:90%; max-width:500px; border:2px solid #198754;">
+                <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">⚙️ LLEGANDO • Nuevo Pedido</div>
+                <div style="font-size:0.95em;">¡Hay una nueva solicitud pendiente de asignación!</div>
+            </div>
             <script>
                 setInterval(async () => {
                     try {
                         const res = await fetch(window.location.href);
                         const html = await res.text();
                         if (html.includes("Solicitado") || html.includes("Pendiente")) {
-                            if (Notification.permission === "granted") {
-                                navigator.serviceWorker.ready.then(reg => {
-                                    reg.showNotification("LLEGANDO • Panel Gerencial", {
-                                        body: "¡Hay una nueva solicitud pendiente de asignación!",
-                                        icon: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png",
-                                        badge: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png",
-                                        vibrate: [200, 100, 200],
-                                        actions: [
-                                            { action: 'gestionar', title: '⚙️ Gestionar' }
-                                        ]
-                                    });
-                                });
-                            }
+                            const cintillo = document.getElementById('cintillo-admin');
+                            if(cintillo) { cintillo.style.display = 'block'; }
                             const ac = new (window.AudioContext || window.webkitAudioContext)();
                             const osc = ac.createOscillator();
                             const g = ac.createGain();
