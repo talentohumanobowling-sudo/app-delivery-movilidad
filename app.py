@@ -39,6 +39,29 @@ st.markdown("""
             background-color: #146c43;
             color: white;
         }
+        .cintillo-flotante {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999999;
+            background-color: #0F5132;
+            color: white;
+            padding: 16px 28px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            font-family: 'Helvetica Neue', sans-serif;
+            text-align: center;
+            width: 90%;
+            max-width: 550px;
+            border: 2px solid #198754;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.02); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -187,56 +210,10 @@ if "Cliente" in rol:
         telefono_busqueda = st.text_input("Ingresa tu número de teléfono registrado:")
         
         if telefono_busqueda:
-            if st.button("🔊 Activar Mensajería Flotante en Tiempo Real"):
-                audio_init_cli = """
-                    <script>
-                        try {
-                            const ac = new (window.AudioContext || window.webkitAudioContext)();
-                            const osc = ac.createOscillator();
-                            const g = ac.createGain();
-                            osc.type = 'triangle';
-                            osc.frequency.value = 600;
-                            g.gain.setValueAtTime(0.15, ac.currentTime);
-                            osc.connect(g);
-                            osc.connect(ac.destination);
-                            osc.start();
-                            osc.stop(ac.currentTime + 0.3);
-                        } catch(e) {}
-                    </script>
-                """
-                components.html(audio_init_cli, height=0)
-                st.success("¡Mensajería flotante activada!")
-
-            realtime_cliente_js = """
-                <div id="cintillo-cliente" style="display:none; position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:999999; background:#0F5132; color:white; padding:14px 22px; border-radius:10px; box-shadow:0 6px 15px rgba(0,0,0,0.3); font-family:sans-serif; text-align:center; width:90%; max-width:500px; border:2px solid #198754;">
-                    <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">🚀 LLEGANDO • Actualización de Viaje</div>
-                    <div style="font-size:0.95em;">¡Su viaje ha sido actualizado por la administración!</div>
-                </div>
-                <script>
-                    const miTlf = "REPLACE_TLF";
-                    setInterval(async () => {
-                        try {
-                            const res = await fetch(window.location.href);
-                            const html = await res.text();
-                            if (html.includes(miTlf) && (html.includes("Pago Confirmado") || html.includes("Asignado") || html.includes("Completado"))) {
-                                const cintillo = document.getElementById('cintillo-cliente');
-                                if(cintillo) { cintillo.style.display = 'block'; }
-                                const ac = new (window.AudioContext || window.webkitAudioContext)();
-                                const osc = ac.createOscillator();
-                                const g = ac.createGain();
-                                osc.type = 'triangle';
-                                osc.frequency.value = 600;
-                                g.gain.setValueAtTime(0.15, ac.currentTime);
-                                osc.connect(g);
-                                g.connect(ac.destination);
-                                osc.start();
-                                osc.stop(ac.currentTime + 0.5);
-                            }
-                        } catch (e) {}
-                    }, 4000);
-                </script>
-            """.replace("REPLACE_TLF", telefono_busqueda.strip())
-            components.html(realtime_cliente_js, height=0)
+            # Auto-actualización cada 6 segundos para verificar cambios en tiempo real
+            components.html("""
+                <meta http-equiv="refresh" content="6">
+            """, height=0)
 
             t_busq_clean = telefono_busqueda.strip()
             resultados = df[df["Telefono_Cliente"].astype(str).str.strip() == t_busq_clean]
@@ -245,22 +222,32 @@ if "Cliente" in rol:
                 for idx_res, serv in resultados.iterrows():
                     monto_usd = float(serv['Monto_USD'])
                     monto_ves = monto_usd * st.session_state.tasa_bcv
+                    estatus_s = str(serv['Estado']).strip()
+                    pago_v = str(serv.get('Pago_Verificado', 'No')).strip()
                     
-                    with st.expander(f"📍 Servicio #{serv['ID_Servicio']} - {serv['Tipo_Servicio']} [{serv['Estado']}]", expanded=True):
+                    # Cintillo flotante dirigido al Cliente si hay actualizaciones
+                    if pago_v.lower() in ["sí", "si"] or estatus_s in ["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto", "Completado"]:
+                        st.markdown(f"""
+                            <div class="cintillo-flotante">
+                                <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">🚀 LLEGANDO • ¡Actualización de tu Viaje!</div>
+                                <div style="font-size:0.95em;">Estatus: <b>{estatus_s}</b> | Conductor: <b>{serv['Conductor']}</b> | Pago: <b>{pago_v}</b></div>
+                            </div>
+                        """, unsafe_allow_html=True)
+
+                    with st.expander(f"📍 Servicio #{serv['ID_Servicio']} - {serv['Tipo_Servicio']} [{estatus_s}]", expanded=True):
                         c1, c2 = st.columns(2)
                         with c1:
                             st.markdown(f"**👤 Cliente:** {serv['Cliente']}")
                             st.markdown(f"**📍 Origen:** {serv['Origen']}")
                             st.markdown(f"**🏁 Destino:** {serv['Destino']}")
                         with c2:
-                            st.markdown(f"**🚦 Estado:** `{serv['Estado']}`")
+                            st.markdown(f"**🚦 Estado:** `{estatus_s}`")
                             st.markdown(f"**💵 Tarifa:** **${monto_usd:,.2f} USD** (Bs. {monto_ves:,.2f})")
                         
-                        if serv['Estado'] == "Cancelado":
+                        if estatus_s == "Cancelado":
                             st.error("⚠️ Este servicio ha sido cancelado.")
                         else:
                             ref_actual = "" if pd.isna(serv['Ref_Pago_Movil']) or str(serv['Ref_Pago_Movil']) == "nan" else str(serv['Ref_Pago_Movil']).strip()
-                            pago_verif = str(serv.get('Pago_Verificado', 'No')).strip()
                             
                             if str(serv['Metodo_Pago']).strip().lower() == "pago móvil" and monto_usd > 0:
                                 st.markdown("---")
@@ -281,12 +268,12 @@ if "Cliente" in rol:
                                         idx = df[df["ID_Servicio"] == serv['ID_Servicio']].index
                                         df.at[idx[0], "Ref_Pago_Movil"] = str(ref_ingresada)
                                         guardar_datos(df)
-                                        st.success("¡Referencia reportada! Esperando confirmación bancaria del administrador.")
+                                        st.success("¡Referencia reportada! El administrador ha recibido la notificación flotante.")
                                         st.rerun()
                                     else:
                                         st.error("Ingresa la referencia de pago.")
                             
-                            if pago_verif.lower() == "sí" or pago_verif.lower() == "si" or str(serv['Metodo_Pago']).strip().lower() != "pago móvil":
+                            if pago_v.lower() in ["sí", "si"] or str(serv['Metodo_Pago']).strip().lower() != "pago móvil":
                                 st.markdown("---")
                                 st.success("✅ **¡Pago Confirmado por la Empresa!**")
                                 st.markdown(f"### 👨‍✈️ Tu Prestador Asignado es: **{serv['Conductor']}**")
@@ -314,7 +301,7 @@ elif "Prestador" in rol:
     nom_prestador = st.text_input("Ingresa tu Nombre exacto autorizado para acceder:")
     
     if not nom_prestador:
-        st.info("💡 Por favor ingresa tu nombre exacto autorizado para ver tus viajes asignados y herramientas de trabajo.")
+        st.info("💡 Por favor ingresa tu nombre exacto autorizado para ver tus viajes asignados y recibir alertas.")
     else:
         prestador_valido = df_prestadores[(df_prestadores["Nombre"].str.lower() == nom_prestador.strip().lower()) & (df_prestadores["Estatus"] == "Autorizado")]
         
@@ -323,61 +310,21 @@ elif "Prestador" in rol:
         else:
             st.success("✅ ¡Acceso Autorizado!")
             
-            if st.button("🔊 Activar Mensajería Flotante de Nuevos Viajes"):
-                audio_init_prest = """
-                    <script>
-                        try {
-                            const ac = new (window.AudioContext || window.webkitAudioContext)();
-                            const osc = ac.createOscillator();
-                            const g = ac.createGain();
-                            osc.type = 'square';
-                            osc.frequency.value = 750;
-                            g.gain.setValueAtTime(0.12, ac.currentTime);
-                            osc.connect(g);
-                            osc.connect(ac.destination);
-                            osc.start();
-                            osc.stop(ac.currentTime + 0.3);
-                        } catch(e) {}
-                    </script>
-                """
-                components.html(audio_init_prest, height=0)
-                st.success("¡Mensajería flotante de prestador activada!")
-
-            realtime_prestador_js = """
-                <div id="cintillo-prestador" style="display:none; position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:999999; background:#0F5132; color:white; padding:14px 22px; border-radius:10px; box-shadow:0 6px 15px rgba(0,0,0,0.3); font-family:sans-serif; text-align:center; width:90%; max-width:500px; border:2px solid #198754;">
-                    <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">🚗 LLEGANDO • Asignación de Viaje</div>
-                    <div style="font-size:0.95em;">¡Se le ha asignado o actualizado un servicio en la plataforma!</div>
-                </div>
-                <script>
-                    const miNombre = "REPLACE_NAME";
-                    setInterval(async () => {
-                        try {
-                            const res = await fetch(window.location.href);
-                            const html = await res.text();
-                            if (html.toLowerCase().includes(miNombre)) {
-                                const cintillo = document.getElementById('cintillo-prestador');
-                                if(cintillo) { cintillo.style.display = 'block'; }
-                                const ac = new (window.AudioContext || window.webkitAudioContext)();
-                                const osc = ac.createOscillator();
-                                const g = ac.createGain();
-                                osc.type = 'square';
-                                osc.frequency.value = 750;
-                                g.gain.setValueAtTime(0.12, ac.currentTime);
-                                osc.connect(g);
-                                g.connect(ac.destination);
-                                osc.start();
-                                osc.stop(ac.currentTime + 0.6);
-                            }
-                        } catch (e) {}
-                    }, 4000);
-                </script>
-            """.replace("REPLACE_NAME", nom_prestador.strip().lower())
-            components.html(realtime_prestador_js, height=0)
+            # Auto-actualización para el Prestador
+            components.html("""
+                <meta http-equiv="refresh" content="6">
+            """, height=0)
 
             servicios_cond = df[df["Conductor"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
             viajes_activos_cond = servicios_cond[servicios_cond["Estado"].isin(["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto"])]
             
             if len(viajes_activos_cond) > 0:
+                st.markdown(f"""
+                    <div class="cintillo-flotante">
+                        <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">🚗 LLEGANDO • ¡Nuevo Servicio Asignado!</div>
+                        <div style="font-size:0.95em;">Tienes <b>{len(viajes_activos_cond)}</b> viaje(s) activo(s) esperando por ti.</div>
+                    </div>
+                """, unsafe_allow_html=True)
                 st.warning(f"🚨 ¡Tienes **{len(viajes_activos_cond)}** servicio(s) activo(s) asignado(s)!")
 
             tab_viajes, tab_finanzas, tab_liquidaciones = st.tabs(["📋 Mis Viajes Activos", "💰 Mis Ganancias", "🤝 Liquidaciones y Pagos"])
@@ -405,7 +352,7 @@ elif "Prestador" in rol:
                                 if st.button(f"Guardar Estatus #{serv['ID_Servicio']}", key=f"btn_{serv['ID_Servicio']}"):
                                     df.at[idx, "Estado"] = nuevo_estado
                                     guardar_datos(df)
-                                    st.success("¡Estatus actualizado!")
+                                    st.success("¡Estatus actualizado y notificado a la empresa!")
                                     st.rerun()
                             with col_b2:
                                 tlf_cliente = str(serv['Telefono_Cliente']).strip().replace(" ", "").replace("+", "")
@@ -475,60 +422,21 @@ elif "Admin" in rol or "Gerencial" in rol:
         st.success("✅ ¡Acceso Gerencial Autorizado!")
         st.markdown("---")
         
-        if st.button("🔊 Activar Mensajería Flotante Gerencial"):
-            audio_init_adm = """
-                <script>
-                    try {
-                        const ac = new (window.AudioContext || window.webkitAudioContext)();
-                        const osc = ac.createOscillator();
-                        const g = ac.createGain();
-                        osc.type = 'sine';
-                        osc.frequency.value = 880;
-                        g.gain.setValueAtTime(0.1, ac.currentTime);
-                        osc.connect(g);
-                        osc.connect(ac.destination);
-                        osc.start();
-                        osc.stop(ac.currentTime + 0.3);
-                    } catch(e) {}
-                </script>
-            """
-            components.html(audio_init_adm, height=0)
-            st.success("¡Mensajería flotante gerencial activada!")
-
-        realtime_admin_js = """
-            <div id="cintillo-admin" style="display:none; position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:999999; background:#0F5132; color:white; padding:14px 22px; border-radius:10px; box-shadow:0 6px 15px rgba(0,0,0,0.3); font-family:sans-serif; text-align:center; width:90%; max-width:500px; border:2px solid #198754;">
-                <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">⚙️ LLEGANDO • Nueva Solicitud o Referencia</div>
-                <div style="font-size:0.95em;">¡Un cliente ha enviado una nueva solicitud o pago móvil!</div>
-            </div>
-            <script>
-                setInterval(async () => {
-                    try {
-                        const res = await fetch(window.location.href);
-                        const html = await res.text();
-                        if (html.includes("Solicitado") || html.includes("Pendiente") || html.includes("Ref_Pago_Movil")) {
-                            const cintillo = document.getElementById('cintillo-admin');
-                            if(cintillo) { cintillo.style.display = 'block'; }
-                            const ac = new (window.AudioContext || window.webkitAudioContext)();
-                            const osc = ac.createOscillator();
-                            const g = ac.createGain();
-                            osc.type = 'sine';
-                            osc.frequency.value = 880;
-                            g.gain.setValueAtTime(0.1, ac.currentTime);
-                            osc.connect(g);
-                            osc.connect(ac.destination);
-                            osc.start();
-                            osc.stop(ac.currentTime + 0.5);
-                        }
-                    } catch (e) {}
-                }, 4000);
-            </script>
-        """
-        components.html(realtime_admin_js, height=0)
+        # Auto-actualización para el Administrador
+        components.html("""
+            <meta http-equiv="refresh" content="6">
+        """, height=0)
         
         pendientes_alarma = df[df["Estado"].isin(["Solicitado", "Pendiente"])]
         conteo_actual_admin = len(pendientes_alarma)
 
         if conteo_actual_admin > 0:
+            st.markdown(f"""
+                <div class="cintillo-flotante">
+                    <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">⚙️ LLEGANDO • ¡Nuevos Pedidos Entrantes!</div>
+                    <div style="font-size:0.95em;">Hay <b>{conteo_actual_admin}</b> solicitud(es) esperando asignación o verificación.</div>
+                </div>
+            """, unsafe_allow_html=True)
             st.warning(f"🚨 ¡Atención Gerente! Tienes **{conteo_actual_admin}** solicitud(es) entrante(s) en tiempo real.")
 
         with st.expander("⚙️ Configuración General del Sistema", expanded=False):
@@ -631,7 +539,7 @@ elif "Admin" in rol or "Gerencial" in rol:
                                 df.at[idx, "Pago_Verificado"] = verif_pago
                                 df.at[idx, "Estado"] = "Asignado"
                                 guardar_datos(df)
-                                st.success(f"¡Servicio #{serv['ID_Servicio']} actualizado correctamente!")
+                                st.success(f"¡Servicio #{serv['ID_Servicio']} actualizado y notificado!")
                                 st.rerun()
                         with col_act2:
                             if st.button(f"❌ Cancelar Servicio #{serv['ID_Servicio']}", key=f"btn_canc_{serv['ID_Servicio']}"):
