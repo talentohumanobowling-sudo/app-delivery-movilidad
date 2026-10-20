@@ -5,7 +5,6 @@ import requests
 from datetime import datetime
 import urllib.parse
 import time
-import streamlit.components.v1 as components
 
 st.set_page_config(page_title="LLEGANDO - Movilidad & Delivery", page_icon="🚀", layout="wide")
 
@@ -39,29 +38,6 @@ st.markdown("""
         .stButton>button:hover {
             background-color: #146c43;
             color: white;
-        }
-        .cintillo-flotante {
-            position: fixed;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 999999;
-            background-color: #0F5132;
-            color: white;
-            padding: 16px 28px;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-            font-family: 'Helvetica Neue', sans-serif;
-            text-align: center;
-            width: 90%;
-            max-width: 550px;
-            border: 2px solid #198754;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: translateX(-50%) scale(1); }
-            50% { transform: translateX(-50%) scale(1.02); }
-            100% { transform: translateX(-50%) scale(1); }
         }
     </style>
 """, unsafe_allow_html=True)
@@ -221,14 +197,8 @@ if "Cliente" in rol:
                     estatus_s = str(serv['Estado']).strip()
                     pago_v = str(serv.get('Pago_Verificado', 'No')).strip()
                     
-                    # Cintillo flotante dirigido al Cliente si hay actualizaciones
                     if pago_v.lower() in ["sí", "si"] or estatus_s in ["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto", "Completado"]:
-                        st.markdown(f"""
-                            <div class="cintillo-flotante">
-                                <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">🚀 LLEGANDO • ¡Actualización de tu Viaje!</div>
-                                <div style="font-size:0.95em;">Estatus: <b>{estatus_s}</b> | Conductor: <b>{serv['Conductor']}</b> | Pago: <b>{pago_v}</b></div>
-                            </div>
-                        """, unsafe_allow_html=True)
+                        st.toast(f"¡Actualización en Viaje #{serv['ID_Servicio']}! Estatus: {estatus_s}", icon="🚀")
 
                     with st.expander(f"📍 Servicio #{serv['ID_Servicio']} - {serv['Tipo_Servicio']} [{estatus_s}]", expanded=True):
                         c1, c2 = st.columns(2)
@@ -264,7 +234,7 @@ if "Cliente" in rol:
                                         idx = df[df["ID_Servicio"] == serv['ID_Servicio']].index
                                         df.at[idx[0], "Ref_Pago_Movil"] = str(ref_ingresada)
                                         guardar_datos(df)
-                                        st.success("¡Referencia reportada! El administrador ha recibido la notificación en tiempo real.")
+                                        st.success("¡Referencia reportada! Notificación enviada al administrador.")
                                         st.rerun()
                                     else:
                                         st.error("Ingresa la referencia de pago.")
@@ -287,7 +257,6 @@ if "Cliente" in rol:
         else:
             st.info("💡 Ingresa tu número de teléfono arriba para consultar tus viajes activos.")
             
-        # Actualización automática en segundo plano cada 3 segundos sin recargar la página completa
         time.sleep(3)
         st.rerun()
 
@@ -314,12 +283,7 @@ elif "Prestador" in rol:
             viajes_activos_cond = servicios_cond[servicios_cond["Estado"].isin(["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto"])]
             
             if len(viajes_activos_cond) > 0:
-                st.markdown(f"""
-                    <div class="cintillo-flotante">
-                        <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">🚗 LLEGANDO • ¡Nuevo Servicio Asignado!</div>
-                        <div style="font-size:0.95em;">Tienes <b>{len(viajes_activos_cond)}</b> viaje(s) activo(s) esperando por ti.</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.toast(f"🚨 ¡Tienes {len(viajes_activos_cond)} viaje(s) activo(s) asignado(s)!", icon="🚗")
                 st.warning(f"🚨 ¡Tienes **{len(viajes_activos_cond)}** servicio(s) activo(s) asignado(s)!")
 
             tab_viajes, tab_finanzas, tab_liquidaciones = st.tabs(["📋 Mis Viajes Activos", "💰 Mis Ganancias", "🤝 Liquidaciones y Pagos"])
@@ -347,7 +311,7 @@ elif "Prestador" in rol:
                                 if st.button(f"Guardar Estatus #{serv['ID_Servicio']}", key=f"btn_{serv['ID_Servicio']}"):
                                     df.at[idx, "Estado"] = nuevo_estado
                                     guardar_datos(df)
-                                    st.success("¡Estatus actualizado y notificado!")
+                                    st.success("¡Estatus actualizado!")
                                     st.rerun()
                             with col_b2:
                                 tlf_cliente = str(serv['Telefono_Cliente']).strip().replace(" ", "").replace("+", "")
@@ -404,7 +368,6 @@ elif "Prestador" in rol:
                 else:
                     st.info("No tienes liquidaciones registradas todavía.")
 
-        # Actualización automática en segundo plano cada 3 segundos
         time.sleep(3)
         st.rerun()
 
@@ -425,12 +388,7 @@ elif "Admin" in rol or "Gerencial" in rol:
         conteo_actual_admin = len(pendientes_alarma)
 
         if conteo_actual_admin > 0:
-            st.markdown(f"""
-                <div class="cintillo-flotante">
-                    <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">⚙️ LLEGANDO • ¡Nuevos Pedidos Entrantes!</div>
-                    <div style="font-size:0.95em;">Hay <b>{conteo_actual_admin}</b> solicitud(es) esperando asignación o verificación.</div>
-                </div>
-            """, unsafe_allow_html=True)
+            st.toast(f"⚙️ ¡Tienes {conteo_actual_admin} solicitud(es) entrante(s)!", icon="🔔")
             st.warning(f"🚨 ¡Atención Gerente! Tienes **{conteo_actual_admin}** solicitud(es) entrante(s) en tiempo real.")
 
         with st.expander("⚙️ Configuración General del Sistema", expanded=False):
@@ -638,11 +596,10 @@ elif "Admin" in rol or "Gerencial" in rol:
                 with open(DB_LIQUIDACIONES, "rb") as file:
                     st.download_button("⬇️ Descargar Base de Liquidaciones", file, file_name="liquidaciones_prestadores.xlsx")
                     
-        # Actualización automática en segundo plano para el Administrador
         time.sleep(3)
         st.rerun()
         
     elif clave_ingresada != "":
         st.error("❌ Contraseña incorrecta. Acceso denegado.")
     else:
-        st.info("🔒 Ingresa tu contraseña en el campo superior para desbloquear el panel gerencial.")
+        st.info("🔒 Ingresa tu contraseña en el campo superior para desbloquear el panel gerencial.")      
