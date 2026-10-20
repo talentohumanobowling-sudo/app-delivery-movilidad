@@ -621,4 +621,10 @@ elif "Admin" in rol or "Gerencial" in rol:
                 with open(DB_LIQUIDACIONES, "rb") as file:
                     st.download_button("⬇️ Descargar Base de Liquidaciones", file, file_name="liquidaciones_prestadores.xlsx")
                     
-        time.sleep(3
+        time.sleep(3)
+        st.rerun()
+        
+    elif clave_ingresada != "":
+        st.error("❌ Contraseña incorrecta. Acceso denegado.")
+    else:
+        st.info("🔒 Ingresa tu contraseña en el campo superior para desbloquear el panel gerencial.")
