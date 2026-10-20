@@ -281,31 +281,4 @@ if "Cliente" in rol:
                             st.markdown(f"**🏁 Destino:** {serv['Destino']}")
                         with c2:
                             st.markdown(f"**🚦 Estado:** `{serv['Estado']}`")
-                            st.markdown(f"**💵 Tarifa:** **${monto_usd:,.2f} USD** (Bs. {monto_ves:,.2f})")
-                        
-                        if serv['Estado'] == "Cancelado":
-                            st.error("⚠️ Este servicio ha sido cancelado.")
-                        else:
-                            ref_actual = "" if pd.isna(serv['Ref_Pago_Movil']) or str(serv['Ref_Pago_Movil']) == "nan" else str(serv['Ref_Pago_Movil']).strip()
-                            pago_verif = str(serv.get('Pago_Verificado', 'No')).strip()
-                            
-                            if str(serv['Metodo_Pago']).strip().lower() == "pago móvil" and monto_usd > 0:
-                                st.markdown("---")
-                                st.info("📲 **Datos para Pago Móvil:**")
-                                st.warning(f"💱 **Monto exacto:** **Bs. {monto_ves:,.2f}** *(Tasa BCV: {st.session_state.tasa_bcv})*")
-                                
-                                col_p1, col_p2 = st.columns(2)
-                                with col_p1:
-                                    st.write(f"🏦 **Banco:** {DATOS_PAGO_MOVIL['Banco']}")
-                                    st.write(f"📱 **Teléfono:** {DATOS_PAGO_MOVIL['Telefono']}")
-                                with col_p2:
-                                    st.write(f"🪪 **Cédula / RIF:** {DATOS_PAGO_MOVIL['Cedula_RIF']}")
-                                    st.write(f"👤 **Titular:** {DATOS_PAGO_MOVIL['Titular']}")
-                                
-                                ref_ingresada = st.text_input("📝 Ingresa los dígitos de tu referencia bancaria:", value=ref_actual, key=f"ref_{serv['ID_Servicio']}")
-                                if st.button(f"Reportar Referencia #{serv['ID_Servicio']}", key=f"btn_ref_{serv['ID_Servicio']}"):
-                                    if ref_ingresada:
-                                        idx = df[df["ID_Servicio"] == serv['ID_Servicio']].index
-                                        df.at[idx[0], "Ref_Pago_Movil"] = str(ref_ingresada)
-                                        guardar_datos(df)
-                                        st.success("¡Referencia
+                            st.markdown(f"**💵 Tarifa:**
