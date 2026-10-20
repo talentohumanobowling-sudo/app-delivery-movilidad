@@ -187,8 +187,8 @@ if "Cliente" in rol:
     with tab_consultar:
         st.subheader("🔍 Mis Servicios Activos e Historial")
         
-        # Componente JavaScript para registrar y recordar el teléfono del cliente automáticamente en su dispositivo
-        componentes.html("""
+        # Registro automático en localStorage del dispositivo
+        components.html("""
             <div style="background:#E8F5E9; padding:12px; border-radius:8px; border:1px solid #198754; margin-bottom:15px; font-family:sans-serif;">
                 <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">📱 Tu Identidad en este Teléfono:</p>
                 <input type="text" id="tel_reg" placeholder="Ingresa tu número (ej: 04141234567)" style="width:70%; padding:6px; border-radius:4px; border:1px solid #ccc;">
@@ -211,13 +211,13 @@ if "Cliente" in rol:
                     }
                 }
             </script>
-        """, height=110)
+        """, height=120)
 
         telefono_busqueda = st.text_input("Confirma tu número de teléfono registrado:")
         
         if telefono_busqueda:
             if st.button("🔊 Activar Alerta de Notificaciones en Tiempo Real"):
-                audio_init_cli = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='triangle'; osc.frequency.value=600; g.gain.setValueAtTime(0.15, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
+                audio_init_cli = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='triangle'; osc.frequency.value=600; g.gain.setValueAtTime(0.15, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
                 components.html(audio_init_cli, height=0)
                 st.success("¡Notificaciones en tiempo real activadas!")
 
@@ -313,7 +313,7 @@ elif "Prestador" in rol:
     st.markdown("<h2 style='color: #198754;'>🚗 Panel Profesional del Prestador - LLEGANDO</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
-    componentes.html("""
+    components.html("""
         <div style="background:#E8F5E9; padding:12px; border-radius:8px; border:1px solid #198754; margin-bottom:15px; font-family:sans-serif;">
             <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">🚗 Tu Nombre Autorizado en este Dispositivo:</p>
             <input type="text" id="prest_reg" placeholder="Tu Nombre Exacto" style="width:70%; padding:6px; border-radius:4px; border:1px solid #ccc;">
@@ -336,7 +336,7 @@ elif "Prestador" in rol:
                 }
             }
         </script>
-    """, height=110)
+    """, height=120)
 
     nom_prestador = st.text_input("Ingresa tu Nombre exacto autorizado para acceder:")
     
@@ -492,7 +492,7 @@ elif "Admin" in rol or "Gerencial" in rol:
                             const g = ac.createGain();
                             osc.type='sine'; osc.frequency.value=880;
                             g.gain.setValueAtTime(0.1, ac.currentTime);
-                            osc.connect(g); g.connect(ac.destination);
+                            osc.connect(g); osc.connect(ac.destination);
                             osc.start(); osc.stop(ac.currentTime + 0.5);
                         }
                     } catch (e) {}
