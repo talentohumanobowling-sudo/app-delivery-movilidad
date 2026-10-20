@@ -128,11 +128,16 @@ df_prestadores = cargar_prestadores()
 df_liquidaciones = cargar_liquidaciones()
 
 # ==========================================
-# BARRA LATERAL - LLEGANDO CON LOGO CORPORATIVO
+# BARRA LATERAL - LOGOTIPO OFICIAL Y NAVEGACIÓN
 # ==========================================
-st.sidebar.image("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=60", width=100)
-st.sidebar.markdown("### 🔵 LLEGANDO")
-st.sidebar.markdown("<p style='font-size: 0.85em; color: #555;'>Red Integral de Movilidad y Logística</p>", unsafe_allow_html=True)
+if os.path.exists("logo.jpg"):
+    st.sidebar.image("logo.jpg", use_container_width=True)
+elif os.path.exists("logo.png"):
+    st.sidebar.image("logo.png", use_container_width=True)
+else:
+    st.sidebar.markdown("### 🔵 LLEGANDO")
+    st.sidebar.markdown("<p style='font-size: 0.8em; color: #666;'>Sube 'logo.jpg' a tu repositorio para mostrar el logotipo oficial.</p>", unsafe_allow_html=True)
+
 st.sidebar.markdown("---")
 
 rol = st.sidebar.radio("Selecciona tu Panel:", [
