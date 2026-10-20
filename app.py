@@ -39,6 +39,16 @@ st.markdown("""
             background-color: #146c43;
             color: white;
         }
+        .cintillo-alerta {
+            background-color: #0F5132;
+            color: white;
+            padding: 18px 24px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(15, 81, 50, 0.3);
+            margin-bottom: 20px;
+            border-left: 8px solid #28a745;
+            font-family: 'Helvetica Neue', sans-serif;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -198,7 +208,12 @@ if "Cliente" in rol:
                     pago_v = str(serv.get('Pago_Verificado', 'No')).strip()
                     
                     if pago_v.lower() in ["sí", "si"] or estatus_s in ["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto", "Completado"]:
-                        st.toast(f"¡Actualización en Viaje #{serv['ID_Servicio']}! Estatus: {estatus_s}", icon="🚀")
+                        st.markdown(f"""
+                            <div class="cintillo-alerta">
+                                <h3 style="color: #ffffff; margin: 0 0 5px 0;">🚀 LLEGANDO • ¡Actualización en tu Viaje #{serv['ID_Servicio']}!</h3>
+                                <p style="margin: 0; font-size: 1.05em;">Estatus actual: <b>{estatus_s}</b> | Prestador: <b>{serv['Conductor']}</b> | Pago: <b>{pago_v}</b></p>
+                            </div>
+                        """, unsafe_allow_html=True)
 
                     with st.expander(f"📍 Servicio #{serv['ID_Servicio']} - {serv['Tipo_Servicio']} [{estatus_s}]", expanded=True):
                         c1, c2 = st.columns(2)
@@ -283,8 +298,12 @@ elif "Prestador" in rol:
             viajes_activos_cond = servicios_cond[servicios_cond["Estado"].isin(["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto"])]
             
             if len(viajes_activos_cond) > 0:
-                st.toast(f"🚨 ¡Tienes {len(viajes_activos_cond)} viaje(s) activo(s) asignado(s)!", icon="🚗")
-                st.warning(f"🚨 ¡Tienes **{len(viajes_activos_cond)}** servicio(s) activo(s) asignado(s)!")
+                st.markdown(f"""
+                    <div class="cintillo-alerta">
+                        <h3 style="color: #ffffff; margin: 0 0 5px 0;">🚗 LLEGANDO • ¡Nuevo Servicio Asignado!</h3>
+                        <p style="margin: 0; font-size: 1.05em;">Tienes <b>{len(viajes_activos_cond)}</b> viaje(s) activo(s) esperando por atención.</p>
+                    </div>
+                """, unsafe_allow_html=True)
 
             tab_viajes, tab_finanzas, tab_liquidaciones = st.tabs(["📋 Mis Viajes Activos", "💰 Mis Ganancias", "🤝 Liquidaciones y Pagos"])
             
@@ -388,8 +407,12 @@ elif "Admin" in rol or "Gerencial" in rol:
         conteo_actual_admin = len(pendientes_alarma)
 
         if conteo_actual_admin > 0:
-            st.toast(f"⚙️ ¡Tienes {conteo_actual_admin} solicitud(es) entrante(s)!", icon="🔔")
-            st.warning(f"🚨 ¡Atención Gerente! Tienes **{conteo_actual_admin}** solicitud(es) entrante(s) en tiempo real.")
+            st.markdown(f"""
+                <div class="cintillo-alerta">
+                    <h3 style="color: #ffffff; margin: 0 0 5px 0;">⚙️ LLEGANDO • ¡Nuevos Pedidos Entrantes!</h3>
+                    <p style="margin: 0; font-size: 1.05em;">Hay <b>{conteo_actual_admin}</b> solicitud(es) esperando asignación o verificación de pago.</p>
+                </div>
+            """, unsafe_allow_html=True)
 
         with st.expander("⚙️ Configuración General del Sistema", expanded=False):
             col_adm1, col_adm2 = st.columns(2)
@@ -602,4 +625,4 @@ elif "Admin" in rol or "Gerencial" in rol:
     elif clave_ingresada != "":
         st.error("❌ Contraseña incorrecta. Acceso denegado.")
     else:
-        st.info("🔒 Ingresa tu contraseña en el campo superior para desbloquear el panel gerencial.")      
+        st.info("🔒 Ingresa tu contraseña en el campo superior para desbloquear el panel gerencial.")
