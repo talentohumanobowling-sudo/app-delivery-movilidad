@@ -189,23 +189,39 @@ if "Cliente" in rol:
         telefono_busqueda = st.text_input("Ingresa tu número de teléfono registrado:")
         
         if telefono_busqueda:
+            # Botón requerido para habilitar audio en móviles/PCs por políticas de navegador
+            if st.button("🔊 Activar Alerta de Notificaciones en Tiempo Real"):
+                audio_init_cli = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='triangle'; osc.frequency.value=600; g.gain.setValueAtTime(0.15, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
+                components.html(audio_init_cli, height=0)
+                st.success("¡Notificaciones en tiempo real activadas!")
+
+            # Sondeo en segundo plano para el cliente (detecta confirmación de pago)
+            realtime_cliente_js = """
+                <script>
+                    setInterval(async () => {
+                        try {
+                            const res = await fetch(window.location.href);
+                            const html = await res.text();
+                            if (html.includes("Pago Confirmado") || html.includes("✅")) {
+                                const ac = new (window.AudioContext || window.webkitAudioContext)();
+                                const osc = ac.createOscillator();
+                                const g = ac.createGain();
+                                osc.type='triangle'; osc.frequency.value=600;
+                                g.gain.setValueAtTime(0.15, ac.currentTime);
+                                osc.connect(g); g.connect(ac.destination);
+                                osc.start(); osc.stop(ac.currentTime + 0.5);
+                            }
+                        } catch (e) {}
+                    }, 4000);
+                </script>
+            """
+            components.html(realtime_cliente_js, height=0)
+
             t_busq_clean = telefono_busqueda.strip()
             resultados = df[df["Telefono_Cliente"].astype(str).str.strip() == t_busq_clean]
             
             if len(resultados) > 0:
                 for idx_res, serv in resultados.iterrows():
-                    id_s = serv['ID_Servicio']
-                    pago_verif_actual = str(serv.get('Pago_Verificado', 'No')).strip().lower()
-                    estado_actual = serv['Estado']
-                    
-                    pago_previo = st.session_state.ultimo_pago_verificado.get(id_s, "No")
-                    if pago_previo != "sí" and pago_verif_actual in ["sí", "si"] and estado_actual not in ["Cancelado", "Completado"]:
-                        audio_confirmacion_cliente = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='triangle'; osc.frequency.value=600; g.gain.setValueAtTime(0.15, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.4); } catch(e){}</script>"
-                        components.html(audio_confirmacion_cliente, height=0)
-                        st.toast("🎉 ¡Tu pago ha sido verificado y confirmado por la empresa!", icon="✅")
-                    
-                    st.session_state.ultimo_pago_verificado[id_s] = pago_verif_actual
-
                     monto_usd = float(serv['Monto_USD'])
                     monto_ves = monto_usd * st.session_state.tasa_bcv
                     
@@ -282,20 +298,20 @@ elif "Prestador" in rol:
         else:
             st.success("✅ ¡Acceso Autorizado!")
             
-            # Botón interactivo obligatorio para desbloquear audio en móviles/PC por políticas de navegador
-            if st.button("🔊 Activar Alarma Sonora en Tiempo Real"):
-                audio_init = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='square'; osc.frequency.value=750; g.gain.setValueAtTime(0.12, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
-                components.html(audio_init, height=0)
-                st.success("¡Alarma activada con éxito en tu dispositivo!")
+            # Botón de activación de audio en tiempo real para prestadores
+            if st.button("🔊 Activar Alarma de Nuevos Viajes"):
+                audio_init_prest = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='square'; osc.frequency.value=750; g.gain.setValueAtTime(0.12, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
+                components.html(audio_init_prest, height=0)
+                st.success("¡Alarma de prestador activada!")
 
-            # Script de sondeo en segundo plano (Polling JS cada 5s)
+            # Sondeo en segundo plano (cada 4s) para detectar nuevas asignaciones de viaje
             realtime_prestador_js = """
                 <script>
                     setInterval(async () => {
                         try {
                             const res = await fetch(window.location.href);
                             const html = await res.text();
-                            if (html.includes("🚨")) {
+                            if (html.includes("Servicio #") || html.includes("Asignado")) {
                                 const ac = new (window.AudioContext || window.webkitAudioContext)();
                                 const osc = ac.createOscillator();
                                 const g = ac.createGain();
@@ -305,7 +321,7 @@ elif "Prestador" in rol:
                                 osc.start(); osc.stop(ac.currentTime + 0.6);
                             }
                         } catch (e) {}
-                    }, 5000);
+                    }, 4000);
                 </script>
             """
             components.html(realtime_prestador_js, height=0)
@@ -411,13 +427,13 @@ elif "Admin" in rol or "Gerencial" in rol:
         st.success("✅ ¡Acceso Gerencial Autorizado!")
         st.markdown("---")
         
-        # Botón interactivo para desbloquear audio en el panel de administración
-        if st.button("🔊 Activar Alarma Gerencial en Tiempo Real"):
-            audio_init_adm = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='sine'; osc.frequency.value=880; g.gain.setValueAtTime(0.1, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
+        # Botón de activación de audio en tiempo real para el Administrador
+        if st.button("🔊 Activar Alarma Gerencial de Nuevos Pedidos"):
+            audio_init_adm = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='sine'; osc.frequency.value=880; g.gain.setValueAtTime(0.1, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
             components.html(audio_init_adm, height=0)
             st.success("¡Alarma gerencial activada en tiempo real!")
 
-        # Script de sondeo en segundo plano para el Administrador (cada 5s)
+        # Sondeo en segundo plano (cada 4s) para detectar nuevos pedidos solicitados
         realtime_admin_js = """
             <script>
                 setInterval(async () => {
@@ -434,7 +450,7 @@ elif "Admin" in rol or "Gerencial" in rol:
                             osc.start(); osc.stop(ac.currentTime + 0.5);
                         }
                     } catch (e) {}
-                }, 5000);
+                }, 4000);
             </script>
         """
         components.html(realtime_admin_js, height=0)
