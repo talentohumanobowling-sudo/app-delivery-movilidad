@@ -186,16 +186,41 @@ if "Cliente" in rol:
                     
     with tab_consultar:
         st.subheader("🔍 Mis Servicios Activos e Historial")
-        telefono_busqueda = st.text_input("Ingresa tu número de teléfono registrado:")
+        
+        # Componente JavaScript para registrar y recordar el teléfono del cliente automáticamente en su dispositivo
+        componentes.html("""
+            <div style="background:#E8F5E9; padding:12px; border-radius:8px; border:1px solid #198754; margin-bottom:15px; font-family:sans-serif;">
+                <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">📱 Tu Identidad en este Teléfono:</p>
+                <input type="text" id="tel_reg" placeholder="Ingresa tu número (ej: 04141234567)" style="width:70%; padding:6px; border-radius:4px; border:1px solid #ccc;">
+                <button onclick="guardarTel()" style="background:#198754; color:white; border:none; padding:7px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar y Recordar</button>
+                <p id="msg_reg" style="margin:5px 0 0 0; color:#146c43; font-size:0.9em; font-weight:bold;"></p>
+            </div>
+            <script>
+                const input = document.getElementById('tel_reg');
+                const msg = document.getElementById('msg_reg');
+                const guardado = localStorage.getItem('llegando_telefono_cliente');
+                if (guardado) {
+                    input.value = guardado;
+                    msg.innerText = "✅ Teléfono vinculado a este dispositivo: " + guardado;
+                }
+                function guardarTel() {
+                    if(input.value.trim() !== "") {
+                        localStorage.setItem('llegando_telefono_cliente', input.value.trim());
+                        msg.innerText = "✅ ¡Teléfono guardado en tu dispositivo con éxito!";
+                        setTimeout(() => { window.location.reload(); }, 800);
+                    }
+                }
+            </script>
+        """, height=110)
+
+        telefono_busqueda = st.text_input("Confirma tu número de teléfono registrado:")
         
         if telefono_busqueda:
-            # Botón requerido para habilitar audio en móviles/PCs por políticas de navegador
             if st.button("🔊 Activar Alerta de Notificaciones en Tiempo Real"):
                 audio_init_cli = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='triangle'; osc.frequency.value=600; g.gain.setValueAtTime(0.15, ac.currentTime); osc.connect(g); g.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
                 components.html(audio_init_cli, height=0)
                 st.success("¡Notificaciones en tiempo real activadas!")
 
-            # Sondeo en segundo plano para el cliente (detecta confirmación de pago)
             realtime_cliente_js = """
                 <script>
                     setInterval(async () => {
@@ -288,6 +313,31 @@ elif "Prestador" in rol:
     st.markdown("<h2 style='color: #198754;'>🚗 Panel Profesional del Prestador - LLEGANDO</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
+    componentes.html("""
+        <div style="background:#E8F5E9; padding:12px; border-radius:8px; border:1px solid #198754; margin-bottom:15px; font-family:sans-serif;">
+            <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">🚗 Tu Nombre Autorizado en este Dispositivo:</p>
+            <input type="text" id="prest_reg" placeholder="Tu Nombre Exacto" style="width:70%; padding:6px; border-radius:4px; border:1px solid #ccc;">
+            <button onclick="guardarPrest()" style="background:#198754; color:white; border:none; padding:7px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar y Recordar</button>
+            <p id="msg_prest" style="margin:5px 0 0 0; color:#146c43; font-size:0.9em; font-weight:bold;"></p>
+        </div>
+        <script>
+            const inputP = document.getElementById('prest_reg');
+            const msgP = document.getElementById('msg_prest');
+            const guardadoP = localStorage.getItem('llegando_nombre_prestador');
+            if (guardadoP) {
+                inputP.value = guardadoP;
+                msgP.innerText = "✅ Prestador vinculado a este dispositivo: " + guardadoP;
+            }
+            function guardarPrest() {
+                if(inputP.value.trim() !== "") {
+                    localStorage.setItem('llegando_nombre_prestador', inputP.value.trim());
+                    msgP.innerText = "✅ ¡Nombre guardado en tu dispositivo!";
+                    setTimeout(() => { window.location.reload(); }, 800);
+                }
+            }
+        </script>
+    """, height=110)
+
     nom_prestador = st.text_input("Ingresa tu Nombre exacto autorizado para acceder:")
     
     if nom_prestador:
@@ -298,13 +348,11 @@ elif "Prestador" in rol:
         else:
             st.success("✅ ¡Acceso Autorizado!")
             
-            # Botón de activación de audio en tiempo real para prestadores
             if st.button("🔊 Activar Alarma de Nuevos Viajes"):
                 audio_init_prest = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='square'; osc.frequency.value=750; g.gain.setValueAtTime(0.12, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
                 components.html(audio_init_prest, height=0)
                 st.success("¡Alarma de prestador activada!")
 
-            # Sondeo en segundo plano (cada 4s) para detectar nuevas asignaciones de viaje
             realtime_prestador_js = """
                 <script>
                     setInterval(async () => {
@@ -427,13 +475,11 @@ elif "Admin" in rol or "Gerencial" in rol:
         st.success("✅ ¡Acceso Gerencial Autorizado!")
         st.markdown("---")
         
-        # Botón de activación de audio en tiempo real para el Administrador
         if st.button("🔊 Activar Alarma Gerencial de Nuevos Pedidos"):
             audio_init_adm = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='sine'; osc.frequency.value=880; g.gain.setValueAtTime(0.1, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
             components.html(audio_init_adm, height=0)
             st.success("¡Alarma gerencial activada en tiempo real!")
 
-        # Sondeo en segundo plano (cada 4s) para detectar nuevos pedidos solicitados
         realtime_admin_js = """
             <script>
                 setInterval(async () => {
