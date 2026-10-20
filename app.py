@@ -7,7 +7,25 @@ import urllib.parse
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="LLEGANDO - Movilidad & Delivery", page_icon="🚀", layout="wide")
-
+# ==========================================
+# CONFIGURACIÓN PWA PARA INSTALACIÓN MÓVIL
+# ==========================================
+pwa_header = """
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,{
+        'name': 'LLEGANDO - Movilidad & Delivery',
+        'short_name': 'LLEGANDO',
+        'start_url': '.',
+        'display': 'standalone',
+        'background_color': '#F4FBF7',
+        'theme_color': '#198754',
+        'icons': [{
+            'src': 'https://cdn-icons-png.flaticon.com/512/7541/7541900.png',
+            'sizes': '512x512',
+            'type': 'image/png'
+        }]
+    }">
+"""
+st.markdown(pwa_header, unsafe_allow_html=True)
 # ==========================================
 # ESTILOS CSS 100% VERDES Y PROFESIONALES
 # ==========================================
