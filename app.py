@@ -64,9 +64,6 @@ if "tasa_bcv" not in st.session_state:
 if "porcentaje_prestador" not in st.session_state:
     st.session_state.porcentaje_prestador = 80.0
 
-if "ultimo_pago_verificado" not in st.session_state:
-    st.session_state.ultimo_pago_verificado = {}
-
 DATOS_PAGO_MOVIL = {
     "Banco": "BDV (0102)",
     "Telefono": "0412-3349463",
@@ -201,12 +198,12 @@ if "Cliente" in rol:
                 const guardado = localStorage.getItem('llegando_telefono_cliente');
                 if (guardado) {
                     input.value = guardado;
-                    msg.innerText = "✅ Teléfono vinculado a este dispositivo: " + guardado;
+                    msg.innerText = "✅ Teléfono vinculado: " + guardado;
                 }
                 function guardarTel() {
                     if(input.value.trim() !== "") {
                         localStorage.setItem('llegando_telefono_cliente', input.value.trim());
-                        msg.innerText = "✅ ¡Teléfono guardado con éxito!";
+                        msg.innerText = "✅ ¡Teléfono guardado!";
                         setTimeout(() => { window.location.reload(); }, 800);
                     }
                 }
@@ -216,25 +213,26 @@ if "Cliente" in rol:
         telefono_busqueda = st.text_input("Confirma tu número de teléfono registrado:")
         
         if telefono_busqueda:
-            if st.button("🔊 Activar Alerta Sonora y Cintillo en Tiempo Real"):
+            if st.button("🔊 Activar Mensajería Flotante en Tiempo Real"):
                 audio_init_cli = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='triangle'; osc.frequency.value=600; g.gain.setValueAtTime(0.15, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
                 components.html(audio_init_cli, height=0)
-                st.success("¡Cintillo y sonido activados!")
+                st.success("¡Mensajería flotante activada!")
 
-            # Cintillo flotante dinámico superior en tiempo real
-            realtime_cliente_js = """
-                <div id="cintillo-alerta" style="display:none; position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:999999; background:#0F5132; color:white; padding:14px 22px; border-radius:10px; box-shadow:0 6px 15px rgba(0,0,0,0.3); font-family:sans-serif; text-align:center; width:90%; max-width:500px; border:2px solid #198754;">
-                    <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">🚀 LLEGANDO • Notificación</div>
-                    <div id="texto-alerta" style="font-size:0.95em;">¡Tu pago ha sido verificado y confirmado!</div>
+            # Cintillo flotante dinámico para el Cliente
+            realtime_cliente_js = f"""
+                <div id="cintillo-cliente" style="display:none; position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:999999; background:#0F5132; color:white; padding:14px 22px; border-radius:10px; box-shadow:0 6px 15px rgba(0,0,0,0.3); font-family:sans-serif; text-align:center; width:90%; max-width:500px; border:2px solid #198754;">
+                    <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">🚀 LLEGANDO • Actualización de Viaje</div>
+                    <div id="msg-cliente" style="font-size:0.95em;">¡Su viaje ha sido actualizado por la administración!</div>
                 </div>
                 <script>
+                    const miTlf = "{telefono_busqueda.strip()}";
                     setInterval(async () => {
-                        try {
+                        try {{
                             const res = await fetch(window.location.href);
                             const html = await res.text();
-                            if (html.includes("Pago Confirmado") || html.includes("✅")) {
-                                const cintillo = document.getElementById('cintillo-alerta');
-                                if(cintillo) { cintillo.style.display = 'block'; }
+                            if (html.includes(miTlf) && (html.includes("Pago Confirmado") || html.includes("Asignado") || html.includes("Completado"))) {{
+                                const cintillo = document.getElementById('cintillo-cliente');
+                                if(cintillo) {{ cintillo.style.display = 'block'; }}
                                 const ac = new (window.AudioContext || window.webkitAudioContext)();
                                 const osc = ac.createOscillator();
                                 const g = ac.createGain();
@@ -242,8 +240,8 @@ if "Cliente" in rol:
                                 g.gain.setValueAtTime(0.15, ac.currentTime);
                                 osc.connect(g); g.connect(ac.destination);
                                 osc.start(); osc.stop(ac.currentTime + 0.5);
-                            }
-                        } catch (e) {}
+                            }}
+                        }} catch (e) {{}}
                     }, 4000);
                 </script>
             """
@@ -305,7 +303,7 @@ if "Cliente" in rol:
                                 info_cond = df_prestadores[df_prestadores["Nombre"].str.lower() == str(serv['Conductor']).lower()]
                                 if len(info_cond) > 0:
                                     tlf_cond = info_cond.iloc[0]["Telefono"].strip().replace(" ", "").replace("+", "")
-                                    msg_c = f"Hola {serv['Conductor']}, le escribo desde LLEGANDO respecto a mi servicio #{serv['ID_Servicio']}."
+                                    msg_c = f"Hola {serv['Conductor']}, le escribo desde LLEGANDO respecto al servicio #{serv['ID_Servicio']}."
                                     url_wa_cond = f"https://wa.me/{tlf_cond}?text={urllib.parse.quote(msg_c)}"
                                     st.link_button("💬 Contactar Conductor por WhatsApp", url_wa_cond)
                             else:
@@ -355,33 +353,34 @@ elif "Prestador" in rol:
         else:
             st.success("✅ ¡Acceso Autorizado!")
             
-            if st.button("🔊 Activar Alarma y Cintillo de Nuevos Viajes"):
+            if st.button("🔊 Activar Mensajería Flotante de Nuevos Viajes"):
                 audio_init_prest = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='square'; osc.frequency.value=750; g.gain.setValueAtTime(0.12, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
                 components.html(audio_init_prest, height=0)
-                st.success("¡Alarma y cintillo activados!")
+                st.success("¡Mensajería flotante de prestador activada!")
 
-            realtime_prestador_js = """
+            realtime_prestador_js = f"""
                 <div id="cintillo-prestador" style="display:none; position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:999999; background:#0F5132; color:white; padding:14px 22px; border-radius:10px; box-shadow:0 6px 15px rgba(0,0,0,0.3); font-family:sans-serif; text-align:center; width:90%; max-width:500px; border:2px solid #198754;">
-                    <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">🚗 LLEGANDO • Nuevo Viaje</div>
-                    <div style="font-size:0.95em;">¡Se te ha asignado un nuevo servicio en la plataforma!</div>
+                    <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">🚗 LLEGANDO • Asignación de Viaje</div>
+                    <div style="font-size:0.95em;">¡Se le ha asignado o actualizado un servicio en la plataforma!</div>
                 </div>
                 <script>
-                    setInterval(async () => {
-                        try {
+                    const miNombre = "{nom_prestador.strip().lower()}";
+                    setInterval(async () => {{
+                        try {{
                             const res = await fetch(window.location.href);
                             const html = await res.text();
-                            if (html.includes("Servicio #") || html.includes("Asignado")) {
+                            if (html.toLowerCase().includes(miNombre)) {{
                                 const cintillo = document.getElementById('cintillo-prestador');
-                                if(cintillo) { cintillo.style.display = 'block'; }
+                                if(cintillo) {{ cintillo.style.display = 'block'; }}
                                 const ac = new (window.AudioContext || window.webkitAudioContext)();
                                 const osc = ac.createOscillator();
                                 const g = ac.createGain();
                                 osc.type='square'; osc.frequency.value=750;
                                 g.gain.setValueAtTime(0.12, ac.currentTime);
-                                osc.connect(g); osc.connect(ac.destination);
+                                osc.connect(g); g.connect(ac.destination);
                                 osc.start(); osc.stop(ac.currentTime + 0.6);
-                            }
-                        } catch (e) {}
+                            }}
+                        }} catch (e) {{}}
                     }, 4000);
                 </script>
             """
@@ -488,22 +487,22 @@ elif "Admin" in rol or "Gerencial" in rol:
         st.success("✅ ¡Acceso Gerencial Autorizado!")
         st.markdown("---")
         
-        if st.button("🔊 Activar Alarma y Cintillo Gerencial"):
+        if st.button("🔊 Activar Mensajería Flotante Gerencial"):
             audio_init_adm = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='sine'; osc.frequency.value=880; g.gain.setValueAtTime(0.1, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
             components.html(audio_init_adm, height=0)
-            st.success("¡Alarma y cintillo gerencial activados!")
+            st.success("¡Mensajería flotante gerencial activada!")
 
         realtime_admin_js = """
             <div id="cintillo-admin" style="display:none; position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:999999; background:#0F5132; color:white; padding:14px 22px; border-radius:10px; box-shadow:0 6px 15px rgba(0,0,0,0.3); font-family:sans-serif; text-align:center; width:90%; max-width:500px; border:2px solid #198754;">
-                <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">⚙️ LLEGANDO • Nuevo Pedido</div>
-                <div style="font-size:0.95em;">¡Hay una nueva solicitud pendiente de asignación!</div>
+                <div style="font-weight:bold; font-size:1.1em; margin-bottom:4px;">⚙️ LLEGANDO • Nueva Solicitud o Referencia</div>
+                <div style="font-size:0.95em;">¡Un cliente ha enviado una nueva solicitud o pago móvil!</div>
             </div>
             <script>
                 setInterval(async () => {
                     try {
                         const res = await fetch(window.location.href);
                         const html = await res.text();
-                        if (html.includes("Solicitado") || html.includes("Pendiente")) {
+                        if (html.includes("Solicitado") || html.includes("Pendiente") || html.includes("Ref_Pago_Movil")) {
                             const cintillo = document.getElementById('cintillo-admin');
                             if(cintillo) { cintillo.style.display = 'block'; }
                             const ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -511,7 +510,7 @@ elif "Admin" in rol or "Gerencial" in rol:
                             const g = ac.createGain();
                             osc.type='sine'; osc.frequency.value=880;
                             g.gain.setValueAtTime(0.1, ac.currentTime);
-                            osc.connect(g); osc.connect(ac.destination);
+                            osc.connect(g); g.connect(ac.destination);
                             osc.start(); osc.stop(ac.currentTime + 0.5);
                         }
                     } catch (e) {}
