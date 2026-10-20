@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="LLEGANDO - Movilidad & Delivery", page_icon="🚀", layout="wide")
 
 # ==========================================
-# CONFIGURACIÓN PWA Y CINTILLO FLOTANTE
+# CONFIGURACIÓN PWA Y MANIFIESTO NATIVO
 # ==========================================
 pwa_header = """
     <link rel="manifest" href="data:application/manifest+json;charset=utf-8,{
@@ -207,11 +207,11 @@ if "Cliente" in rol:
     with tab_consultar:
         st.subheader("🔍 Mis Servicios Activos e Historial")
         
-        # Registro automático y solicitud de permisos para notificaciones flotantes en el teléfono
+        # Componente para registro de identidad y activación de notificaciones estilo app nativa
         components.html("""
             <div style="background:#E8F5E9; padding:12px; border-radius:8px; border:1px solid #198754; margin-bottom:15px; font-family:sans-serif;">
-                <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">📱 Tu Identidad y Cintillo de Alertas:</p>
-                <input type="text" id="tel_reg" placeholder="Ingresa tu número (ej: 04141234567)" style="width:65%; padding:6px; border-radius:4px; border:1px solid #ccc;">
+                <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">📱 Tu Identidad y Cintillo de Alertas Nativo:</p>
+                <input type="text" id="tel_reg" placeholder="Ingresa tu número (ej: 04141234567)" style="width:60%; padding:6px; border-radius:4px; border:1px solid #ccc;">
                 <button onclick="guardarTel()" style="background:#198754; color:white; border:none; padding:7px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar</button>
                 <button onclick="pedirPermiso()" style="background:#0F5132; color:white; border:none; padding:7px 10px; border-radius:4px; font-weight:bold; cursor:pointer; margin-left:5px;">🔔 Activar Cintillo</button>
                 <p id="msg_reg" style="margin:5px 0 0 0; color:#146c43; font-size:0.9em; font-weight:bold;"></p>
@@ -227,7 +227,7 @@ if "Cliente" in rol:
                 function guardarTel() {
                     if(input.value.trim() !== "") {
                         localStorage.setItem('llegando_telefono_cliente', input.value.trim());
-                        msg.innerText = "✅ ¡Teléfono guardado en tu dispositivo!";
+                        msg.innerText = "✅ ¡Teléfono guardado!";
                         setTimeout(() => { window.location.reload(); }, 800);
                     }
                 }
@@ -235,7 +235,7 @@ if "Cliente" in rol:
                     if ("Notification" in window) {
                         Notification.requestPermission().then(permission => {
                             if (permission === "granted") {
-                                alert("¡Cintillo de notificaciones activado con éxito!");
+                                alert("¡Cintillo flotante activado correctamente!");
                             } else {
                                 alert("Permiso de notificaciones denegado.");
                             }
@@ -248,12 +248,12 @@ if "Cliente" in rol:
         telefono_busqueda = st.text_input("Confirma tu número de teléfono registrado:")
         
         if telefono_busqueda:
-            if st.button("🔊 Activar Alerta Sonora en Tiempo Real"):
+            if st.button("🔊 Activar Alerta Sonora y Notificación Nativa"):
                 audio_init_cli = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='triangle'; osc.frequency.value=600; g.gain.setValueAtTime(0.15, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
                 components.html(audio_init_cli, height=0)
-                st.toast("🎉 ¡Cintillo de notificaciones activo!", icon="🚀")
+                st.toast("🎉 ¡Sistema de notificaciones nativas activo!", icon="🚀")
 
-            # Script de sondeo que lanza un aviso flotante y cintillo si hay confirmación
+            # Sondeo en segundo plano que genera la notificación flotante estilo app
             realtime_cliente_js = """
                 <script>
                     setInterval(async () => {
@@ -262,9 +262,17 @@ if "Cliente" in rol:
                             const html = await res.text();
                             if (html.includes("Pago Confirmado") || html.includes("✅")) {
                                 if (Notification.permission === "granted") {
-                                    new Notification("🚀 LLEGANDO", {
-                                        body: "¡Tu pago ha sido verificado y confirmado por la empresa!",
-                                        icon: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png"
+                                    navigator.serviceWorker.ready.then(reg => {
+                                        reg.showNotification("LLEGANDO • Servicio al Cliente", {
+                                            body: "¡Tu pago ha sido verificado y confirmado por la empresa!",
+                                            icon: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png",
+                                            badge: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png",
+                                            vibrate: [200, 100, 200],
+                                            actions: [
+                                                { action: 'abrir', title: '📂 Abrir App' },
+                                                { action: 'contacto', title: '💬 Soporte' }
+                                            ]
+                                        });
                                     });
                                 }
                                 const ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -355,7 +363,7 @@ elif "Prestador" in rol:
     components.html("""
         <div style="background:#E8F5E9; padding:12px; border-radius:8px; border:1px solid #198754; margin-bottom:15px; font-family:sans-serif;">
             <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">🚗 Tu Nombre Autorizado y Cintillo de Alertas:</p>
-            <input type="text" id="prest_reg" placeholder="Tu Nombre Exacto" style="width:65%; padding:6px; border-radius:4px; border:1px solid #ccc;">
+            <input type="text" id="prest_reg" placeholder="Tu Nombre Exacto" style="width:60%; padding:6px; border-radius:4px; border:1px solid #ccc;">
             <button onclick="guardarPrest()" style="background:#198754; color:white; border:none; padding:7px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar</button>
             <button onclick="pedirPermiso()" style="background:#0F5132; color:white; border:none; padding:7px 10px; border-radius:4px; font-weight:bold; cursor:pointer; margin-left:5px;">🔔 Activar Cintillo</button>
             <p id="msg_prest" style="margin:5px 0 0 0; color:#146c43; font-size:0.9em; font-weight:bold;"></p>
@@ -400,7 +408,7 @@ elif "Prestador" in rol:
             if st.button("🔊 Activar Alarma de Nuevos Viajes"):
                 audio_init_prest = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='square'; osc.frequency.value=750; g.gain.setValueAtTime(0.12, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
                 components.html(audio_init_prest, height=0)
-                st.toast("🚀 ¡Cintillo y alarma de prestador activos!", icon="🚗")
+                st.toast("🚀 ¡Alarma y cintillo de prestador activos!", icon="🚗")
 
             realtime_prestador_js = """
                 <script>
@@ -410,9 +418,16 @@ elif "Prestador" in rol:
                             const html = await res.text();
                             if (html.includes("Servicio #") || html.includes("Asignado")) {
                                 if (Notification.permission === "granted") {
-                                    new Notification("🚗 LLEGANDO - Nuevo Viaje", {
-                                        body: "¡Se te ha asignado un nuevo servicio en la plataforma!",
-                                        icon: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png"
+                                    navigator.serviceWorker.ready.then(reg => {
+                                        reg.showNotification("LLEGANDO • Nuevo Viaje", {
+                                            body: "¡Se te ha asignado un nuevo servicio en la plataforma!",
+                                            icon: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png",
+                                            badge: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png",
+                                            vibrate: [200, 100, 200],
+                                            actions: [
+                                                { action: 'ver', title: '👀 Ver Viaje' }
+                                            ]
+                                        });
                                     });
                                 }
                                 const ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -559,9 +574,16 @@ elif "Admin" in rol or "Gerencial" in rol:
                         const html = await res.text();
                         if (html.includes("Solicitado") || html.includes("Pendiente")) {
                             if (Notification.permission === "granted") {
-                                new Notification("⚙️ LLEGANDO - Nuevo Pedido", {
-                                    body: "¡Hay una nueva solicitud pendiente de asignación!",
-                                    icon: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png"
+                                navigator.serviceWorker.ready.then(reg => {
+                                    reg.showNotification("LLEGANDO • Panel Gerencial", {
+                                        body: "¡Hay una nueva solicitud pendiente de asignación!",
+                                        icon: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png",
+                                        badge: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png",
+                                        vibrate: [200, 100, 200],
+                                        actions: [
+                                            { action: 'gestionar', title: '⚙️ Gestionar' }
+                                        ]
+                                    });
                                 });
                             }
                             const ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -569,7 +591,7 @@ elif "Admin" in rol or "Gerencial" in rol:
                             const g = ac.createGain();
                             osc.type='sine'; osc.frequency.value=880;
                             g.gain.setValueAtTime(0.1, ac.currentTime);
-                            osc.connect(g); g.connect(ac.destination);
+                            osc.connect(g); osc.connect(ac.destination);
                             osc.start(); osc.stop(ac.currentTime + 0.5);
                         }
                     } catch (e) {}
