@@ -7,8 +7,9 @@ import urllib.parse
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="LLEGANDO - Movilidad & Delivery", page_icon="🚀", layout="wide")
+
 # ==========================================
-# CONFIGURACIÓN PWA PARA INSTALACIÓN MÓVIL
+# CONFIGURACIÓN PWA Y CINTILLO FLOTANTE
 # ==========================================
 pwa_header = """
     <link rel="manifest" href="data:application/manifest+json;charset=utf-8,{
@@ -26,6 +27,7 @@ pwa_header = """
     }">
 """
 st.markdown(pwa_header, unsafe_allow_html=True)
+
 # ==========================================
 # ESTILOS CSS 100% VERDES Y PROFESIONALES
 # ==========================================
@@ -205,12 +207,13 @@ if "Cliente" in rol:
     with tab_consultar:
         st.subheader("🔍 Mis Servicios Activos e Historial")
         
-        # Registro automático en localStorage del dispositivo
+        # Registro automático y solicitud de permisos para notificaciones flotantes en el teléfono
         components.html("""
             <div style="background:#E8F5E9; padding:12px; border-radius:8px; border:1px solid #198754; margin-bottom:15px; font-family:sans-serif;">
-                <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">📱 Tu Identidad en este Teléfono:</p>
-                <input type="text" id="tel_reg" placeholder="Ingresa tu número (ej: 04141234567)" style="width:70%; padding:6px; border-radius:4px; border:1px solid #ccc;">
-                <button onclick="guardarTel()" style="background:#198754; color:white; border:none; padding:7px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar y Recordar</button>
+                <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">📱 Tu Identidad y Cintillo de Alertas:</p>
+                <input type="text" id="tel_reg" placeholder="Ingresa tu número (ej: 04141234567)" style="width:65%; padding:6px; border-radius:4px; border:1px solid #ccc;">
+                <button onclick="guardarTel()" style="background:#198754; color:white; border:none; padding:7px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar</button>
+                <button onclick="pedirPermiso()" style="background:#0F5132; color:white; border:none; padding:7px 10px; border-radius:4px; font-weight:bold; cursor:pointer; margin-left:5px;">🔔 Activar Cintillo</button>
                 <p id="msg_reg" style="margin:5px 0 0 0; color:#146c43; font-size:0.9em; font-weight:bold;"></p>
             </div>
             <script>
@@ -219,26 +222,38 @@ if "Cliente" in rol:
                 const guardado = localStorage.getItem('llegando_telefono_cliente');
                 if (guardado) {
                     input.value = guardado;
-                    msg.innerText = "✅ Teléfono vinculado a este dispositivo: " + guardado;
+                    msg.innerText = "✅ Teléfono vinculado: " + guardado;
                 }
                 function guardarTel() {
                     if(input.value.trim() !== "") {
                         localStorage.setItem('llegando_telefono_cliente', input.value.trim());
-                        msg.innerText = "✅ ¡Teléfono guardado en tu dispositivo con éxito!";
+                        msg.innerText = "✅ ¡Teléfono guardado en tu dispositivo!";
                         setTimeout(() => { window.location.reload(); }, 800);
                     }
                 }
+                function pedirPermiso() {
+                    if ("Notification" in window) {
+                        Notification.requestPermission().then(permission => {
+                            if (permission === "granted") {
+                                alert("¡Cintillo de notificaciones activado con éxito!");
+                            } else {
+                                alert("Permiso de notificaciones denegado.");
+                            }
+                        });
+                    }
+                }
             </script>
-        """, height=120)
+        """, height=130)
 
         telefono_busqueda = st.text_input("Confirma tu número de teléfono registrado:")
         
         if telefono_busqueda:
-            if st.button("🔊 Activar Alerta de Notificaciones en Tiempo Real"):
+            if st.button("🔊 Activar Alerta Sonora en Tiempo Real"):
                 audio_init_cli = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='triangle'; osc.frequency.value=600; g.gain.setValueAtTime(0.15, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
                 components.html(audio_init_cli, height=0)
-                st.success("¡Notificaciones en tiempo real activadas!")
+                st.toast("🎉 ¡Cintillo de notificaciones activo!", icon="🚀")
 
+            # Script de sondeo que lanza un aviso flotante y cintillo si hay confirmación
             realtime_cliente_js = """
                 <script>
                     setInterval(async () => {
@@ -246,6 +261,12 @@ if "Cliente" in rol:
                             const res = await fetch(window.location.href);
                             const html = await res.text();
                             if (html.includes("Pago Confirmado") || html.includes("✅")) {
+                                if (Notification.permission === "granted") {
+                                    new Notification("🚀 LLEGANDO", {
+                                        body: "¡Tu pago ha sido verificado y confirmado por la empresa!",
+                                        icon: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png"
+                                    });
+                                }
                                 const ac = new (window.AudioContext || window.webkitAudioContext)();
                                 const osc = ac.createOscillator();
                                 const g = ac.createGain();
@@ -316,7 +337,7 @@ if "Cliente" in rol:
                                 info_cond = df_prestadores[df_prestadores["Nombre"].str.lower() == str(serv['Conductor']).lower()]
                                 if len(info_cond) > 0:
                                     tlf_cond = info_cond.iloc[0]["Telefono"].strip().replace(" ", "").replace("+", "")
-                                    msg_c = f"Hola {serv['Conductor']}, le escribo desde LLEGANDO respecto a mi servicio #{serv['ID_Servicio']}."
+                                    msg_c = f"Hola {serv['Conductor']}, le escribo desde LLEGANDO respecto al servicio #{serv['ID_Servicio']}."
                                     url_wa_cond = f"https://wa.me/{tlf_cond}?text={urllib.parse.quote(msg_c)}"
                                     st.link_button("💬 Contactar Conductor por WhatsApp", url_wa_cond)
                             else:
@@ -333,9 +354,10 @@ elif "Prestador" in rol:
     
     components.html("""
         <div style="background:#E8F5E9; padding:12px; border-radius:8px; border:1px solid #198754; margin-bottom:15px; font-family:sans-serif;">
-            <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">🚗 Tu Nombre Autorizado en este Dispositivo:</p>
-            <input type="text" id="prest_reg" placeholder="Tu Nombre Exacto" style="width:70%; padding:6px; border-radius:4px; border:1px solid #ccc;">
-            <button onclick="guardarPrest()" style="background:#198754; color:white; border:none; padding:7px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar y Recordar</button>
+            <p style="margin:0 0 8px 0; color:#0F5132; font-weight:600;">🚗 Tu Nombre Autorizado y Cintillo de Alertas:</p>
+            <input type="text" id="prest_reg" placeholder="Tu Nombre Exacto" style="width:65%; padding:6px; border-radius:4px; border:1px solid #ccc;">
+            <button onclick="guardarPrest()" style="background:#198754; color:white; border:none; padding:7px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar</button>
+            <button onclick="pedirPermiso()" style="background:#0F5132; color:white; border:none; padding:7px 10px; border-radius:4px; font-weight:bold; cursor:pointer; margin-left:5px;">🔔 Activar Cintillo</button>
             <p id="msg_prest" style="margin:5px 0 0 0; color:#146c43; font-size:0.9em; font-weight:bold;"></p>
         </div>
         <script>
@@ -344,17 +366,26 @@ elif "Prestador" in rol:
             const guardadoP = localStorage.getItem('llegando_nombre_prestador');
             if (guardadoP) {
                 inputP.value = guardadoP;
-                msgP.innerText = "✅ Prestador vinculado a este dispositivo: " + guardadoP;
+                msgP.innerText = "✅ Prestador vinculado: " + guardadoP;
             }
             function guardarPrest() {
                 if(inputP.value.trim() !== "") {
                     localStorage.setItem('llegando_nombre_prestador', inputP.value.trim());
-                    msgP.innerText = "✅ ¡Nombre guardado en tu dispositivo!";
+                    msgP.innerText = "✅ ¡Nombre guardado!";
                     setTimeout(() => { window.location.reload(); }, 800);
                 }
             }
+            function pedirPermiso() {
+                if ("Notification" in window) {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            alert("¡Cintillo de notificaciones activo para nuevos viajes!");
+                        }
+                    });
+                }
+            }
         </script>
-    """, height=120)
+    """, height=130)
 
     nom_prestador = st.text_input("Ingresa tu Nombre exacto autorizado para acceder:")
     
@@ -369,7 +400,7 @@ elif "Prestador" in rol:
             if st.button("🔊 Activar Alarma de Nuevos Viajes"):
                 audio_init_prest = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='square'; osc.frequency.value=750; g.gain.setValueAtTime(0.12, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
                 components.html(audio_init_prest, height=0)
-                st.success("¡Alarma de prestador activada!")
+                st.toast("🚀 ¡Cintillo y alarma de prestador activos!", icon="🚗")
 
             realtime_prestador_js = """
                 <script>
@@ -378,6 +409,12 @@ elif "Prestador" in rol:
                             const res = await fetch(window.location.href);
                             const html = await res.text();
                             if (html.includes("Servicio #") || html.includes("Asignado")) {
+                                if (Notification.permission === "granted") {
+                                    new Notification("🚗 LLEGANDO - Nuevo Viaje", {
+                                        body: "¡Se te ha asignado un nuevo servicio en la plataforma!",
+                                        icon: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png"
+                                    });
+                                }
                                 const ac = new (window.AudioContext || window.webkitAudioContext)();
                                 const osc = ac.createOscillator();
                                 const g = ac.createGain();
@@ -493,10 +530,26 @@ elif "Admin" in rol or "Gerencial" in rol:
         st.success("✅ ¡Acceso Gerencial Autorizado!")
         st.markdown("---")
         
-        if st.button("🔊 Activar Alarma Gerencial de Nuevos Pedidos"):
-            audio_init_adm = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='sine'; osc.frequency.value=880; g.gain.setValueAtTime(0.1, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
-            components.html(audio_init_adm, height=0)
-            st.success("¡Alarma gerencial activada en tiempo real!")
+        col_adm_btn1, col_adm_btn2 = st.columns(2)
+        with col_adm_btn1:
+            if st.button("🔊 Activar Alarma Gerencial"):
+                audio_init_adm = "<script>try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const osc = ac.createOscillator(); const g = ac.createGain(); osc.type='sine'; osc.frequency.value=880; g.gain.setValueAtTime(0.1, ac.currentTime); osc.connect(g); osc.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.3); } catch(e){}</script>"
+                components.html(audio_init_adm, height=0)
+                st.toast("🚀 ¡Alarma gerencial activa!", icon="⚙️")
+        with col_adm_btn2:
+            if st.button("🔔 Activar Permiso de Cintillo Push"):
+                components.html("""
+                    <script>
+                        if ("Notification" in window) {
+                            Notification.requestPermission().then(permission => {
+                                if (permission === "granted") {
+                                    alert("¡Cintillo de nuevos pedidos activado!");
+                                }
+                            });
+                        }
+                    </script>
+                """, height=0)
+                st.success("¡Solicitud de permiso enviada!")
 
         realtime_admin_js = """
             <script>
@@ -505,12 +558,18 @@ elif "Admin" in rol or "Gerencial" in rol:
                         const res = await fetch(window.location.href);
                         const html = await res.text();
                         if (html.includes("Solicitado") || html.includes("Pendiente")) {
+                            if (Notification.permission === "granted") {
+                                new Notification("⚙️ LLEGANDO - Nuevo Pedido", {
+                                    body: "¡Hay una nueva solicitud pendiente de asignación!",
+                                    icon: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png"
+                                });
+                            }
                             const ac = new (window.AudioContext || window.webkitAudioContext)();
                             const osc = ac.createOscillator();
                             const g = ac.createGain();
                             osc.type='sine'; osc.frequency.value=880;
                             g.gain.setValueAtTime(0.1, ac.currentTime);
-                            osc.connect(g); osc.connect(ac.destination);
+                            osc.connect(g); g.connect(ac.destination);
                             osc.start(); osc.stop(ac.currentTime + 0.5);
                         }
                     } catch (e) {}
