@@ -307,7 +307,6 @@ elif "Portal de Prestador" in rol:
             else:
                 st.success("Acceso Autorizado")
                 
-                # Mostrar foto del prestador si existe
                 foto_prestador_path = str(p_row.get("Foto_Path", "")).strip()
                 if foto_prestador_path and os.path.exists(foto_prestador_path):
                     st.image(foto_prestador_path, width=120)
