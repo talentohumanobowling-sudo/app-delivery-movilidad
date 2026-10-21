@@ -5,8 +5,8 @@ import requests
 from datetime import datetime
 import urllib.parse
 import time
+import random
 
-# Intentar importar el componente de autore fresco, si no está instalado se maneja de forma segura
 try:
     from streamlit_autorefresh import st_autorefresh
     has_autorefresh = True
@@ -41,7 +41,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Configurar actualización automática cada 10 segundos (10000 milisegundos)
 if has_autorefresh:
     st_autorefresh(interval=10000, limit=None, key="actualizacion_automatica_llegando")
 
@@ -49,7 +48,7 @@ DB_FILE = "base_datos_servicios.xlsx"
 DB_PRESTADORES = "prestadores_autorizados.xlsx"
 DB_LIQUIDACIONES = "liquidaciones_prestadores.xlsx"
 DB_ALIADOS = "aliados_comerciales.xlsx"
-CLAVE_ADMIN_SECRETA = "Sky1012#"
+CLAVE_ADMIN_SECRETA = "admin123"
 
 @st.cache_data(ttl=3600)
 def obtener_tasa_bcv():
@@ -121,9 +120,14 @@ def cargar_prestadores():
             df_p["Estatus"] = "Autorizado"
         if "Foto_Path" not in df_p.columns:
             df_p["Foto_Path"] = ""
+        if "Numero_Suscripcion" not in df_p.columns:
+            df_p["Numero_Suscripcion"] = ""
+        for idx in df_p.index:
+            if not str(df_p.loc[idx, "Numero_Suscripcion"]).strip():
+                df_p.loc[idx, "Numero_Suscripcion"] = f"{random.randint(1000, 9999)}"
         return df_p
     else:
-        df_p = pd.DataFrame(columns=["Nombre", "Telefono", "Vehiculo", "Marca", "Modelo", "Placa", "Foto_Path", "Pago_Afiliacion_5USD", "Pago_Mensualidad_5USD", "Estatus", "Saldo_Wallet"])
+        df_p = pd.DataFrame(columns=["Numero_Suscripcion", "Nombre", "Telefono", "Vehiculo", "Marca", "Modelo", "Placa", "Foto_Path", "Pago_Afiliacion_5USD", "Pago_Mensualidad_5USD", "Estatus", "Saldo_Wallet"])
         df_p.to_excel(DB_PRESTADORES, index=False)
         return df_p
 
@@ -150,7 +154,7 @@ def cargar_aliados():
             df_a["Numero_Suscripcion"] = ""
         for idx in df_a.index:
             if not str(df_a.loc[idx, "Numero_Suscripcion"]).strip():
-                df_a.loc[idx, "Numero_Suscripcion"] = f"ALIADO-{101 + idx}"
+                df_a.loc[idx, "Numero_Suscripcion"] = f"{random.randint(1000, 9999)}"
         return df_a
     else:
         df_a = pd.DataFrame(columns=["Numero_Suscripcion", "Nombre", "Ubicacion", "Telefono", "Logo_Path", "Estatus"])
@@ -165,7 +169,6 @@ df_prestadores = cargar_prestadores()
 df_liquidaciones = cargar_liquidaciones()
 df_aliados = cargar_aliados()
 
-# Detectar nuevas interacciones comparando longitud de registros en session_state
 if "total_servicios_prev" not in st.session_state:
     st.session_state.total_servicios_prev = len(df)
 elif len(df) > st.session_state.total_servicios_prev:
@@ -310,19 +313,23 @@ if "Portal de Cliente" in rol:
 elif "Portal de Prestador" in rol:
     st.markdown("<h2>Panel Profesional del Prestador</h2>", unsafe_allow_html=True)
     st.markdown("---")
-    nom_prestador = st.text_input("Ingresa tu Nombre exacto autorizado:")
-    if nom_prestador:
-        prestador_valido = df_prestadores[(df_prestadores["Nombre"].str.lower() == nom_prestador.strip().lower())]
+    
+    num_suscripcion_prestador = st.text_input("Ingrese su Código de 4 Dígitos:").strip()
+    
+    if num_suscripcion_prestador:
+        prestador_valido = df_prestadores[df_prestadores["Numero_Suscripcion"].astype(str).str.strip() == num_suscripcion_prestador]
+        
         if len(prestador_valido) == 0:
-            st.warning("Tu cuenta no existe.")
+            st.warning("⚠️ Código de 4 dígitos no válido o no registrado.")
         else:
             p_row = prestador_valido.iloc[0]
             estatus_prestador = str(p_row.get("Estatus", "Autorizado")).strip()
+            nom_prestador = str(p_row.get("Nombre", ""))
             
             if estatus_prestador.lower() in ["suspendido", "suspendida"]:
                 st.error("⚠️ Su cuenta de prestador se encuentra suspendida temporalmente por la administración.")
             else:
-                st.success("Acceso Autorizado")
+                st.success(f"✅ Bienvenido, prestador autorizado: **{nom_prestador}**")
                 
                 foto_prestador_path = str(p_row.get("Foto_Path", "")).strip()
                 if foto_prestador_path and os.path.exists(foto_prestador_path):
@@ -378,6 +385,8 @@ elif "Portal de Prestador" in rol:
                         st.dataframe(liq_prestador, use_container_width=True)
                     else:
                         st.info("Sin liquidaciones registradas.")
+    else:
+        st.info("💡 Ingrese su código de 4 dígitos otorgado por la administración para iniciar sesión.")
 
 # ==========================================
 # 3. VISTA ALIADO COMERCIAL
@@ -386,10 +395,10 @@ elif "Portal de Aliado Comercial" in rol:
     st.markdown("<h2>🏬 Portal de Aliados Comerciales - LLEGANDO</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
-    num_suscripcion_ingresado = st.text_input("Ingrese su Número de Suscripción de Aliado (Ej: ALIADO-101):").strip()
+    num_suscripcion_ingresado = st.text_input("Ingrese su Código de 4 Dígitos:").strip()
     
     if num_suscripcion_ingresado:
-        aliado_valido = df_aliados[df_aliados["Numero_Suscripcion"].astype(str).str.strip().str.lower() == num_suscripcion_ingresado.lower()]
+        aliado_valido = df_aliados[df_aliados["Numero_Suscripcion"].astype(str).str.strip() == num_suscripcion_ingresado]
         
         if len(aliado_valido) > 0:
             info_aliado = aliado_valido.iloc[0]
@@ -453,9 +462,9 @@ elif "Portal de Aliado Comercial" in rol:
                     else:
                         st.info("No hay órdenes registradas para este comercio.")
         else:
-            st.warning("⚠️ Número de suscripción de aliado no válido o no registrado.")
+            st.warning("⚠️ Código de 4 dígitos no válido o no registrado.")
     else:
-        st.info("💡 Ingrese su número de suscripción otorgado por la administración para iniciar sesión.")
+        st.info("💡 Ingrese su código de 4 dígitos otorgado por la administración para iniciar sesión.")
 
 # ==========================================
 # 4. VISTA ADMINISTRADOR
@@ -494,9 +503,9 @@ elif "Panel Gerencial" in rol:
                 telefono_aliado = st.text_input("Teléfono de Contacto *")
                 logo_aliado_file = st.file_uploader("Logo del Aliado (Opcional)", type=["jpg", "png"])
                 
-                if st.form_submit_button("Registrar y Generar Número de Suscripción"):
+                if st.form_submit_button("Registrar y Generar Código de 4 Dígitos"):
                     if nombre_aliado_admin and ubicacion_aliado and telefono_aliado:
-                        num_suscripcion = f"ALIADO-{101 if len(df_aliados) == 0 else int(df_aliados.index.max()) + 102}"
+                        codigo_4_digitos = f"{random.randint(1000, 9999)}"
                         
                         logo_path_g = ""
                         if logo_aliado_file:
@@ -506,7 +515,7 @@ elif "Panel Gerencial" in rol:
                                 f.write(logo_aliado_file.getbuffer())
                                 
                         nuevo_aliado_df = pd.DataFrame([{
-                            "Numero_Suscripcion": str(num_suscripcion),
+                            "Numero_Suscripcion": str(codigo_4_digitos),
                             "Nombre": str(nombre_aliado_admin),
                             "Ubicacion": str(ubicacion_aliado),
                             "Telefono": str(telefono_aliado),
@@ -518,7 +527,7 @@ elif "Panel Gerencial" in rol:
                         guardar_aliados(df_aliados)
                         
                         reproducir_alerta_sonora()
-                        st.success(f"¡Aliado registrado con éxito! Suscripción generada: **{num_suscripcion}**")
+                        st.success(f"¡Aliado registrado con éxito! Código asignado: **{codigo_4_digitos}**")
                         st.rerun()
                     else:
                         st.error("Por favor completa los campos obligatorios (*).")
@@ -531,7 +540,7 @@ elif "Panel Gerencial" in rol:
                     suscripcion_num = str(ali.get("Numero_Suscripcion", "N/A"))
                     nombre_com = str(ali.get("Nombre", ""))
                     
-                    with st.expander(f"[{suscripcion_num}] {nombre_com} - Estatus: {estatus_actual}"):
+                    with st.expander(f"[Código: {suscripcion_num}] {nombre_com} - Estatus: {estatus_actual}"):
                         st.write(f"**Ubicación:** {ali['Ubicacion']} | **Teléfono:** {ali['Telefono']}")
                         if str(ali['Logo_Path']).strip() and os.path.exists(str(ali['Logo_Path'])):
                             st.image(str(ali['Logo_Path']), width=100)
@@ -611,6 +620,8 @@ elif "Panel Gerencial" in rol:
                 
                 if st.form_submit_button("Autorizar Prestador"):
                     if nombre_p and telefono_p and placa_p:
+                        codigo_4_digitos_p = f"{random.randint(1000, 9999)}"
+                        
                         foto_path_p = ""
                         if foto_prestador_file:
                             os.makedirs("fotos_prestadores", exist_ok=True)
@@ -619,6 +630,7 @@ elif "Panel Gerencial" in rol:
                                 f.write(foto_prestador_file.getbuffer())
 
                         nuevo_p = pd.DataFrame([{
+                            "Numero_Suscripcion": str(codigo_4_digitos_p),
                             "Nombre": str(nombre_p), "Telefono": str(telefono_p), "Vehiculo": str(vehiculo_p),
                             "Marca": "", "Modelo": "", "Placa": str(placa_p), "Foto_Path": str(foto_path_p),
                             "Pago_Afiliacion_5USD": str(pago_afi), "Pago_Mensualidad_5USD": str(pago_men), 
@@ -628,7 +640,7 @@ elif "Panel Gerencial" in rol:
                         guardar_prestadores(df_prestadores)
                         
                         reproducir_alerta_sonora()
-                        st.success("¡Prestador autorizado con éxito!")
+                        st.success(f"¡Prestador autorizado con éxito! Código asignado: **{codigo_4_digitos_p}**")
                         st.rerun()
                     else:
                         st.error("Completa los campos obligatorios (*).")
@@ -639,8 +651,9 @@ elif "Panel Gerencial" in rol:
                 for idx_p, pres in df_prestadores.iterrows():
                     estatus_p_actual = str(pres.get("Estatus", "Autorizado"))
                     nombre_pres = str(pres.get("Nombre", ""))
+                    suscripcion_p_num = str(pres.get("Numero_Suscripcion", "N/A"))
                     
-                    with st.expander(f"{nombre_pres} - Vehículo: {pres['Vehiculo']} [{estatus_p_actual}]"):
+                    with st.expander(f"[Código: {suscripcion_p_num}] {nombre_pres} - Vehículo: {pres['Vehiculo']} [{estatus_p_actual}]"):
                         st.write(f"**Teléfono:** {pres['Telefono']} | **Placa:** {pres['Placa']} | **Wallet:** ${float(pres['Saldo_Wallet'] if pd.notna(pres['Saldo_Wallet']) and str(pres['Saldo_Wallet']).strip() != '' else 0):,.2f}")
                         if str(pres['Foto_Path']).strip() and os.path.exists(str(pres['Foto_Path'])):
                             st.image(str(pres['Foto_Path']), width=100)
@@ -653,7 +666,7 @@ elif "Panel Gerencial" in rol:
                                 index=0 if estatus_p_actual.lower() in ["autorizado", "activo"] else 1, 
                                 key=f"est_pres_{idx_p}"
                             )
-                            if st.button(f"Actualizar Estatus de {nombre_pres}", key=f"btn_est_pres_{idx_p}"):
+                            if st.button(f"Actualizar Estatus #{suscripcion_p_num}", key=f"btn_est_pres_{idx_p}"):
                                 df_prestadores.at[idx_p, "Estatus"] = str(nuevo_estatus_p)
                                 guardar_prestadores(df_prestadores)
                                 
@@ -663,7 +676,7 @@ elif "Panel Gerencial" in rol:
                         with col_p2:
                             st.write("")
                             st.write("")
-                            if st.button(f"🗑️ Eliminar Prestador {nombre_pres}", key=f"btn_del_pres_{idx_p}"):
+                            if st.button(f"🗑️ Eliminar Prestador #{suscripcion_p_num}", key=f"btn_del_pres_{idx_p}"):
                                 df_prestadores = df_prestadores.drop(idx_p).reset_index(drop=True)
                                 guardar_prestadores(df_prestadores)
                                 
