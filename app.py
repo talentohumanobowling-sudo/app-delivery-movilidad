@@ -1,17 +1,31 @@
-def cargar_datos():
-    if os.path.exists(DB_FILE):
-        df_temp = pd.read_excel(DB_FILE, dtype={"Ref_Pago_Movil": str, "Telefono_Cliente": str, "ID_Servicio": int})
-        if "Pago_Verificado" not in df_temp.columns: df_temp["Pago_Verificado"] = "No"
-        if "Liquidado" not in df_temp.columns: df_temp["Liquidado"] = "No"
-        if "Valoracion" not in df_temp.columns: df_temp["Valoracion"] = "Sin valorar"
-        if "Aliado_Comercial" not in df_temp.columns: df_temp["Aliado_Comercial"] = "Particular"
-        if "Capture_Pago" not in df_temp.columns: df_temp["Capture_Pago"] = ""
-        return df_temp
-    else:
-        df_inicial = pd.DataFrame(columns=[
-            "ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Cliente", 
-            "Telefono_Cliente", "Origen", "Destino", "Conductor", 
-            "Monto_USD", "Metodo_Pago", "Ref_Pago_Movil", "Pago_Verificado", "Estado", "Liquidado", "Valoracion", "Notas", "Aliado_Comercial", "Capture_Pago"
-        ])
-        df_inicial.to_excel(DB_FILE, index=False)
-        return df_inicial
+                    "Tipo_Servicio": "Delivery", "Cliente": c_cliente, "Telefono_Cliente": str(c_tlf).strip(),
+                    "Origen": nombre_aliado, "Destino": c_destino, "Conductor": "Por Asignar", "Monto_USD": c_monto,
+                    "Metodo_Pago": "Efectivo / POS", "Ref_Pago_Movil": "", "Pago_Verificado": "Sí",
+                    "Estado": "Solicitado", "Liquidado": "No", "Valoracion": "Sin valorar", "Notas": f"Aliado: {nombre_aliado}", 
+                    "Aliado_Comercial": nombre_aliado, "Capture_Pago": ""
+                }
+                df = pd.concat([df, pd.DataFrame([nuevo_reg])], ignore_index=True)
+                guardar_datos(df)
+                st.success(f"¡Delivery creado con éxito! ID #{nuevo_id}")
+
+elif "Panel Gerencial (Admin)" in rol:
+    st.markdown("<h2>Panel Gerencial y de Control Admin</h2>", unsafe_allow_html=True)
+    st.markdown("---")
+    clave = st.text_input("Contraseña de Administrador:", type="password")
+    if clave == CLAVE_ADMIN_SECRETA:
+        st.success("Acceso Gerencial Concedido")
+        tab_serv, tab_prest, tab_conf = st.tabs(["Control de Servicios", "Prestadores Autorizados", "Configuración"])
+        with tab_serv:
+            st.subheader("Gestión de Todos los Servicios")
+            st.dataframe(df)
+        with tab_prest:
+            st.subheader("Control de Prestadores")
+            st.dataframe(df_prestadores)
+        with tab_conf:
+            st.subheader("Ajustes del Sistema")
+            nueva_tasa = st.number_input("Actualizar Tasa BCV Manual (Bs.)", value=float(st.session_state.tasa_bcv))
+            if st.button("Guardar Tasa"):
+                st.session_state.tasa_bcv = nueva_tasa
+                st.success(f"Tasa actualizada a Bs. {nueva_tasa:,.2f}")
+    elif clave:
+        st.error("Contraseña incorrecta.")
