@@ -59,7 +59,7 @@ DATOS_PAGO_MOVIL = {
     "Banco": "BDV (0102)",
     "Telefono": "0412-3349463",
     "Cedula_RIF": "V-13609424",
-    "Titular": "Servicios de Movilidad"
+    "Titular": "ANGEL INOJOSA"
 }
 
 def reproducir_alerta_sonora():
@@ -366,7 +366,7 @@ elif "Portal de Aliado Comercial" in rol:
     st.markdown("<h2>🏬 Portal de Aliados Comerciales - LLEGANDO</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
-    num_suscripcion_ingresado = st.text_input("Ingrese su Número de Suscripción de Aliado (Ej: ALIADO-101):").strip()
+    num_suscripcion_ingresado = st.text_input("Ingrese su Número de Suscripción de Aliado (Ej: XXXXX-XXX):").strip()
     
     if num_suscripcion_ingresado:
         aliado_valido = df_aliados[df_aliados["Numero_Suscripcion"].astype(str).str.strip().str.lower() == num_suscripcion_ingresado.lower()]
@@ -443,7 +443,7 @@ elif "Panel Gerencial" in rol:
     st.markdown("<h2>Panel Gerencial LLEGANDO</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
-    clave_ingresada = st.text_input("Contraseña de Administrador (admin123):", type="password")
+    clave_ingresada = st.text_input("Contraseña de Administrador (XXXXXXX):", type="password")
     if clave_ingresada == CLAVE_ADMIN_SECRETA:
         st.success("Acceso Gerencial Autorizado")
         st.markdown("---")
