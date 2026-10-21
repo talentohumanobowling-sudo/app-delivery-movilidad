@@ -49,6 +49,7 @@ st.markdown("""
 DB_FILE = "base_datos_servicios.xlsx"
 DB_PRESTADORES = "prestadores_autorizados.xlsx"
 DB_LIQUIDACIONES = "liquidaciones_prestadores.xlsx"
+DB_ALIADOS = "aliados_comerciales.xlsx"
 CLAVE_ADMIN_SECRETA = "admin123"
 
 @st.cache_data(ttl=3600)
@@ -125,9 +126,21 @@ def cargar_liquidaciones():
 def guardar_liquidaciones(df_l):
     df_l.to_excel(DB_LIQUIDACIONES, index=False)
 
+def cargar_aliados():
+    if os.path.exists(DB_ALIADOS):
+        return pd.read_excel(DB_ALIADOS, dtype=str)
+    else:
+        df_a = pd.DataFrame(columns=["Nombre", "Ubicacion", "Telefono", "Logo_Path"])
+        df_a.to_excel(DB_ALIADOS, index=False)
+        return df_a
+
+def guardar_aliados(df_a):
+    df_a.to_excel(DB_ALIADOS, index=False)
+
 df = cargar_datos()
 df_prestadores = cargar_prestadores()
 df_liquidaciones = cargar_liquidaciones()
+df_aliados = cargar_aliados()
 
 # ==========================================
 # BARRA LATERAL
@@ -413,9 +426,26 @@ elif "Portal de Aliado Comercial" in rol:
     st.markdown("<h2>🏬 Portal de Aliados Comerciales - LLEGANDO Delivery</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
-    nombre_aliado = st.text_input("Nombre de su Negocio / Comercio Aliado:")
+    # Mostrar comercios registrados autorizados si existen
+    nombres_aliados_reg = df_aliados["Nombre"].tolist() if len(df_aliados) > 0 else []
+    
+    if len(nombres_aliados_reg) > 0:
+        nombre_aliado = st.selectbox("Seleccione su Comercio / Negocio Aliado:", nombres_aliados_reg)
+    else:
+        nombre_aliado = st.text_input("Nombre de su Negocio / Comercio Aliado:")
     
     if nombre_aliado:
+        # Buscar info del aliado
+        info_aliado = df_aliados[df_aliados["Nombre"].str.lower() == nombre_aliado.strip().lower()]
+        ubicacion_comercio = ""
+        if len(info_aliado) > 0:
+            comercio_row = info_aliado.iloc[0]
+            ubicacion_comercio = str(comercio_row.get("Ubicacion", ""))
+            logo_comercio = str(comercio_row.get("Logo_Path", ""))
+            if logo_comercio and logo_comercio != "nan" and os.path.exists(logo_comercio):
+                st.image(logo_comercio, width=100)
+            st.write(f"📍 **Ubicación:** {ubicacion_comercio} | 📞 **Teléfono:** {comercio_row.get('Telefono', '')}")
+        
         st.success(f"✅ Bienvenido, comercio: **{nombre_aliado}**")
         
         tab_pedido_aliado, tab_historial_aliado = st.tabs(["📦 Solicitar Delivery Inmediato", "📋 Mis Deliveries Registrados"])
@@ -429,7 +459,7 @@ elif "Portal de Aliado Comercial" in rol:
                     telefono_final = st.text_input("Teléfono del Cliente Final *")
                     monto_pedido = st.number_input("Monto del Delivery USD ($)", min_value=1.0, value=3.0, step=0.5)
                 with c_al2:
-                    direccion_origen_comercio = st.text_input("Dirección de su Local / Comercio *")
+                    direccion_origen_comercio = st.text_input("Dirección de su Local / Comercio *", value=ubicacion_comercio)
                     direccion_destino_cliente = st.text_input("Dirección de Entrega (Cliente) *")
                     metodo_pago_comercio = st.selectbox("Método de Pago del Pedido", ["Pago Móvil", "Efectivo", "Zelle", "Pagado al Comercio"])
                 
@@ -478,7 +508,7 @@ elif "Portal de Aliado Comercial" in rol:
             else:
                 st.info("No hay órdenes de delivery registradas con este nombre de comercio.")
     else:
-        st.info("💡 Ingresa el nombre de tu comercio o restaurante para acceder al panel de pedidos.")
+        st.info("💡 Ingresa o selecciona el nombre de tu comercio o restaurante para acceder al panel de pedidos.")
 
 # ==========================================
 # 4. VISTA ADMINISTRADOR
@@ -506,7 +536,7 @@ elif "Panel Gerencial" in rol:
             st.session_state.tasa_bcv = st.number_input("Tasa BCV", value=float(st.session_state.tasa_bcv))
             st.session_state.porcentaje_prestador = st.number_input("% Ganancia Prestador", value=float(st.session_state.porcentaje_prestador))
 
-        opcion_admin = st.selectbox("Seccion:", ["Autorizar Prestadores", "Asignar y Confirmar Pagos", "Liquidaciones a Prestadores", "Control General", "Finanzas", "Excel"])
+        opcion_admin = st.selectbox("Seccion:", ["Autorizar Prestadores", "Gestionar Aliados Comerciales", "Asignar y Confirmar Pagos", "Liquidaciones a Prestadores", "Control General", "Finanzas", "Excel"])
         
         if opcion_admin == "Autorizar Prestadores":
             with st.form("nuevo_p"):
@@ -554,6 +584,55 @@ elif "Panel Gerencial" in rol:
                             df_prestadores = df_prestadores.drop(idx_p).reset_index(drop=True)
                             guardar_prestadores(df_prestadores)
                             st.rerun()
+
+        elif opcion_admin == "Gestionar Aliados Comerciales":
+            st.subheader("🏪 Registro y Control de Aliados Comerciales")
+            
+            with st.form("form_nuevo_aliado"):
+                nombre_aliado_n = st.text_input("Nombre del Comercio / Negocio *")
+                ubicacion_aliado_n = st.text_input("Ubicación / Dirección del Local *")
+                telefono_aliado_n = st.text_input("Teléfono de Contacto *")
+                logo_aliado_file = st.file_uploader("Logotipo del Comercio (JPG/PNG)", type=["jpg", "jpeg", "png"])
+                
+                if st.form_submit_button("➕ Registrar Aliado Comercial"):
+                    if nombre_aliado_n and ubicacion_aliado_n and telefono_aliado_n:
+                        logo_path_g = ""
+                        if logo_aliado_file is not None:
+                            os.makedirs("fotos_aliados", exist_ok=True)
+                            logo_path_g = os.path.join("fotos_aliados", f"{nombre_aliado_n.strip().replace(' ', '_')}.jpg")
+                            with open(logo_path_g, "wb") as f:
+                                f.write(logo_aliado_file.getbuffer())
+                        
+                        nuevo_aliado_df = pd.DataFrame([{
+                            "Nombre": nombre_aliado_n,
+                            "Ubicacion": ubicacion_aliado_n,
+                            "Telefono": telefono_aliado_n,
+                            "Logo_Path": logo_path_g
+                        }])
+                        df_aliados = pd.concat([df_aliados, nuevo_aliado_df], ignore_index=True)
+                        guardar_aliados(df_aliados)
+                        st.success(f"¡Aliado comercial '{nombre_aliado_n}' registrado con éxito!")
+                        st.rerun()
+                    else:
+                        st.error("Completa los campos obligatorios (*).")
+            
+            st.markdown("---")
+            st.markdown("#### 📋 Comercios Aliados Registrados:")
+            if len(df_aliados) > 0:
+                for idx_a, aliado_item in df_aliados.iterrows():
+                    l_path = str(aliado_item.get("Logo_Path", ""))
+                    with st.expander(f"🏬 {aliado_item['Nombre']} - 📍 {aliado_item['Ubicacion']}"):
+                        if l_path and l_path != "nan" and os.path.exists(l_path):
+                            st.image(l_path, width=80)
+                        st.write(f"📞 **Teléfono:** {aliado_item['Telefono']}")
+                        st.write(f"📍 **Ubicación:** {aliado_item['Ubicacion']}")
+                        if st.button(f"🗑️ Eliminar Aliado", key=f"del_aliado_{idx_a}"):
+                            df_aliados = df_aliados.drop(idx_a).reset_index(drop=True)
+                            guardar_aliados(df_aliados)
+                            st.success("Aliado eliminado.")
+                            st.rerun()
+            else:
+                st.info("No hay aliados comerciales registrados todavía.")
 
         elif opcion_admin == "Asignar y Confirmar Pagos":
             pendientes = df[df["Estado"].isin(["Solicitado", "Pendiente", "Asignado"])]
