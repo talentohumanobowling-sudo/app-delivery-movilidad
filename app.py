@@ -110,13 +110,13 @@ def guardar_datos(df):
 def cargar_prestadores():
     if os.path.exists(DB_PRESTADORES):
         df_p_temp = pd.read_excel(DB_PRESTADORES, dtype=str)
-        cols_necesarias = ["Nombre", "Telefono", "Vehiculo", "Marca", "Modelo", "Placa", "Foto_Url", "Pago_Afiliacion_5USD", "Pago_Mensualidad_5USD", "Estatus"]
+        cols_necesarias = ["Nombre", "Telefono", "Vehiculo", "Marca", "Modelo", "Placa", "Foto_Path", "Pago_Afiliacion_5USD", "Pago_Mensualidad_5USD", "Estatus"]
         for col in cols_necesarias:
             if col not in df_p_temp.columns:
                 df_p_temp[col] = "Pendiente" if "Pago" in col else ""
         return df_p_temp
     else:
-        df_p = pd.DataFrame(columns=["Nombre", "Telefono", "Vehiculo", "Marca", "Modelo", "Placa", "Foto_Url", "Pago_Afiliacion_5USD", "Pago_Mensualidad_5USD", "Estatus"])
+        df_p = pd.DataFrame(columns=["Nombre", "Telefono", "Vehiculo", "Marca", "Modelo", "Placa", "Foto_Path", "Pago_Afiliacion_5USD", "Pago_Mensualidad_5USD", "Estatus"])
         df_p.to_excel(DB_PRESTADORES, index=False)
         return df_p
 
@@ -276,7 +276,7 @@ if "Cliente" in rol:
                                 info_cond = df_prestadores[df_prestadores["Nombre"].str.lower() == str(serv['Conductor']).lower()]
                                 if len(info_cond) > 0:
                                     cond_row = info_cond.iloc[0]
-                                    foto_url = str(cond_row.get('Foto_Url', '')).strip()
+                                    foto_path = str(cond_row.get('Foto_Path', '')).strip()
                                     marca_v = str(cond_row.get('Marca', 'N/A')).strip()
                                     modelo_v = str(cond_row.get('Modelo', 'N/A')).strip()
                                     placa_v = str(cond_row.get('Placa', 'N/A')).strip()
@@ -284,10 +284,10 @@ if "Cliente" in rol:
                                     
                                     col_info1, col_info2 = st.columns([1, 2])
                                     with col_info1:
-                                        if foto_url and foto_url.startswith("http"):
-                                            st.image(foto_url, width=120, caption="Foto (Fondo Blanco)")
+                                        if foto_path and os.path.exists(foto_path):
+                                            st.image(foto_path, width=120, caption="Foto (Fondo Blanco)")
                                         else:
-                                            st.info("📷 [Foto con fondo blanco]")
+                                            st.info("📷 [Sin foto cargada]")
                                     with col_info2:
                                         st.markdown(f"🚗 **Vehículo:** {cond_row['Vehiculo']}")
                                         st.markdown(f"🏷️ **Marca / Modelo:** {marca_v} {modelo_v}")
@@ -499,10 +499,17 @@ elif "Admin" in rol or "Gerencial" in rol:
                     vehiculo_p = st.selectbox("Tipo de Vehículo *", ["Moto", "Carro / Taxi", "Flete / Camión", "Delivery (Moto)", "Delivery (Carro)"])
                     placa_p = st.text_input("Placa del Vehículo *")
                 
-                foto_url_p = st.text_input("URL de la Foto del Prestador (Fondo Blanco) *")
+                foto_file = st.file_uploader("Sube la Foto del Prestador (Fondo Blanco - JPG/PNG)", type=["jpg", "jpeg", "png"])
                     
                 if st.form_submit_button("➕ Registrar y Autorizar Prestador"):
                     if nombre_p and telefono_p and placa_p:
+                        path_guardado = ""
+                        if foto_file is not None:
+                            os.makedirs("fotos_prestadores", exist_ok=True)
+                            path_guardado = os.path.join("fotos_prestadores", f"{nombre_p.strip().replace(' ', '_')}.jpg")
+                            with open(path_guardado, "wb") as f:
+                                f.write(foto_file.getbuffer())
+
                         nuevo_p = pd.DataFrame([{
                             "Nombre": nombre_p,
                             "Telefono": telefono_p,
@@ -510,7 +517,7 @@ elif "Admin" in rol or "Gerencial" in rol:
                             "Marca": marca_p,
                             "Modelo": modelo_p,
                             "Placa": placa_p,
-                            "Foto_Url": foto_url_p,
+                            "Foto_Path": path_guardado,
                             "Pago_Afiliacion_5USD": pago_afi,
                             "Pago_Mensualidad_5USD": pago_men,
                             "Estatus": "Autorizado"
