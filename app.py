@@ -6,7 +6,7 @@ from datetime import datetime
 import urllib.parse
 import time
 
-st.set_page_config(page_title="LLEGANDO - Red Integral de Movilidad y Logistica", page_icon="🚗", layout="wide")
+st.set_page_config(page_title="LLEGANDO - Red Integral de Movilidad y Logística", page_icon="🚗", layout="wide")
 
 # ==========================================
 # SOPORTE PWA Y ESTILOS CSS
@@ -95,13 +95,13 @@ def guardar_datos(df):
 def cargar_prestadores():
     if os.path.exists(DB_PRESTADORES):
         df_p_temp = pd.read_excel(DB_PRESTADORES, dtype=str)
-        cols_necesarias = ["Nombre", "Telefono", "Vehiculo", "Marca", "Modelo", "Placa", "Foto_Path", "Pago_Afiliacion_5USD", "Pago_Mensualidad_5USD", "Estatus"]
+        cols_necesarias = ["Nombre", "Telefono", "Vehiculo", "Marca", "Modelo", "Placa", "Foto_Path", "Pago_Afiliacion_5USD", "Pago_Mensualidad_5USD", "Estatus", "Saldo_Wallet"]
         for col in cols_necesarias:
             if col not in df_p_temp.columns:
-                df_p_temp[col] = "Pendiente" if "Pago" in col else ""
+                df_p_temp[col] = "0.0" if col == "Saldo_Wallet" else ("Pendiente" if "Pago" in col else "")
         return df_p_temp
     else:
-        df_p = pd.DataFrame(columns=["Nombre", "Telefono", "Vehiculo", "Marca", "Modelo", "Placa", "Foto_Path", "Pago_Afiliacion_5USD", "Pago_Mensualidad_5USD", "Estatus"])
+        df_p = pd.DataFrame(columns=["Nombre", "Telefono", "Vehiculo", "Marca", "Modelo", "Placa", "Foto_Path", "Pago_Afiliacion_5USD", "Pago_Mensualidad_5USD", "Estatus", "Saldo_Wallet"])
         df_p.to_excel(DB_PRESTADORES, index=False)
         return df_p
 
@@ -176,13 +176,18 @@ if "Cliente" in rol:
             
             notas = st.text_area("Detalles adicionales (Opcional)")
             
+            # Tarifa sugerida automática según tipo de servicio
+            tarifas_base = {"Delivery": 3.0, "Mototaxi": 2.5, "Taxi / Carro": 5.0, "Flete": 15.0}
+            tarifa_sugerida = tarifas_base.get(tipo_serv, 3.0)
+            st.info(f"Tarifa estimada sugerida para {tipo_serv}: **${tarifa_sugerida:.2f} USD**")
+            
             if st.form_submit_button("Enviar Solicitud Ahora"):
                 if nombre and telefono and origen and destino:
                     nuevo_id = 1001 if len(df) == 0 else int(pd.to_numeric(df["ID_Servicio"], errors='coerce').max()) + 1
                     nuevo_registro = {
                         "ID_Servicio": nuevo_id, "Fecha_Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         "Tipo_Servicio": tipo_serv, "Cliente": nombre, "Telefono_Cliente": str(telefono).strip(),
-                        "Origen": origen, "Destino": destino, "Conductor": "Por Asignar", "Monto_USD": 0.0,
+                        "Origen": origen, "Destino": destino, "Conductor": "Por Asignar", "Monto_USD": tarifa_sugerida,
                         "Metodo_Pago": metodo_pago, "Ref_Pago_Movil": "", "Pago_Verificado": "No",
                         "Estado": "Solicitado", "Liquidado": "No", "Valoracion": "Sin valorar", "Notas": notas
                     }
@@ -266,6 +271,12 @@ if "Cliente" in rol:
                                         st.markdown(f"Vehiculo: {cond_row['Vehiculo']} ({cond_row.get('Marca', '')} {cond_row.get('Modelo', '')})")
                                         st.markdown(f"Placa: `{cond_row.get('Placa', '')}`")
                                     
+                                    # Botones GPS Mapas integrados
+                                    url_waze = f"https://waze.com/ul?q={urllib.parse.quote(serv['Origen'])}"
+                                    url_gmaps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(serv['Origen'])}"
+                                    st.link_button("🗺️ Abrir Ruta en Waze", url_waze)
+                                    st.link_button("📍 Abrir Ruta en Google Maps", url_gmaps)
+                                    
                                     msg_c = f"Hola {serv['Conductor']}, le escribo desde LLEGANDO respecto al servicio #{serv['ID_Servicio']}."
                                     st.link_button("Contactar Conductor por WhatsApp", f"https://wa.me/{tlf_cond}?text={urllib.parse.quote(msg_c)}")
                                 
@@ -308,8 +319,16 @@ elif "Prestador" in rol:
         else:
             st.success("Acceso Autorizado")
             p_row = prestador_valido.iloc[0]
-            st.metric("Afiliacion ($5)", str(p_row.get("Pago_Afiliacion_5USD", "Pendiente")))
-            st.metric("Mensualidad ($5)", str(p_row.get("Pago_Mensualidad_5USD", "Pendiente")))
+            
+            # Billetera Virtual / Saldo Prepago y Reputación
+            saldo_wallet = float(p_row.get("Saldo_Wallet", 0.0))
+            servicios_prestador_hist = df[(df["Conductor"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()) & (df["Estado"] == "Completado")]
+            
+            col_st1, col_st2, col_st3 = st.columns(3)
+            col_st1.metric("Afiliacion ($5)", str(p_row.get("Pago_Afiliacion_5USD", "Pendiente")))
+            col_st2.metric("Mensualidad ($5)", str(p_row.get("Pago_Mensualidad_5USD", "Pendiente")))
+            col_st3.metric("💳 Saldo Billetera (Wallet)", f"${saldo_wallet:,.2f} USD")
+            
             st.markdown("---")
 
             servicios_cond = df[df["Conductor"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
@@ -333,7 +352,14 @@ elif "Prestador" in rol:
                         ganancia_usd = monto_usd * (st.session_state.porcentaje_prestador / 100)
                         with st.expander(f"Servicio #{serv['ID_Servicio']} - [{serv['Estado']}]"):
                             st.write(f"Cliente: {serv['Cliente']} | Telefono: {serv['Telefono_Cliente']}")
+                            st.write(f"Origen: {serv['Origen']} ➡️ Destino: {serv['Destino']}")
                             st.write(f"Tu Ganancia: **${ganancia_usd:.2f} USD**")
+                            
+                            # Botones GPS de navegación directa para el conductor
+                            url_waze_c = f"https://waze.com/ul?q={urllib.parse.quote(serv['Origen'])}"
+                            url_gmaps_c = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(serv['Origen'])}"
+                            st.link_button("🗺️ Navegar al Origen con Waze", url_waze_c)
+                            st.link_button("📍 Navegar al Origen con Google Maps", url_gmaps_c)
                             
                             estados_posibles = ["Asignado", "En Camino", "Llegue al Sitio", "En Trayecto", "Completado", "Cancelado"]
                             idx_est = estados_posibles.index(serv['Estado']) if serv['Estado'] in estados_posibles else 0
@@ -357,7 +383,7 @@ elif "Prestador" in rol:
                 tot_usd = pd.to_numeric(completados["Monto_USD"], errors='coerce').sum() * (st.session_state.porcentaje_prestador / 100)
                 st.metric("Ganancia Total USD", f"${tot_usd:,.2f}")
                 if len(completados) > 0:
-                    st.dataframe(completados[["ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Monto_USD"]], use_container_width=True)
+                    st.dataframe(completados[["ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Monto_USD", "Valoracion"]], use_container_width=True)
 
             with tab_liquidaciones:
                 liq_prestador = df_liquidaciones[df_liquidaciones["Prestador"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
@@ -411,6 +437,7 @@ elif "Admin" in rol or "Gerencial" in rol:
                 placa_p = st.text_input("Placa *")
                 pago_afi = st.selectbox("Afiliacion ($5)", ["Pendiente", "Pagado"])
                 pago_men = st.selectbox("Mensualidad ($5)", ["Pendiente", "Pagado"])
+                saldo_ini = st.number_input("Saldo Billetera Wallet ($)", value=0.0)
                 foto_file = st.file_uploader("Foto", type=["jpg", "png"])
                 
                 if st.form_submit_button("Registrar Prestador"):
@@ -424,7 +451,8 @@ elif "Admin" in rol or "Gerencial" in rol:
                         nuevo_p = pd.DataFrame([{
                             "Nombre": nombre_p, "Telefono": telefono_p, "Vehiculo": vehiculo_p,
                             "Marca": "", "Modelo": "", "Placa": placa_p, "Foto_Path": path_g,
-                            "Pago_Afiliacion_5USD": pago_afi, "Pago_Mensualidad_5USD": pago_men, "Estatus": "Autorizado"
+                            "Pago_Afiliacion_5USD": pago_afi, "Pago_Mensualidad_5USD": pago_men, 
+                            "Estatus": "Autorizado", "Saldo_Wallet": str(saldo_ini)
                         }])
                         df_prestadores = pd.concat([df_prestadores, nuevo_p], ignore_index=True)
                         guardar_prestadores(df_prestadores)
@@ -435,7 +463,7 @@ elif "Admin" in rol or "Gerencial" in rol:
             
             if len(df_prestadores) > 0:
                 for idx_p, p_item in df_prestadores.iterrows():
-                    with st.expander(f"{p_item['Nombre']} [{p_item.get('Estatus', 'Autorizado')}]"):
+                    with st.expander(f"{p_item['Nombre']} [{p_item.get('Estatus', 'Autorizado')}] - Wallet: ${p_item.get('Saldo_Wallet', '0')}"):
                         if st.button("Eliminar Prestador", key=f"del_{idx_p}"):
                             df_prestadores = df_prestadores.drop(idx_p).reset_index(drop=True)
                             guardar_prestadores(df_prestadores)
