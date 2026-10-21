@@ -6,6 +6,13 @@ from datetime import datetime
 import urllib.parse
 import time
 
+# Intentar importar el componente de autore fresco, si no está instalado se maneja de forma segura
+try:
+    from streamlit_autorefresh import st_autorefresh
+    has_autorefresh = True
+except ImportError:
+    has_autorefresh = False
+
 st.set_page_config(page_title="LLEGANDO - Red Integral de Movilidad y Logística", page_icon="🚗", layout="wide")
 
 st.markdown("""
@@ -33,6 +40,10 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
+
+# Configurar actualización automática cada 10 segundos (10000 milisegundos)
+if has_autorefresh:
+    st_autorefresh(interval=10000, limit=None, key="actualizacion_automatica_llegando")
 
 DB_FILE = "base_datos_servicios.xlsx"
 DB_PRESTADORES = "prestadores_autorizados.xlsx"
@@ -154,6 +165,13 @@ df_prestadores = cargar_prestadores()
 df_liquidaciones = cargar_liquidaciones()
 df_aliados = cargar_aliados()
 
+# Detectar nuevas interacciones comparando longitud de registros en session_state
+if "total_servicios_prev" not in st.session_state:
+    st.session_state.total_servicios_prev = len(df)
+elif len(df) > st.session_state.total_servicios_prev:
+    st.session_state.total_servicios_prev = len(df)
+    reproducir_alerta_sonora()
+
 if os.path.exists("logo.jpg"):
     st.sidebar.image("logo.jpg", use_container_width=True)
 elif os.path.exists("logo.png"):
@@ -247,7 +265,6 @@ if "Portal de Cliente" in rol:
                     monto_usd = float(serv['Monto_USD'])
                     monto_ves = monto_usd * st.session_state.tasa_bcv
                     estatus_s = str(serv['Estado']).strip()
-                    pago_v = str(serv.get('Pago_Verificado', 'No')).strip()
                     
                     with st.expander(f"Servicio #{serv['ID_Servicio']} - {serv['Tipo_Servicio']} [{estatus_s}]", expanded=True):
                         c1, c2 = st.columns(2)
