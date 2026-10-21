@@ -552,4 +552,125 @@ elif "Panel Gerencial" in rol:
                         idx_e = estados_lista.index(row_a['Estado']) if row_a['Estado'] in estados_lista else 0
                         nuevo_est = st.selectbox("Estado del Servicio:", estados_lista, index=idx_e, key=f"est_admin_{row_a['ID_Servicio']}")
                         
-                        if st.button(f"Guardar Cambios Servicio #{row_a
+                        if st.button(f"Guardar Cambios Servicio #{row_a['ID_Servicio']}", key=f"save_admin_{row_a['ID_Servicio']}"):
+                            filtro_adm = df["ID_Servicio"] == int(row_a['ID_Servicio'])
+                            df.loc[filtro_adm, "Conductor"] = str(nuevo_cond)
+                            df.loc[filtro_adm, "Pago_Verificado"] = str(nuevo_verif)
+                            df.loc[filtro_adm, "Estado"] = str(nuevo_est)
+                            guardar_datos(df)
+                            st.success("¡Actualizado correctamente!")
+                            st.rerun()
+            else:
+                st.info("No hay servicios registrados.")
+
+        elif opcion_admin == "Autorizar Prestadores":
+            st.subheader("Registro, Autorización, Suspensión y Eliminación de Prestadores")
+            
+            with st.form("nuevo_p"):
+                st.markdown("#### Registrar Nuevo Prestador")
+                nombre_p = st.text_input("Nombre Completo *")
+                telefono_p = st.text_input("Teléfono *")
+                vehiculo_p = st.selectbox("Tipo de Vehículo *", ["Moto", "Carro / Taxi", "Flete", "Delivery"])
+                placa_p = st.text_input("Placa *")
+                pago_afi = st.selectbox("Pago Afiliación ($5)", ["Pendiente", "Pagado"])
+                pago_men = st.selectbox("Pago Mensualidad ($5)", ["Pendiente", "Pagado"])
+                saldo_ini = st.number_input("Saldo Inicial Billetera Wallet ($)", value=0.0)
+                
+                if st.form_submit_button("Autorizar Prestador"):
+                    if nombre_p and telefono_p and placa_p:
+                        nuevo_p = pd.DataFrame([{
+                            "Nombre": str(nombre_p), "Telefono": str(telefono_p), "Vehiculo": str(vehiculo_p),
+                            "Marca": "", "Modelo": "", "Placa": str(placa_p), "Foto_Path": "",
+                            "Pago_Afiliacion_5USD": str(pago_afi), "Pago_Mensualidad_5USD": str(pago_men), 
+                            "Estatus": "Autorizado", "Saldo_Wallet": str(saldo_ini)
+                        }])
+                        df_prestadores = pd.concat([df_prestadores, nuevo_p], ignore_index=True)
+                        guardar_prestadores(df_prestadores)
+                        st.success("¡Prestador autorizado con éxito!")
+                        st.rerun()
+                    else:
+                        st.error("Completa los campos obligatorios.")
+            
+            st.markdown("---")
+            st.markdown("#### Prestadores Registrados (Control y Gestión)")
+            if len(df_prestadores) > 0:
+                for idx_p, pres in df_prestadores.iterrows():
+                    estatus_p_actual = str(pres.get("Estatus", "Autorizado"))
+                    nombre_pres = str(pres.get("Nombre", ""))
+                    
+                    with st.expander(f"{nombre_pres} - Vehículo: {pres['Vehiculo']} [{estatus_p_actual}]"):
+                        st.write(f"**Teléfono:** {pres['Telefono']} | **Placa:** {pres['Placa']} | **Wallet:** ${float(pres['Saldo_Wallet'] if pd.notna(pres['Saldo_Wallet']) and str(pres['Saldo_Wallet']).strip() != '' else 0):,.2f}")
+                        
+                        col_p1, col_p2 = st.columns(2)
+                        with col_p1:
+                            nuevo_estatus_p = st.selectbox(
+                                "Cambiar Estatus:", 
+                                ["Autorizado", "Suspendido"], 
+                                index=0 if estatus_p_actual.lower() in ["autorizado", "activo"] else 1, 
+                                key=f"est_pres_{idx_p}"
+                            )
+                            if st.button(f"Actualizar Estatus de {nombre_pres}", key=f"btn_est_pres_{idx_p}"):
+                                df_prestadores.at[idx_p, "Estatus"] = str(nuevo_estatus_p)
+                                guardar_prestadores(df_prestadores)
+                                st.success("¡Estatus del prestador actualizado!")
+                                st.rerun()
+                        with col_p2:
+                            st.write("")
+                            st.write("")
+                            if st.button(f"🗑️ Eliminar Prestador {nombre_pres}", key=f"btn_del_pres_{idx_p}"):
+                                df_prestadores = df_prestadores.drop(idx_p).reset_index(drop=True)
+                                guardar_prestadores(df_prestadores)
+                                st.warning("¡Prestador eliminado del sistema!")
+                                st.rerun()
+            else:
+                st.info("No hay prestadores registrados todavía.")
+
+        elif opcion_admin == "Liquidaciones a Prestadores":
+            st.subheader("Generar Liquidación a Prestador")
+            lista_cond_aut = list(df_prestadores[df_prestadores["Estatus"].str.lower() == "autorizado"]["Nombre"])
+            if len(lista_cond_aut) > 0:
+                with st.form("form_liq"):
+                    prestador_sel = st.selectbox("Seleccionar Prestador", lista_cond_aut)
+                    monto_liq = st.number_input("Monto a Liquidar en USD ($)", min_value=1.0, value=10.0)
+                    ref_pago_liq = st.text_input("Referencia de Pago Bancario realizado al Prestador *")
+                    
+                    if st.form_submit_button("Registrar y Enviar Liquidación"):
+                        if ref_pago_liq:
+                            nuevo_id_l = 1 if len(df_liquidaciones) == 0 else int(len(df_liquidaciones)) + 1
+                            nueva_l = pd.DataFrame([{
+                                "ID_Liquidacion": str(nuevo_id_l),
+                                "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                                "Prestador": str(prestador_sel),
+                                "Monto_USD": float(monto_liq),
+                                "Referencia_Pago": str(ref_pago_liq),
+                                "Estatus_Confirmacion": "Pendiente de Confirmar"
+                            }])
+                            df_liquidaciones = pd.concat([df_liquidaciones, nueva_l], ignore_index=True)
+                            guardar_liquidaciones(df_liquidaciones)
+                            st.success("¡Liquidación registrada con éxito!")
+                            st.rerun()
+                        else:
+                            st.error("Ingresa la referencia de pago.")
+                
+                st.markdown("#### Historial de Liquidaciones:")
+                st.dataframe(df_liquidaciones, use_container_width=True)
+            else:
+                st.warning("No hay prestadores autorizados disponibles.")
+
+        elif opcion_admin == "Control General de Servicios":
+            st.subheader("Base de Datos Completa de Servicios")
+            st.dataframe(df, use_container_width=True)
+
+        elif opcion_admin == "Finanzas":
+            st.subheader("Resumen Financiero")
+            total_recaudado = pd.to_numeric(df[df["Pago_Verificado"].str.lower().isin(["sí", "si"])]["Monto_USD"], errors='coerce').sum()
+            st.metric("Total Recaudado (USD Verificado)", f"${total_recaudado:,.2f}")
+            st.dataframe(df[["ID_Servicio", "Fecha_Hora", "Cliente", "Monto_USD", "Metodo_Pago", "Pago_Verificado"]], use_container_width=True)
+
+        elif opcion_admin == "Descargar Excel":
+            st.subheader("Exportar Datos")
+            st.download_button("📥 Descargar Base de Datos Completa (Excel)", data=open(DB_FILE, "rb").read(), file_name="llegando_db.xlsx")
+
+    else:
+        if clave_ingresada:
+            st.error("Contraseña incorrecta.")
