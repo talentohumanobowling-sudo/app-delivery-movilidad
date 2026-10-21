@@ -229,7 +229,13 @@ if "Cliente" in rol:
                     pago_v = str(serv.get('Pago_Verificado', 'No')).strip()
                     
                     if pago_v.lower() in ["sí", "si"] or estatus_s in ["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto", "Completado"]:
-                        st.markdown(f'<div class="cintillo-alerta"><h3 style="color: #ffffff; margin: 0 0 5px 0;">🔵 LLEGANDO • ¡Actualización en tu Viaje #{serv["ID_Servicio"]}!</h3><p style="margin: 0; font-size: 1.05em;">Estatus actual: <b>{estatus_s}</b> | Prestador: <b>{serv["Conductor"]}</b> | Pago: <b>{pago_v}</b></p></div>', unsafe_allow_html=True)
+                        st.markdown(f'''
+                            <div class="cintillo-alerta">
+                                <h3 style="color: #ffffff; margin: 0 0 5px 0;">🔵 LLEGANDO • ¡Actualización en tu Viaje #{serv["ID_Servicio"]}!</h3>
+                                <p style="margin: 0; font-size: 1.05em;">Estatus actual: <b>{estatus_s}</b> | Prestador: <b>{serv["Conductor"]}</b> | Pago: <b>{pago_v}</b></p>
+                            </div>
+                            <audio autoplay style="display:none;"><source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"></audio>
+                        ''', unsafe_allow_html=True)
 
                     with st.expander(f"📍 Servicio #{serv['ID_Servicio']} - {serv['Tipo_Servicio']} [{estatus_s}]", expanded=True):
                         c1, c2 = st.columns(2)
@@ -358,7 +364,13 @@ elif "Prestador" in rol:
             viajes_activos_cond = servicios_cond[servicios_cond["Estado"].isin(["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto"])]
             
             if len(viajes_activos_cond) > 0:
-                st.markdown(f'<div class="cintillo-alerta"><h3 style="color: #ffffff; margin: 0 0 5px 0;">🚗 LLEGANDO • ¡Nuevo Servicio Asignado!</h3><p style="margin: 0; font-size: 1.05em;">Tienes <b>{len(viajes_activos_cond)}</b> viaje(s) activo(s) esperando por atención.</p></div>', unsafe_allow_html=True)
+                st.markdown(f'''
+                    <div class="cintillo-alerta">
+                        <h3 style="color: #ffffff; margin: 0 0 5px 0;">🚗 LLEGANDO • ¡Nuevo Servicio Asignado!</h3>
+                        <p style="margin: 0; font-size: 1.05em;">Tienes <b>{len(viajes_activos_cond)}</b> viaje(s) activo(s) esperando por atención.</p>
+                    </div>
+                    <audio autoplay style="display:none;"><source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"></audio>
+                ''', unsafe_allow_html=True)
 
             tab_viajes, tab_finanzas, tab_liquidaciones = st.tabs(["📋 Mis Viajes Activos", "💰 Mis Ganancias", "🤝 Liquidaciones y Pagos"])
             
@@ -463,7 +475,13 @@ elif "Admin" in rol or "Gerencial" in rol:
         conteo_actual_admin = len(pendientes_alarma)
 
         if conteo_actual_admin > 0:
-            st.markdown(f'<div class="cintillo-alerta"><h3 style="color: #ffffff; margin: 0 0 5px 0;">⚙️ LLEGANDO • ¡Nuevos Pedidos Entrantes!</h3><p style="margin: 0; font-size: 1.05em;">Hay <b>{conteo_actual_admin}</b> solicitud(es) esperando asignación o verificación de pago.</p></div>', unsafe_allow_html=True)
+            st.markdown(f'''
+                <div class="cintillo-alerta">
+                    <h3 style="color: #ffffff; margin: 0 0 5px 0;">⚙️ LLEGANDO • ¡Nuevos Pedidos Entrantes!</h3>
+                    <p style="margin: 0; font-size: 1.05em;">Hay <b>{conteo_actual_admin}</b> solicitud(es) esperando asignación o verificación de pago.</p>
+                </div>
+                <audio autoplay style="display:none;"><source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"></audio>
+            ''', unsafe_allow_html=True)
 
         with st.expander("⚙️ Configuración General del Sistema", expanded=False):
             col_adm1, col_adm2 = st.columns(2)
@@ -747,7 +765,7 @@ elif "Admin" in rol or "Gerencial" in rol:
             st.subheader("📁 Descargar Bases de Datos")
             if os.path.exists(DB_FILE):
                 with open(DB_FILE, "rb") as file:
-                    st.download_button("⬇️ Descargar Base de Servicios", file, file_name="base_datos_servicios.xlsx")
+                    st.download_button("⬇️ Descargar Base de Servicios", file, file_name="base_datos_services.xlsx")
             if os.path.exists(DB_PRESTADORES):
                 with open(DB_PRESTADORES, "rb") as file:
                     st.download_button("⬇️ Descargar Base de Prestadores", file, file_name="prestadores_autorizados.xlsx")
@@ -762,3 +780,4 @@ elif "Admin" in rol or "Gerencial" in rol:
         st.error("❌ Contraseña incorrecta. Acceso denegado.")
     else:
         st.info("🔒 **Ingresa la contraseña `admin123` en el campo superior para desbloquear el panel gerencial.**")
+           
