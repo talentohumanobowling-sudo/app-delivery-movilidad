@@ -284,10 +284,10 @@ if "Cliente" in rol:
                                     
                                     col_info1, col_info2 = st.columns([1, 2])
                                     with col_info1:
-                                        if foto_path and os.path.exists(foto_path):
+                                        if foto_path and foto_path != "nan" and os.path.exists(foto_path):
                                             st.image(foto_path, width=120, caption="Foto (Fondo Blanco)")
                                         else:
-                                            st.info("📷 [Sin foto cargada]")
+                                            st.info("📷 [Sin foto registrada]")
                                     with col_info2:
                                         st.markdown(f"🚗 **Vehículo:** {cond_row['Vehiculo']}")
                                         st.markdown(f"🏷️ **Marca / Modelo:** {marca_v} {modelo_v}")
