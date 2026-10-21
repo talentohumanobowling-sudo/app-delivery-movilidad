@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import os
 import requests
@@ -35,15 +34,6 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
-
-# Actualización automática cada 5 segundos mediante JavaScript nativo
-components.html("""
-    <script>
-        setTimeout(function(){
-            window.location.reload();
-        }, 5000);
-    </script>
-""", height=0, width=0)
 
 DB_FILE = "base_datos_servicios.xlsx"
 DB_PRESTADORES = "prestadores_autorizados.xlsx"
@@ -194,6 +184,9 @@ rol = st.sidebar.radio("Selecciona tu Panel:", [
 st.sidebar.markdown("---")
 st.sidebar.metric("Tasa BCV Oficial", f"Bs. {st.session_state.tasa_bcv:,.2f}")
 
+if st.sidebar.button("🔄 Actualizar Información"):
+    st.rerun()
+
 # ==========================================
 # 1. VISTA CLIENTE
 # ==========================================
@@ -308,16 +301,4 @@ if "Portal de Cliente" in rol:
                 st.warning("No se encontraron servicios con ese número exacto.")
 
 # ==========================================
-# 2. VISTA PRESTADOR DE SERVICIOS
-# ==========================================
-elif "Portal de Prestador" in rol:
-    st.markdown("<h2>Panel Profesional del Prestador</h2>", unsafe_allow_html=True)
-    st.markdown("---")
-    
-    num_suscripcion_prestador = st.text_input("Ingrese su Código de 4 Dígitos:").strip()
-    
-    if num_suscripcion_prestador:
-        prestador_valido = df_prestadores[df_prestadores["Numero_Suscripcion"].astype(str).str.strip() == num_suscripcion_prestador]
-        
-        if len(prestador_valido) == 0:
-            st
+# 2. VISTA PREST
