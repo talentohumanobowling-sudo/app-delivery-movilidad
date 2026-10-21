@@ -27,10 +27,6 @@ st.markdown("""
         h1, h2, h3 { color: #0A2540; font-family: 'Helvetica Neue', sans-serif; }
         .stButton>button { background-color: #1E3A8A; color: white; border-radius: 6px; font-weight: 600; border: none; }
         .stButton>button:hover { background-color: #0F172A; color: white; }
-        .banner-instalacion {
-            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
-            color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px;
-        }
         .card-aliado {
             background-color: #FFFFFF; padding: 15px; border-radius: 8px;
             border-left: 5px solid #10B981; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px;
@@ -112,6 +108,8 @@ def cargar_prestadores():
         df_p = pd.read_excel(DB_PRESTADORES, dtype=str).fillna("")
         if "Estatus" not in df_p.columns:
             df_p["Estatus"] = "Autorizado"
+        if "Foto_Path" not in df_p.columns:
+            df_p["Foto_Path"] = ""
         return df_p
     else:
         df_p = pd.DataFrame(columns=["Nombre", "Telefono", "Vehiculo", "Marca", "Modelo", "Placa", "Foto_Path", "Pago_Afiliacion_5USD", "Pago_Mensualidad_5USD", "Estatus", "Saldo_Wallet"])
@@ -308,6 +306,12 @@ elif "Portal de Prestador" in rol:
                 st.error("⚠️ Su cuenta de prestador se encuentra suspendida temporalmente por la administración.")
             else:
                 st.success("Acceso Autorizado")
+                
+                # Mostrar foto del prestador si existe
+                foto_prestador_path = str(p_row.get("Foto_Path", "")).strip()
+                if foto_prestador_path and os.path.exists(foto_prestador_path):
+                    st.image(foto_prestador_path, width=120)
+                
                 saldo_wallet = float(p_row.get("Saldo_Wallet", 0.0) if pd.notna(p_row.get("Saldo_Wallet", 0.0)) else 0.0)
                 
                 st.markdown("### 💼 Billetera Virtual y Membresías")
@@ -542,7 +546,7 @@ elif "Panel Gerencial" in rol:
                         st.write(f"Tipo: {row_a['Tipo_Servicio']} | Origen: {row_a['Origen']} ➡️ Destino: {row_a['Destino']}")
                         st.write(f"Método de Pago: {row_a['Metodo_Pago']} | Ref: `{row_a['Ref_Pago_Movil']}` | Verificado: **{row_a['Pago_Verificado']}**")
                         
-                        lista_conductores = ["Por Asignar"] + list(df_prestadores[df_prestadores["Estatus"] == "Autorizado"]["Nombre"])
+                        lista_conductores = ["Por Asignar"] + list(df_prestadores[df_prestadores["Estatus"].str.lower() == "autorizado"]["Nombre"])
                         cond_actual = row_a['Conductor'] if row_a['Conductor'] in lista_conductores else "Por Asignar"
                         idx_c = lista_conductores.index(cond_actual)
                         
@@ -572,15 +576,23 @@ elif "Panel Gerencial" in rol:
                 telefono_p = st.text_input("Teléfono *")
                 vehiculo_p = st.selectbox("Tipo de Vehículo *", ["Moto", "Carro / Taxi", "Flete", "Delivery"])
                 placa_p = st.text_input("Placa *")
+                foto_prestador_file = st.file_uploader("Foto del Prestador *", type=["jpg", "png"])
                 pago_afi = st.selectbox("Pago Afiliación ($5)", ["Pendiente", "Pagado"])
                 pago_men = st.selectbox("Pago Mensualidad ($5)", ["Pendiente", "Pagado"])
                 saldo_ini = st.number_input("Saldo Inicial Billetera Wallet ($)", value=0.0)
                 
                 if st.form_submit_button("Autorizar Prestador"):
                     if nombre_p and telefono_p and placa_p:
+                        foto_path_p = ""
+                        if foto_prestador_file:
+                            os.makedirs("fotos_prestadores", exist_ok=True)
+                            foto_path_p = os.path.join("fotos_prestadores", f"{nombre_p.replace(' ', '_')}.jpg")
+                            with open(foto_path_p, "wb") as f:
+                                f.write(foto_prestador_file.getbuffer())
+
                         nuevo_p = pd.DataFrame([{
                             "Nombre": str(nombre_p), "Telefono": str(telefono_p), "Vehiculo": str(vehiculo_p),
-                            "Marca": "", "Modelo": "", "Placa": str(placa_p), "Foto_Path": "",
+                            "Marca": "", "Modelo": "", "Placa": str(placa_p), "Foto_Path": str(foto_path_p),
                             "Pago_Afiliacion_5USD": str(pago_afi), "Pago_Mensualidad_5USD": str(pago_men), 
                             "Estatus": "Autorizado", "Saldo_Wallet": str(saldo_ini)
                         }])
@@ -589,7 +601,7 @@ elif "Panel Gerencial" in rol:
                         st.success("¡Prestador autorizado con éxito!")
                         st.rerun()
                     else:
-                        st.error("Completa los campos obligatorios.")
+                        st.error("Completa los campos obligatorios (*).")
             
             st.markdown("---")
             st.markdown("#### Prestadores Registrados (Control y Gestión)")
@@ -600,7 +612,9 @@ elif "Panel Gerencial" in rol:
                     
                     with st.expander(f"{nombre_pres} - Vehículo: {pres['Vehiculo']} [{estatus_p_actual}]"):
                         st.write(f"**Teléfono:** {pres['Telefono']} | **Placa:** {pres['Placa']} | **Wallet:** ${float(pres['Saldo_Wallet'] if pd.notna(pres['Saldo_Wallet']) and str(pres['Saldo_Wallet']).strip() != '' else 0):,.2f}")
-                        
+                        if str(pres['Foto_Path']).strip() and os.path.exists(str(pres['Foto_Path'])):
+                            st.image(str(pres['Foto_Path']), width=100)
+                            
                         col_p1, col_p2 = st.columns(2)
                         with col_p1:
                             nuevo_estatus_p = st.selectbox(
