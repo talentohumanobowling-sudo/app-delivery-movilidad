@@ -49,6 +49,7 @@ st.markdown("""
 DB_FILE = "base_datos_servicios.xlsx"
 DB_PRESTADORES = "prestadores_autorizados.xlsx"
 DB_LIQUIDACIONES = "liquidaciones_prestadores.xlsx"
+DB_ALIADOS = "aliados_comerciales.xlsx"
 CLAVE_ADMIN_SECRETA = "admin123"
 
 @st.cache_data(ttl=3600)
@@ -80,12 +81,13 @@ def cargar_datos():
         if "Liquidado" not in df_temp.columns: df_temp["Liquidado"] = "No"
         if "Valoracion" not in df_temp.columns: df_temp["Valoracion"] = "Sin valorar"
         if "Aliado_Comercial" not in df_temp.columns: df_temp["Aliado_Comercial"] = "Particular"
+        if "Capture_Pago" not in df_temp.columns: df_temp["Capture_Pago"] = ""
         return df_temp
     else:
         df_inicial = pd.DataFrame(columns=[
             "ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Cliente", 
             "Telefono_Cliente", "Origen", "Destino", "Conductor", 
-            "Monto_USD", "Metodo_Pago", "Ref_Pago_Movil", "Pago_Verificado", "Estado", "Liquidado", "Valoracion", "Notas", "Aliado_Comercial"
+            "Monto_USD", "Metodo_Pago", "Ref_Pago_Movil", "Pago_Verificado", "Estado", "Liquidado", "Valoracion", "Notas", "Aliado_Comercial", "Capture_Pago"
         ])
         df_inicial.to_excel(DB_FILE, index=False)
         return df_inicial
@@ -96,6 +98,7 @@ def guardar_datos(df):
     df["Liquidado"] = df["Liquidado"].astype(str)
     df["Valoracion"] = df["Valoracion"].astype(str)
     df["Aliado_Comercial"] = df["Aliado_Comercial"].astype(str)
+    df["Capture_Pago"] = df["Capture_Pago"].astype(str)
     df.to_excel(DB_FILE, index=False)
 
 def cargar_prestadores():
@@ -125,9 +128,26 @@ def cargar_liquidaciones():
 def guardar_liquidaciones(df_l):
     df_l.to_excel(DB_LIQUIDACIONES, index=False)
 
+def cargar_aliados():
+    if os.path.exists(DB_ALIADOS):
+        df_a = pd.DataFrame(columns=["Nombre", "Ubicacion", "Telefono", "Logo_Path"])
+        df_a.to_excel(DB_ALIADOS, index=False)
+        return df_a
+    else:
+        df_a_temp = pd.read_excel(DB_ALIADOS, dtype=str)
+        cols_a = ["Nombre", "Ubicacion", "Telefono", "Logo_Path"]
+        for col in cols_a:
+            if col not in df_a_temp.columns:
+                df_a_temp[col] = ""
+        return df_a_temp
+
+def guardar_aliados(df_a):
+    df_a.to_excel(DB_ALIADOS, index=False)
+
 df = cargar_datos()
 df_prestadores = cargar_prestadores()
 df_liquidaciones = cargar_liquidaciones()
+df_aliados = cargar_aliados()
 
 # ==========================================
 # BARRA LATERAL
@@ -195,7 +215,8 @@ if "Portal de Cliente" in rol:
                         "Tipo_Servicio": tipo_serv, "Cliente": nombre, "Telefono_Cliente": str(telefono).strip(),
                         "Origen": origen, "Destino": destino, "Conductor": "Por Asignar", "Monto_USD": tarifa_sugerida,
                         "Metodo_Pago": metodo_pago, "Ref_Pago_Movil": "", "Pago_Verificado": "No",
-                        "Estado": "Solicitado", "Liquidado": "No", "Valoracion": "Sin valorar", "Notas": notas, "Aliado_Comercial": "Particular"
+                        "Estado": "Solicitado", "Liquidado": "No", "Valoracion": "Sin valorar", "Notas": notas, 
+                        "Aliado_Comercial": "Particular", "Capture_Pago": ""
                     }
                     df = pd.concat([df, pd.DataFrame([nuevo_registro])], ignore_index=True)
                     guardar_datos(df)
@@ -248,16 +269,30 @@ if "Portal de Cliente" in rol:
                                 st.write(f"Cedula/RIF: {DATOS_PAGO_MOVIL['Cedula_RIF']} | Titular: {DATOS_PAGO_MOVIL['Titular']}")
                                 
                                 ref_ingresada = st.text_input("Ingresa los digitos de tu referencia:", value=ref_actual, key=f"ref_{serv['ID_Servicio']}")
-                                if st.button(f"Reportar Referencia #{serv['ID_Servicio']}", key=f"btn_ref_{serv['ID_Servicio']}"):
+                                capture_file = st.file_uploader("Sube el capture o comprobante de pago (JPG/PNG)", type=["jpg", "jpeg", "png"], key=f"cap_{serv['ID_Servicio']}")
+                                
+                                if st.button(f"Reportar Pago y Referencia #{serv['ID_Servicio']}", key=f"btn_ref_{serv['ID_Servicio']}"):
                                     if ref_ingresada:
+                                        path_capture = str(serv.get('Capture_Pago', ''))
+                                        if capture_file is not None:
+                                            os.makedirs("comprobantes_pago", exist_ok=True)
+                                            path_capture = os.path.join("comprobantes_pago", f"serv_{serv['ID_Servicio']}.jpg")
+                                            with open(path_capture, "wb") as f:
+                                                f.write(capture_file.getbuffer())
+                                        
                                         idx = df[df["ID_Servicio"] == serv['ID_Servicio']].index
                                         df.at[idx[0], "Ref_Pago_Movil"] = str(ref_ingresada)
+                                        df.at[idx[0], "Capture_Pago"] = path_capture
                                         guardar_datos(df)
-                                        st.success("¡Referencia reportada al administrador!")
+                                        st.success("¡Referencia y comprobante reportados con éxito al administrador!")
                                         st.rerun()
                                     else:
-                                        st.error("Ingresa la referencia.")
+                                        st.error("Ingresa al menos la referencia de pago.")
                             
+                            c_pago_path = str(serv.get('Capture_Pago', ''))
+                            if c_pago_path and c_pago_path != "nan" and os.path.exists(c_pago_path):
+                                st.image(c_pago_path, width=200, caption="Comprobante de Pago Subido")
+
                             if pago_v.lower() in ["si", "sí"] or str(serv['Metodo_Pago']).strip().lower() != "pago movil":
                                 st.markdown("---")
                                 st.success("Pago Confirmado por la Empresa")
@@ -350,277 +385,3 @@ elif "Portal de Prestador" in rol:
             tab_viajes, tab_finanzas, tab_liquidaciones = st.tabs(["Mis Viajes Activos", "Mis Ganancias", "Liquidaciones"])
             
             with tab_viajes:
-                if len(servicios_cond) > 0:
-                    for idx, serv in servicios_cond.iterrows():
-                        monto_usd = float(serv['Monto_USD'])
-                        ganancia_usd = monto_usd * (st.session_state.porcentaje_prestador / 100)
-                        aliado_info = f" [Aliado: {serv.get('Aliado_Comercial', 'Particular')}]" if serv.get('Aliado_Comercial', 'Particular') != 'Particular' else ""
-                        
-                        with st.expander(f"Servicio #{serv['ID_Servicio']}{aliado_info} - [{serv['Estado']}]"):
-                            st.write(f"Cliente: {serv['Cliente']} | Telefono: {serv['Telefono_Cliente']}")
-                            st.write(f"Origen: {serv['Origen']} ➡️ Destino: {serv['Destino']}")
-                            st.write(f"Tu Ganancia: **${ganancia_usd:.2f} USD**")
-                            
-                            url_waze_c = f"https://waze.com/ul?q={urllib.parse.quote(serv['Origen'])}"
-                            url_gmaps_c = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(serv['Origen'])}"
-                            st.link_button("🗺️ Navegar al Origen con Waze", url_waze_c)
-                            st.link_button("📍 Navegar al Origen con Google Maps", url_gmaps_c)
-                            
-                            estados_posibles = ["Asignado", "En Camino", "Llegue al Sitio", "En Trayecto", "Completado", "Cancelado"]
-                            idx_est = estados_posibles.index(serv['Estado']) if serv['Estado'] in estados_posibles else 0
-                            nuevo_estado = st.selectbox("Actualizar Estatus:", estados_posibles, index=idx_est, key=f"st_{serv['ID_Servicio']}")
-                            
-                            col_b1, col_b2 = st.columns(2)
-                            with col_b1:
-                                if st.button(f"Guardar #{serv['ID_Servicio']}", key=f"btn_{serv['ID_Servicio']}"):
-                                    df.at[idx, "Estado"] = nuevo_estado
-                                    guardar_datos(df)
-                                    st.success("Estatus actualizado")
-                                    st.rerun()
-                            with col_b2:
-                                tlf_c = str(serv['Telefono_Cliente']).strip().replace(" ", "").replace("+", "")
-                                st.link_button("WhatsApp", f"https://wa.me/{tlf_c}")
-                else:
-                    st.info("No tienes servicios asignados.")
-                    
-            with tab_finanzas:
-                completados = servicios_cond[servicios_cond["Estado"] == "Completado"]
-                tot_usd = pd.to_numeric(completados["Monto_USD"], errors='coerce').sum() * (st.session_state.porcentaje_prestador / 100)
-                st.metric("Ganancia Total USD", f"${tot_usd:,.2f}")
-                if len(completados) > 0:
-                    st.dataframe(completados[["ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Monto_USD", "Valoracion"]], use_container_width=True)
-
-            with tab_liquidaciones:
-                liq_prestador = df_liquidaciones[df_liquidaciones["Prestador"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
-                if len(liq_prestador) > 0:
-                    for idx_l, liq in liq_prestador.iterrows():
-                        st.write(f"Liquidacion #{liq['ID_Liquidacion']} - ${float(liq['Monto_USD']):,.2f} USD | Ref: {liq['Referencia_Pago']} | Estatus: {liq['Estatus_Confirmacion']}")
-                        if str(liq['Estatus_Confirmacion']).lower() != "confirmado":
-                            if st.button(f"Confirmar Recepcion #{liq['ID_Liquidacion']}", key=f"conf_liq_{liq['ID_Liquidacion']}"):
-                                df_liquidaciones.at[idx_l, "Estatus_Confirmacion"] = "Confirmado"
-                                guardar_liquidaciones(df_liquidaciones)
-                                st.success("¡Confirmado!")
-                                st.rerun()
-                else:
-                    st.info("Sin liquidaciones registradas.")
-        time.sleep(3)
-        st.rerun()
-
-# ==========================================
-# 3. VISTA ALIADO COMERCIAL (COMERCIO / RESTAURANTE)
-# ==========================================
-elif "Portal de Aliado Comercial" in rol:
-    st.markdown("<h2>🏬 Portal de Aliados Comerciales - LLEGANDO Delivery</h2>", unsafe_allow_html=True)
-    st.markdown("---")
-    
-    nombre_aliado = st.text_input("Nombre de su Negocio / Comercio Aliado:")
-    
-    if nombre_aliado:
-        st.success(f"✅ Bienvenido, comercio: **{nombre_aliado}**")
-        
-        tab_pedido_aliado, tab_historial_aliado = st.tabs(["📦 Solicitar Delivery Inmediato", "📋 Mis Deliveries Registrados"])
-        
-        with tab_pedido_aliado:
-            with st.form("form_aliado_comercial"):
-                st.markdown("#### Datos de la Orden y Entrega")
-                c_al1, c_al2 = st.columns(2)
-                with c_al1:
-                    cliente_final = st.text_input("Nombre del Cliente Final *")
-                    telefono_final = st.text_input("Teléfono del Cliente Final *")
-                    monto_pedido = st.number_input("Monto del Delivery USD ($)", min_value=1.0, value=3.0, step=0.5)
-                with c_al2:
-                    direccion_origen_comercio = st.text_input("Dirección de su Local / Comercio *")
-                    direccion_destino_cliente = st.text_input("Dirección de Entrega (Cliente) *")
-                    metodo_pago_comercio = st.selectbox("Método de Pago del Pedido", ["Pago Móvil", "Efectivo", "Zelle", "Pagado al Comercio"])
-                
-                detalles_orden = st.text_area("Descripción del pedido o notas especiales (Ej. Comida caliente, frágil, etc.)")
-                
-                if st.form_submit_button("🚀 Solicitar Motorizado / Delivery"):
-                    if cliente_final and telefono_final and direccion_destino_cliente:
-                        nuevo_id = 1001 if len(df) == 0 else int(pd.to_numeric(df["ID_Servicio"], errors='coerce').max()) + 1
-                        nuevo_registro_aliado = {
-                            "ID_Servicio": nuevo_id,
-                            "Fecha_Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            "Tipo_Servicio": "Delivery",
-                            "Cliente": cliente_final,
-                            "Telefono_Cliente": str(telefono_final).strip(),
-                            "Origen": direccion_origen_comercio if direccion_origen_comercio else f"Local de {nombre_aliado}",
-                            "Destino": direccion_destino_cliente,
-                            "Conductor": "Por Asignar",
-                            "Monto_USD": monto_pedido,
-                            "Metodo_Pago": metodo_pago_comercio,
-                            "Ref_Pago_Movil": "",
-                            "Pago_Verificado": "Sí",
-                            "Estado": "Solicitado",
-                            "Liquidado": "No",
-                            "Valoracion": "Sin valorar",
-                            "Notas": detalles_orden,
-                            "Aliado_Comercial": nombre_aliado
-                        }
-                        df = pd.concat([df, pd.DataFrame([nuevo_registro_aliado])], ignore_index=True)
-                        guardar_datos(df)
-                        st.success(f"¡Delivery solicitado con éxito! ID de orden asignado: **#{nuevo_id}**")
-                    else:
-                        st.error("Por favor completa los campos obligatorios (*).")
-                        
-        with tab_historial_aliado:
-            st.subheader(f"Historial de Deliveries solicitados por {nombre_aliado}")
-            mis_pedidos = df[df["Aliado_Comercial"].astype(str).str.strip().str.lower() == nombre_aliado.strip().lower()]
-            
-            if len(mis_pedidos) > 0:
-                for idx_p, ped in mis_pedidos.iterrows():
-                    st.markdown(f"""
-                        <div class="card-aliado">
-                            <b>Orden #{ped['ID_Servicio']}</b> | Cliente: {ped['Cliente']} | Destino: {ped['Destino']} <br>
-                            <b>Estatus:</b> <code>{ped['Estado']}</code> | <b>Motorizado Asignado:</b> {ped['Conductor']} | <b>Tarifa:</b> ${float(ped['Monto_USD']):.2f} USD
-                        </div>
-                    """, unsafe_allow_html=True)
-            else:
-                st.info("No hay órdenes de delivery registradas con este nombre de comercio.")
-    else:
-        st.info("💡 Ingresa el nombre de tu comercio o restaurante para acceder al panel de pedidos.")
-
-# ==========================================
-# 4. VISTA ADMINISTRADOR
-# ==========================================
-elif "Panel Gerencial" in rol:
-    st.markdown("<h2>Panel Gerencial LLEGANDO</h2>", unsafe_allow_html=True)
-    st.markdown("---")
-    
-    clave_ingresada = st.text_input("Contrasena de Administrador (admin123):", type="password")
-    if clave_ingresada == CLAVE_ADMIN_SECRETA:
-        st.success("Acceso Gerencial Autorizado")
-        st.markdown("---")
-        
-        pendientes_alarma = df[df["Estado"].isin(["Solicitado", "Pendiente"])]
-        if len(pendientes_alarma) > 0:
-            st.markdown(f'''
-                <div class="cintillo-alerta">
-                    <h3 style="color: #ffffff; margin: 0 0 5px 0;">¡Nuevos Pedidos Entrantes!</h3>
-                    <p style="margin: 0;">Hay <b>{len(pendientes_alarma)}</b> solicitud(es) esperando asignacion.</p>
-                </div>
-                <audio autoplay style="display:none;"><source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"></audio>
-            ''', unsafe_allow_html=True)
-
-        with st.expander("Configuracion General"):
-            st.session_state.tasa_bcv = st.number_input("Tasa BCV", value=float(st.session_state.tasa_bcv))
-            st.session_state.porcentaje_prestador = st.number_input("% Ganancia Prestador", value=float(st.session_state.porcentaje_prestador))
-
-        opcion_admin = st.selectbox("Seccion:", ["Autorizar Prestadores", "Asignar y Confirmar Pagos", "Liquidaciones a Prestadores", "Control General", "Finanzas", "Excel"])
-        
-        if opcion_admin == "Autorizar Prestadores":
-            with st.form("nuevo_p"):
-                nombre_p = st.text_input("Nombre *")
-                telefono_p = st.text_input("Telefono *")
-                vehiculo_p = st.selectbox("Vehiculo *", ["Moto", "Carro / Taxi", "Flete", "Delivery"])
-                placa_p = st.text_input("Placa *")
-                pago_afi = st.selectbox("Afiliacion ($5)", ["Pendiente", "Pagado"])
-                pago_men = st.selectbox("Mensualidad ($5)", ["Pendiente", "Pagado"])
-                saldo_ini = st.number_input("Saldo Inicial Billetera Wallet ($)", value=0.0)
-                foto_file = st.file_uploader("Foto", type=["jpg", "png"])
-                
-                if st.form_submit_button("Registrar Prestador"):
-                    if nombre_p and telefono_p and placa_p:
-                        path_g = ""
-                        if foto_file:
-                            os.makedirs("fotos_prestadores", exist_ok=True)
-                            path_g = os.path.join("fotos_prestadores", f"{nombre_p.replace(' ', '_')}.jpg")
-                            with open(path_g, "wb") as f: f.write(foto_file.getbuffer())
-                        
-                        nuevo_p = pd.DataFrame([{
-                            "Nombre": nombre_p, "Telefono": telefono_p, "Vehiculo": vehiculo_p,
-                            "Marca": "", "Modelo": "", "Placa": placa_p, "Foto_Path": path_g,
-                            "Pago_Afiliacion_5USD": pago_afi, "Pago_Mensualidad_5USD": pago_men, 
-                            "Estatus": "Autorizado", "Saldo_Wallet": str(saldo_ini)
-                        }])
-                        df_prestadores = pd.concat([df_prestadores, nuevo_p], ignore_index=True)
-                        guardar_prestadores(df_prestadores)
-                        st.success("¡Prestador registrado con saldo en wallet!")
-                        st.rerun()
-                    else:
-                        st.error("Campos requeridos vacios.")
-            
-            if len(df_prestadores) > 0:
-                st.markdown("#### Prestadores Registrados y Saldo en Wallet:")
-                for idx_p, p_item in df_prestadores.iterrows():
-                    with st.expander(f"{p_item['Nombre']} [Wallet: ${p_item.get('Saldo_Wallet', '0.0')}]"):
-                        nuevo_saldo_edit = st.number_input(f"Actualizar Saldo Wallet para {p_item['Nombre']}", value=float(p_item.get('Saldo_Wallet', 0.0) if pd.notna(p_item.get('Saldo_Wallet', 0.0)) else 0.0), key=f"edit_wallet_{idx_p}")
-                        if st.button("Guardar Nuevo Saldo", key=f"btn_w_{idx_p}"):
-                            df_prestadores.at[idx_p, "Saldo_Wallet"] = str(nuevo_saldo_edit)
-                            guardar_prestadores(df_prestadores)
-                            st.success("¡Saldo de billetera actualizado!")
-                            st.rerun()
-                        if st.button("Eliminar Prestador", key=f"del_{idx_p}"):
-                            df_prestadores = df_prestadores.drop(idx_p).reset_index(drop=True)
-                            guardar_prestadores(df_prestadores)
-                            st.rerun()
-
-        elif opcion_admin == "Asignar y Confirmar Pagos":
-            pendientes = df[df["Estado"].isin(["Solicitado", "Pendiente", "Asignado"])]
-            if len(pendientes) > 0:
-                p_aut = df_prestadores[df_prestadores["Estatus"] == "Autorizado"]["Nombre"].tolist()
-                for idx, serv in pendientes.iterrows():
-                    aliado_txt = f" [Aliado: {serv.get('Aliado_Comercial', 'Particular')}]" if serv.get('Aliado_Comercial', 'Particular') != 'Particular' else ""
-                    with st.expander(f"#{serv['ID_Servicio']}{aliado_txt} - {serv['Cliente']} ({serv['Tipo_Servicio']})"):
-                        st.write(f"Ref: {serv['Ref_Pago_Movil']} | Origen: {serv['Origen']} ➡️ Destino: {serv['Destino']}")
-                        c_asig = st.selectbox("Conductor", p_aut, key=f"c_{serv['ID_Servicio']}")
-                        tarifa = st.number_input("Tarifa USD", value=float(serv['Monto_USD']), key=f"t_{serv['ID_Servicio']}")
-                        v_pago = st.selectbox("Pago verificado", ["No", "Sí"], index=1 if str(serv.get('Pago_Verificado'))=="Sí" else 0, key=f"vp_{serv['ID_Servicio']}")
-                        
-                        if st.button(f"Guardar #{serv['ID_Servicio']}", key=f"sb_{serv['ID_Servicio']}"):
-                            df.at[idx, "Conductor"] = c_asig
-                            df.at[idx, "Monto_USD"] = tarifa
-                            df.at[idx, "Pago_Verificado"] = v_pago
-                            df.at[idx, "Estado"] = "Asignado"
-                            guardar_datos(df)
-                            st.success("Actualizado")
-                            st.rerun()
-            else:
-                st.info("No hay solicitudes pendientes.")
-
-        elif opcion_admin == "Liquidaciones a Prestadores":
-            p_act = df_prestadores[df_prestadores["Estatus"] == "Autorizado"]["Nombre"].tolist()
-            if p_act:
-                p_sel = st.selectbox("Prestador:", p_act)
-                pend_liq = df[(df["Conductor"].astype(str).str.strip().str.lower() == p_sel.strip().lower()) & (df["Estado"] == "Completado") & (df["Liquidado"] != "Sí")]
-                tot_liq = pd.to_numeric(pend_liq["Monto_USD"], errors='coerce').sum() * (st.session_state.porcentaje_prestador / 100)
-                
-                st.metric("Total a Liquidar USD", f"${tot_liq:,.2f}")
-                if len(pend_liq) > 0:
-                    with st.form("form_liq"):
-                        m_liq = st.number_input("Monto USD", value=float(tot_liq))
-                        ref_l = st.text_input("Referencia de Pago *")
-                        if st.form_submit_button("Registrar Liquidacion"):
-                            if ref_l:
-                                n_liq_id = 1 if len(df_liquidaciones) == 0 else int(pd.to_numeric(df_liquidaciones["ID_Liquidacion"], errors='coerce').max()) + 1
-                                n_l = pd.DataFrame([{
-                                    "ID_Liquidacion": n_liq_id, "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                    "Prestador": p_sel, "Monto_USD": m_liq, "Referencia_Pago": ref_l, "Estatus_Confirmacion": "Pendiente"
-                                }])
-                                df_liquidaciones = pd.concat([df_liquidaciones, n_l], ignore_index=True)
-                                guardar_liquidaciones(df_liquidaciones)
-                                for i_s in pend_liq.index: df.at[i_s, "Liquidado"] = "Sí"
-                                guardar_datos(df)
-                                st.success("Liquidacion registrada")
-                                st.rerun()
-            else:
-                st.warning("No hay prestadores autorizados.")
-
-        elif opcion_admin == "Control General":
-            st.dataframe(df.astype(str), use_container_width=True)
-
-        elif opcion_admin == "Finanzas":
-            comp = df[df["Estado"] == "Completado"]
-            tot = pd.to_numeric(comp["Monto_USD"], errors='coerce').sum()
-            st.metric("Total Recaudado USD", f"${tot:,.2f}")
-
-        elif opcion_admin == "Excel":
-            if os.path.exists(DB_FILE):
-                with open(DB_FILE, "rb") as f: st.download_button("Descargar Servicios", f, file_name="servicios.xlsx")
-                
-        time.sleep(3)
-        st.rerun()
-    elif clave_ingresada != "":
-        st.error("Contraseña incorrecta.")
-    else:
-        st.info("Ingresa la contraseña `admin123`.")
