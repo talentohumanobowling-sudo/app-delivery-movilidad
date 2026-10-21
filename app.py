@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import os
 import requests
@@ -176,7 +176,6 @@ if "Cliente" in rol:
             
             notas = st.text_area("Detalles adicionales (Opcional)")
             
-            # Tarifa sugerida automática según tipo de servicio
             tarifas_base = {"Delivery": 3.0, "Mototaxi": 2.5, "Taxi / Carro": 5.0, "Flete": 15.0}
             tarifa_sugerida = tarifas_base.get(tipo_serv, 3.0)
             st.info(f"Tarifa estimada sugerida para {tipo_serv}: **${tarifa_sugerida:.2f} USD**")
@@ -271,7 +270,6 @@ if "Cliente" in rol:
                                         st.markdown(f"Vehiculo: {cond_row['Vehiculo']} ({cond_row.get('Marca', '')} {cond_row.get('Modelo', '')})")
                                         st.markdown(f"Placa: `{cond_row.get('Placa', '')}`")
                                     
-                                    # Botones GPS Mapas integrados
                                     url_waze = f"https://waze.com/ul?q={urllib.parse.quote(serv['Origen'])}"
                                     url_gmaps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(serv['Origen'])}"
                                     st.link_button("🗺️ Abrir Ruta en Waze", url_waze)
@@ -320,10 +318,10 @@ elif "Prestador" in rol:
             st.success("Acceso Autorizado")
             p_row = prestador_valido.iloc[0]
             
-            # Billetera Virtual / Saldo Prepago y Reputación
-            saldo_wallet = float(p_row.get("Saldo_Wallet", 0.0))
-            servicios_prestador_hist = df[(df["Conductor"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()) & (df["Estado"] == "Completado")]
+            # --- BILLETERA VIRTUAL (WALLET) VISIBLE AQUÍ ---
+            saldo_wallet = float(p_row.get("Saldo_Wallet", 0.0) if pd.notna(p_row.get("Saldo_Wallet", 0.0)) else 0.0)
             
+            st.markdown("### 💼 Billetera Virtual y Membresías")
             col_st1, col_st2, col_st3 = st.columns(3)
             col_st1.metric("Afiliacion ($5)", str(p_row.get("Pago_Afiliacion_5USD", "Pendiente")))
             col_st2.metric("Mensualidad ($5)", str(p_row.get("Pago_Mensualidad_5USD", "Pendiente")))
@@ -355,7 +353,6 @@ elif "Prestador" in rol:
                             st.write(f"Origen: {serv['Origen']} ➡️ Destino: {serv['Destino']}")
                             st.write(f"Tu Ganancia: **${ganancia_usd:.2f} USD**")
                             
-                            # Botones GPS de navegación directa para el conductor
                             url_waze_c = f"https://waze.com/ul?q={urllib.parse.quote(serv['Origen'])}"
                             url_gmaps_c = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(serv['Origen'])}"
                             st.link_button("🗺️ Navegar al Origen con Waze", url_waze_c)
@@ -437,7 +434,7 @@ elif "Admin" in rol or "Gerencial" in rol:
                 placa_p = st.text_input("Placa *")
                 pago_afi = st.selectbox("Afiliacion ($5)", ["Pendiente", "Pagado"])
                 pago_men = st.selectbox("Mensualidad ($5)", ["Pendiente", "Pagado"])
-                saldo_ini = st.number_input("Saldo Billetera Wallet ($)", value=0.0)
+                saldo_ini = st.number_input("Saldo Inicial Billetera Wallet ($)", value=0.0)
                 foto_file = st.file_uploader("Foto", type=["jpg", "png"])
                 
                 if st.form_submit_button("Registrar Prestador"):
@@ -456,14 +453,21 @@ elif "Admin" in rol or "Gerencial" in rol:
                         }])
                         df_prestadores = pd.concat([df_prestadores, nuevo_p], ignore_index=True)
                         guardar_prestadores(df_prestadores)
-                        st.success("¡Prestador registrado!")
+                        st.success("¡Prestador registrado con saldo en wallet!")
                         st.rerun()
                     else:
                         st.error("Campos requeridos vacios.")
             
             if len(df_prestadores) > 0:
+                st.markdown("#### Prestadores Registrados y Saldo en Wallet:")
                 for idx_p, p_item in df_prestadores.iterrows():
-                    with st.expander(f"{p_item['Nombre']} [{p_item.get('Estatus', 'Autorizado')}] - Wallet: ${p_item.get('Saldo_Wallet', '0')}"):
+                    with st.expander(f"{p_item['Nombre']} [Wallet: ${p_item.get('Saldo_Wallet', '0.0')}]"):
+                        nuevo_saldo_edit = st.number_input(f"Actualizar Saldo Wallet para {p_item['Nombre']}", value=float(p_item.get('Saldo_Wallet', 0.0) if pd.notna(p_item.get('Saldo_Wallet', 0.0)) else 0.0), key=f"edit_wallet_{idx_p}")
+                        if st.button("Guardar Nuevo Saldo", key=f"btn_w_{idx_p}"):
+                            df_prestadores.at[idx_p, "Saldo_Wallet"] = str(nuevo_saldo_edit)
+                            guardar_prestadores(df_prestadores)
+                            st.success("¡Saldo de billetera actualizado!")
+                            st.rerun()
                         if st.button("Eliminar Prestador", key=f"del_{idx_p}"):
                             df_prestadores = df_prestadores.drop(idx_p).reset_index(drop=True)
                             guardar_prestadores(df_prestadores)
@@ -536,4 +540,4 @@ elif "Admin" in rol or "Gerencial" in rol:
     elif clave_ingresada != "":
         st.error("Contraseña incorrecta.")
     else:
-        st.info("Ingresa la contraseña `admin123`.")
+        st.info("Ingresa la contraseña `admin123`.")        
