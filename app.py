@@ -41,6 +41,7 @@ st.markdown("""
 DB_FILE = "base_datos_servicios.xlsx"
 DB_PRESTADORES = "prestadores_autorizados.xlsx"
 DB_LIQUIDACIONES = "liquidaciones_prestadores.xlsx"
+DB_ALIADOS = "aliados_comerciales.xlsx"
 CLAVE_ADMIN_SECRETA = "admin123"
 
 @st.cache_data(ttl=3600)
@@ -128,9 +129,21 @@ def cargar_liquidaciones():
 def guardar_liquidaciones(df_l):
     df_l.to_excel(DB_LIQUIDACIONES, index=False)
 
+def cargar_aliados():
+    if os.path.exists(DB_ALIADOS):
+        return pd.read_excel(DB_ALIADOS, dtype=str).fillna("")
+    else:
+        df_a = pd.DataFrame(columns=["Numero_Suscripcion", "Nombre", "Ubicacion", "Telefono", "Logo_Path"])
+        df_a.to_excel(DB_ALIADOS, index=False)
+        return df_a
+
+def guardar_aliados(df_a):
+    df_a.to_excel(DB_ALIADOS, index=False)
+
 df = cargar_datos()
 df_prestadores = cargar_prestadores()
 df_liquidaciones = cargar_liquidaciones()
+df_aliados = cargar_aliados()
 
 if os.path.exists("logo.jpg"):
     st.sidebar.image("logo.jpg", use_container_width=True)
@@ -328,47 +341,81 @@ elif "Portal de Prestador" in rol:
                     st.info("Sin liquidaciones registradas.")
 
 # ==========================================
-# 3. VISTA ALIADO COMERCIAL
+# 3. VISTA ALIADO COMERCIAL (ACCESO CON NÚMERO DE SUSCRIPCIÓN)
 # ==========================================
 elif "Portal de Aliado Comercial" in rol:
-    st.markdown("<h2>🏬 Portal de Aliados Comerciales</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>🏬 Portal de Aliados Comerciales - LLEGANDO</h2>", unsafe_allow_html=True)
     st.markdown("---")
-    nombre_aliado = st.text_input("Nombre de su Comercio Aliado:")
-    if nombre_aliado:
-        st.success(f"Bienvenido, comercio: **{nombre_aliado}**")
-        with st.form("form_aliado"):
-            c_al1, c_al2 = st.columns(2)
-            with c_al1:
-                cliente_final = st.text_input("Cliente Final *")
-                telefono_final = st.text_input("Teléfono Cliente Final *")
-                monto_pedido = st.number_input("Monto Delivery USD ($)", min_value=1.0, value=3.0)
-            with c_al2:
-                origen_comercio = st.text_input("Dirección de su Local *")
-                destino_cliente = st.text_input("Dirección de Entrega *")
-                metodo_pago_comercio = st.selectbox("Método de Pago", ["Pago Móvil", "Efectivo", "Zelle"])
+    
+    num_suscripcion_ingresado = st.text_input("Ingrese su Número de Suscripción de Aliado:").strip()
+    
+    if num_suscripcion_ingresado:
+        aliado_valido = df_aliados[df_aliados["Numero_Suscripcion"].astype(str).str.strip() == num_suscripcion_ingresado]
+        
+        if len(aliado_valido) > 0:
+            info_aliado = aliado_valido.iloc[0]
+            nombre_aliado = info_aliado["Nombre"]
             
-            if st.form_submit_button("🚀 Solicitar Delivery"):
-                if cliente_final and telefono_final and destino_cliente:
-                    nuevo_id = 1001 if len(df) == 0 else int(df["ID_Servicio"].max()) + 1
-                    nuevo_registro_aliado = {
-                        "ID_Servicio": nuevo_id, "Fecha_Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "Tipo_Servicio": "Delivery", "Cliente": str(cliente_final), "Telefono_Cliente": str(telefono_final).strip(),
-                        "Origen": str(origen_comercio) if origen_comercio else f"Local de {nombre_aliado}",
-                        "Destino": str(destino_cliente), "Conductor": "Por Asignar", "Monto_USD": float(monto_pedido),
-                        "Metodo_Pago": str(metodo_pago_comercio), "Ref_Pago_Movil": "", "Pago_Verificado": "Sí",
-                        "Estado": "Solicitado", "Liquidado": "No", "Valoracion": "Sin valorar", "Notas": "",
-                        "Aliado_Comercial": str(nombre_aliado)
-                    }
-                    df = pd.concat([df, pd.DataFrame([nuevo_registro_aliado])], ignore_index=True)
-                    guardar_datos(df)
-                    reproducir_alerta_sonora()
-                    st.toast(f"¡Delivery #{nuevo_id} solicitado con éxito!", icon="🚀")
-                    st.success(f"¡Delivery solicitado! ID #{nuevo_id}")
+            # Mostrar logo del aliado si existe guardado
+            logo_aliado_path = str(info_aliado.get("Logo_Path", "")).strip()
+            if logo_aliado_path and os.path.exists(logo_aliado_path):
+                st.image(logo_aliado_path, width=150)
+                
+            st.success(f"✅ Bienvenido, comercio aliado: **{nombre_aliado}** (Ubicación: {info_aliado['Ubicacion']})")
+            
+            tab_p_aliado, tab_h_aliado = st.tabs(["📦 Solicitar Delivery Inmediato", "📋 Mis Deliveries Registrados"])
+            
+            with tab_p_aliado:
+                with st.form("form_aliado_portal"):
+                    c_al1, c_al2 = st.columns(2)
+                    with c_al1:
+                        cliente_final = st.text_input("Cliente Final *")
+                        telefono_final = st.text_input("Teléfono Cliente Final *")
+                        monto_pedido = st.number_input("Monto Delivery USD ($)", min_value=1.0, value=3.0)
+                    with c_al2:
+                        origen_comercio = st.text_input("Dirección de su Local *", value=str(info_aliado['Ubicacion']))
+                        destino_cliente = st.text_input("Dirección de Entrega *")
+                        metodo_pago_comercio = st.selectbox("Método de Pago", ["Pago Móvil", "Efectivo", "Zelle", "Pagado al Comercio"])
+                    
+                    if st.form_submit_button("🚀 Solicitar Delivery"):
+                        if cliente_final and telefono_final and destino_cliente:
+                            nuevo_id = 1001 if len(df) == 0 else int(df["ID_Servicio"].max()) + 1
+                            nuevo_registro_aliado = {
+                                "ID_Servicio": nuevo_id, "Fecha_Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "Tipo_Servicio": "Delivery", "Cliente": str(cliente_final), "Telefono_Cliente": str(telefono_final).strip(),
+                                "Origen": str(origen_comercio), "Destino": str(destino_cliente), "Conductor": "Por Asignar", 
+                                "Monto_USD": float(monto_pedido), "Metodo_Pago": str(metodo_pago_comercio), "Ref_Pago_Movil": "", 
+                                "Pago_Verificado": "Sí", "Estado": "Solicitado", "Liquidado": "No", "Valoracion": "Sin valorar", "Notas": "",
+                                "Aliado_Comercial": str(nombre_aliado)
+                            }
+                            df = pd.concat([df, pd.DataFrame([nuevo_registro_aliado])], ignore_index=True)
+                            guardar_datos(df)
+                            reproducir_alerta_sonora()
+                            st.toast(f"¡Delivery #{nuevo_id} solicitado con éxito!", icon="🚀")
+                            st.success(f"¡Delivery solicitado! ID #{nuevo_id}")
+                        else:
+                            st.error("Completa los campos obligatorios.")
+                            
+            with tab_h_aliado:
+                st.subheader(f"Deliveries de {nombre_aliado}")
+                mis_pedidos = df[df["Aliado_Comercial"].astype(str).str.strip().str.lower() == nombre_aliado.lower()]
+                if len(mis_pedidos) > 0:
+                    for idx_p, ped in mis_pedidos.iterrows():
+                        st.markdown(f"""
+                            <div class="card-aliado">
+                                <b>Orden #{ped['ID_Servicio']}</b> | Cliente: {ped['Cliente']} | Destino: {ped['Destino']} <br>
+                                <b>Estatus:</b> <code>{ped['Estado']}</code> | <b>Motorizado:</b> {ped['Conductor']} | <b>Tarifa:</b> ${float(ped['Monto_USD']):.2f} USD
+                            </div>
+                        """, unsafe_allow_html=True)
                 else:
-                    st.error("Completa los campos obligatorios.")
+                    st.info("No hay órdenes registradas para este comercio.")
+        else:
+            st.warning("⚠️ Número de suscripción de aliado no válido o no registrado.")
+    else:
+        st.info("💡 Ingrese su número de suscripción otorgado por la administración para iniciar sesión.")
 
 # ==========================================
-# 4. VISTA ADMINISTRADOR (CON TODAS LAS FUNCIONES RESTAURADAS)
+# 4. VISTA ADMINISTRADOR (CON GESTIÓN DE ALIADOS)
 # ==========================================
 elif "Panel Gerencial" in rol:
     st.markdown("<h2>Panel Gerencial LLEGANDO</h2>", unsafe_allow_html=True)
@@ -384,6 +431,7 @@ elif "Panel Gerencial" in rol:
             st.session_state.porcentaje_prestador = st.number_input("% Ganancia Prestador", value=float(st.session_state.porcentaje_prestador))
 
         opcion_admin = st.selectbox("Seleccione Sección Gerencial:", [
+            "Gestionar Aliados Comerciales",
             "Asignar y Confirmar Pagos", 
             "Autorizar Prestadores", 
             "Liquidaciones a Prestadores", 
@@ -393,7 +441,49 @@ elif "Panel Gerencial" in rol:
         ])
         st.markdown("---")
         
-        if opcion_admin == "Asignar y Confirmar Pagos":
+        if opcion_admin == "Gestionar Aliados Comerciales":
+            st.subheader("🏬 Registro y Control de Aliados Comerciales")
+            
+            with st.form("form_nuevo_aliado"):
+                nombre_aliado_admin = st.text_input("Nombre del Comercio / Aliado *")
+                ubicacion_aliado = st.text_input("Ubicación / Dirección del Local *")
+                telefono_aliado = st.text_input("Teléfono de Contacto *")
+                logo_aliado_file = st.file_uploader("Logo del Aliado (Opcional)", type=["jpg", "png"])
+                
+                if st.form_submit_button("Registrar y Generar Número de Suscripción"):
+                    if nombre_aliado_admin and ubicacion_aliado and telefono_aliado:
+                        # Generar número de suscripción único automático (Ej: ALIADO-101)
+                        num_suscripcion = f"ALIADO-{101 if len(df_aliados) == 0 else int(df_aliados.index.max()) + 102}"
+                        
+                        logo_path_g = ""
+                        if logo_aliado_file:
+                            os.makedirs("logos_aliados", exist_ok=True)
+                            logo_path_g = os.path.join("logos_aliados", f"{nombre_aliado_admin.replace(' ', '_')}.jpg")
+                            with open(logo_path_g, "wb") as f:
+                                f.write(logo_aliado_file.getbuffer())
+                                
+                        nuevo_aliado_df = pd.DataFrame([{
+                            "Numero_Suscripcion": str(num_suscripcion),
+                            "Nombre": str(nombre_aliado_admin),
+                            "Ubicacion": str(ubicacion_aliado),
+                            "Telefono": str(telefono_aliado),
+                            "Logo_Path": str(logo_path_g)
+                        }])
+                        
+                        df_aliados = pd.concat([df_aliados, nuevo_aliado_df], ignore_index=True)
+                        guardar_aliados(df_aliados)
+                        st.success(f"¡Aliado registrado con éxito! El número de suscripción generado es: **{num_suscripcion}**")
+                        st.rerun()
+                    else:
+                        st.error("Por favor completa los campos obligatorios (*).")
+            
+            if len(df_aliados) > 0:
+                st.markdown("#### Aliados Comerciales Registrados:")
+                st.dataframe(df_aliados, use_container_width=True)
+            else:
+                st.info("No hay aliados comerciales registrados todavía.")
+
+        elif opcion_admin == "Asignar y Confirmar Pagos":
             st.subheader("Gestión de Solicitudes, Pagos y Asignación de Conductores")
             if len(df) > 0:
                 for idx_a, row_a in df.iterrows():
