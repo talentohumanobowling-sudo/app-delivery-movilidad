@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import pandas as pd
 import os
 import requests
@@ -241,19 +241,19 @@ if "Portal de Cliente" in rol:
                                 st.write(f"Cedula/RIF: {DATOS_PAGO_MOVIL['Cedula_RIF']} | Titular: {DATOS_PAGO_MOVIL['Titular']}")
                                 
                                 ref_ingresada = st.text_input("Ingresa los digitos de tu referencia:", value=ref_actual, key=f"ref_{serv['ID_Servicio']}")
-                                capture_file = st.file_uploader("Sube el capture de tu pago (Imagen JPG/PNG):", type=["jpg", "png", "jpeg"], key=f"cap_{serv['ID_Servicio']}")
+                                capture_file = st.file_uploader("Sube el capture o comprobante de pago (JPG/PNG)", type=["jpg", "png", "jpeg"], key=f"cap_{serv['ID_Servicio']}")
                                 
                                 if st.button(f"Reportar Pago y Referencia #{serv['ID_Servicio']}", key=f"btn_ref_{serv['ID_Servicio']}"):
                                     if ref_ingresada:
-                                        idx = df[df["ID_Servicio"] == serv['ID_Servicio']].index
-                                        df.at[idx[0], "Ref_Pago_Movil"] = str(ref_ingresada)
+                                        filtro = df["ID_Servicio"] == serv['ID_Servicio']
+                                        df.loc[filtro, "Ref_Pago_Movil"] = str(ref_ingresada)
                                         
                                         if capture_file is not None:
                                             os.makedirs("captures_pagos", exist_ok=True)
                                             path_capture = os.path.join("captures_pagos", f"servicio_{serv['ID_Servicio']}.jpg")
                                             with open(path_capture, "wb") as f:
                                                 f.write(capture_file.getbuffer())
-                                            df.at[idx[0], "Capture_Pago"] = path_capture
+                                            df.loc[filtro, "Capture_Pago"] = path_capture
                                             
                                         guardar_datos(df)
                                         st.success("¡Comprobante y referencia reportados con éxito!")
@@ -295,8 +295,8 @@ if "Portal de Cliente" in rol:
                                     idx_val = escalas.index(val_actual) if val_actual in escalas else 0
                                     nueva_valoracion = st.selectbox("Valora tu servicio:", escalas, index=idx_val, key=f"val_{serv['ID_Servicio']}")
                                     if st.button(f"Guardar Valoracion #{serv['ID_Servicio']}", key=f"btn_val_{serv['ID_Servicio']}"):
-                                        idx = df[df["ID_Servicio"] == serv['ID_Servicio']].index
-                                        df.at[idx[0], "Valoracion"] = nueva_valoracion
+                                        filtro = df["ID_Servicio"] == serv['ID_Servicio']
+                                        df.loc[filtro, "Valoracion"] = nueva_valoracion
                                         guardar_datos(df)
                                         st.success("¡Gracias por valorar!")
                                         st.rerun()
@@ -366,7 +366,8 @@ elif "Portal de Prestador" in rol:
                             col_b1, col_b2 = st.columns(2)
                             with col_b1:
                                 if st.button(f"Guardar #{serv['ID_Servicio']}", key=f"btn_{serv['ID_Servicio']}"):
-                                    df.at[idx, "Estado"] = nuevo_estado
+                                    filtro_c = df["ID_Servicio"] == serv['ID_Servicio']
+                                    df.loc[filtro_c, "Estado"] = nuevo_estado
                                     guardar_datos(df)
                                     st.success("Estatus actualizado")
                                     st.rerun()
@@ -525,14 +526,12 @@ elif "Panel Gerencial" in rol:
                         st.write(f"Origen: {row_a['Origen']} ➡️ Destino: {row_a['Destino']}")
                         st.write(f"Método de Pago: {row_a['Metodo_Pago']} | Ref: `{row_a['Ref_Pago_Movil']}` | Verificado: **{row_a['Pago_Verificado']}**")
                         
-                        # Mostrar capture si existe
                         path_c = str(row_a.get("Capture_Pago", ""))
                         if path_c and os.path.exists(path_c):
                             st.image(path_c, caption=f"Capture de pago - Servicio #{row_a['ID_Servicio']}", width=300)
                         else:
                             st.info("El cliente no ha subido capture o no es requerido.")
                         
-                        # Opciones de administración
                         lista_conductores = ["Por Asignar"] + list(df_prestadores[df_prestadores["Estatus"] == "Autorizado"]["Nombre"])
                         cond_actual = row_a['Conductor'] if row_a['Conductor'] in lista_conductores else "Por Asignar"
                         idx_c = lista_conductores.index(cond_actual)
@@ -542,9 +541,10 @@ elif "Panel Gerencial" in rol:
                         nuevo_est = st.selectbox("Estado del Servicio:", ["Solicitado", "Asignado", "En Camino", "Llegue al Sitio", "En Trayecto", "Completado", "Cancelado"], index=["Solicitado", "Asignado", "En Camino", "Llegue al Sitio", "En Trayecto", "Completado", "Cancelado"].index(row_a['Estado']) if row_a['Estado'] in ["Solicitado", "Asignado", "En Camino", "Llegue al Sitio", "En Trayecto", "Completado", "Cancelado"] else 0, key=f"est_admin_{row_a['ID_Servicio']}")
                         
                         if st.button(f"Guardar Cambios Servicio #{row_a['ID_Servicio']}", key=f"save_admin_{row_a['ID_Servicio']}"):
-                            df.at[idx_a, "Conductor"] = nuevo_cond
-                            df.at[idx_a, "Pago_Verificado"] = nuevo_verif
-                            df.at[idx_a, "Estado"] = nuevo_est
+                            filtro_adm = df["ID_Servicio"] == row_a['ID_Servicio']
+                            df.loc[filtro_adm, "Conductor"] = nuevo_cond
+                            df.loc[filtro_adm, "Pago_Verificado"] = nuevo_verif
+                            df.loc[filtro_adm, "Estado"] = nuevo_est
                             guardar_datos(df)
                             st.success("¡Actualizado correctamente!")
                             st.rerun()
