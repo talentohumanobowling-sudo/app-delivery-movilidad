@@ -308,4 +308,4 @@ if "Cliente" in rol:
                                     nueva_valoracion = st.selectbox("Selecciona tu valoración:", escalas, index=idx_val, key=f"val_{serv['ID_Servicio']}")
                                     if st.button(f"Guardar Valoración #{serv['ID_Servicio']}", key=f"btn_val_{serv['ID_Servicio']}"):
                                         idx = df[df["ID_Servicio"] == serv['ID_Servicio']].index
-                                        df.
+                                        df.at[idx[0], "Valoracion"] = nueva_valoracion
