@@ -41,9 +41,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Actualización automática estricta cada 5 segundos para mantener la app en tiempo real permanente
+# Actualización automática estricta cada 4 segundos para mantener sincronización total en tiempo real
 if has_autorefresh:
-    st_autorefresh(interval=5000, limit=None, key="refresco_constante_llegando")
+    st_autorefresh(interval=4000, limit=None, key="refresco_constante_llegando")
 
 DB_FILE = "base_datos_servicios.xlsx"
 DB_PRESTADORES = "prestadores_autorizados.xlsx"
@@ -73,13 +73,14 @@ DATOS_PAGO_MOVIL = {
     "Titular": "Servicios de Movilidad"
 }
 
-def reproducir_alerta_sonora():
+def disparar_alerta_y_toast(mensaje):
     audio_html = """
         <audio autoplay>
           <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
         </audio>
     """
     st.markdown(audio_html, unsafe_allow_html=True)
+    st.toast(mensaje, icon="🚨")
 
 def cargar_datos():
     columnas_necesarias = [
@@ -170,11 +171,12 @@ df_prestadores = cargar_prestadores()
 df_liquidaciones = cargar_liquidaciones()
 df_aliados = cargar_aliados()
 
+# Detección en tiempo real de cambios en servicios para emitir alerta y mensaje flotante global
 if "total_servicios_prev" not in st.session_state:
     st.session_state.total_servicios_prev = len(df)
 elif len(df) > st.session_state.total_servicios_prev:
     st.session_state.total_servicios_prev = len(df)
-    reproducir_alerta_sonora()
+    disparar_alerta_y_toast("¡Nueva interacción detectada en la red!")
 
 if os.path.exists("logo.jpg"):
     st.sidebar.image("logo.jpg", use_container_width=True)
@@ -244,8 +246,7 @@ if "Portal de Cliente" in rol:
                     df = pd.concat([df, pd.DataFrame([nuevo_registro])], ignore_index=True)
                     guardar_datos(df)
                     
-                    reproducir_alerta_sonora()
-                    st.toast(f"¡Solicitud #{nuevo_id} enviada con éxito!", icon="🚨")
+                    disparar_alerta_y_toast(f"¡Solicitud #{nuevo_id} enviada con éxito!")
                     st.success(f"¡Solicitud enviada! Tu número de ID es #{nuevo_id}.")
                 else:
                     st.error("Completa los campos obligatorios (*).")
@@ -299,8 +300,7 @@ if "Portal de Cliente" in rol:
                                         df.loc[filtro, "Ref_Pago_Movil"] = str(ref_ingresada)
                                         guardar_datos(df)
                                         
-                                        reproducir_alerta_sonora()
-                                        st.toast("¡Referencia reportada exitosamente!", icon="🔔")
+                                        disparar_alerta_y_toast("¡Referencia reportada exitosamente!")
                                         st.success("¡Referencia reportada con éxito!")
                                         st.rerun()
                                     else:
@@ -326,12 +326,3 @@ elif "Portal de Prestador" in rol:
             p_row = prestador_valido.iloc[0]
             estatus_prestador = str(p_row.get("Estatus", "Autorizado")).strip()
             nom_prestador = str(p_row.get("Nombre", ""))
-            
-            if estatus_prestador.lower() in ["suspendido", "suspendida"]:
-                st.error("⚠️ Su cuenta de prestador se encuentra suspendida temporalmente por la administración.")
-            else:
-                st.success(f"✅ Bienvenido, prestador autorizado: **{nom_prestador}**")
-                
-                foto_prestador_path = str(p_row.get("Foto_Path", "")).strip()
-                if foto_prestador_path and os.path.exists(foto_prestador_path):
-                    st.image(foto_prestador_path, width
