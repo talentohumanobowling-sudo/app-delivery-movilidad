@@ -288,7 +288,6 @@ if "Portal de Cliente" in rol:
                             st.markdown("---")
                             st.success("✅ ¡Pago verificado por administración! Conductor asignado:")
                             
-                            # Buscar datos del prestador en la BD de prestadores
                             match_prestador = df_prestadores[df_prestadores["Nombre"].astype(str).str.strip().str.lower() == conductor_asignado.lower()]
                             
                             col_f1, col_f2 = st.columns([1, 2])
@@ -353,4 +352,129 @@ if "Portal de Cliente" in rol:
 # ==========================================
 # 2. VISTA PRESTADOR DE SERVICIOS
 # ==========================================
-elif "Portal de Prestador" in rol
+elif "Portal de Prestador" in rol:
+    st.markdown("<h2>Panel Profesional del Prestador</h2>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    num_suscripcion_prestador = st.text_input("Ingrese su Código de 4 Dígitos:").strip()
+    
+    if num_suscripcion_prestador:
+        prestador_valido = df_prestadores[df_prestadores["Numero_Suscripcion"].astype(str).str.strip() == num_suscripcion_prestador]
+        
+        if len(prestador_valido) == 0:
+            st.warning("⚠️ Código de 4 dígitos no válido o no registrado.")
+        else:
+            p_row = prestador_valido.iloc[0]
+            estatus_prestador = str(p_row.get("Estatus", "Autorizado")).strip()
+            nom_prestador = str(p_row.get("Nombre", ""))
+            
+            if estatus_prestador.lower() in ["suspendido", "suspendida"]:
+                st.error("⚠️ Su cuenta de prestador se encuentra suspendida temporalmente por la administración.")
+            else:
+                st.success(f"✅ Bienvenido, prestador autorizado: **{nom_prestador}**")
+                
+                foto_prestador_path = str(p_row.get("Foto_Path", "")).strip()
+                if foto_prestador_path and os.path.exists(foto_prestador_path):
+                    st.image(foto_prestador_path, width=120)
+                
+                saldo_wallet = float(p_row.get("Saldo_Wallet", 0.0) if pd.notna(p_row.get("Saldo_Wallet", 0.0)) else 0.0)
+                
+                st.markdown("### 💼 Billetera Virtual y Membresías")
+                col_st1, col_st2, col_st3 = st.columns(3)
+                col_st1.metric("Afiliacion ($5)", str(p_row.get("Pago_Afiliacion_5USD", "Pendiente")))
+                col_st2.metric("Mensualidad ($5)", str(p_row.get("Pago_Mensualidad_5USD", "Pendiente")))
+                col_st3.metric("💳 Saldo Billetera (Wallet)", f"${saldo_wallet:,.2f} USD")
+                st.markdown("---")
+
+                servicios_cond = df[df["Conductor"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
+                tab_viajes, tab_finanzas, tab_liquidaciones = st.tabs(["Mis Viajes Activos", "Mis Ganancias", "Liquidaciones"])
+                
+                with tab_viajes:
+                    if len(servicios_cond) > 0:
+                        for idx, serv in servicios_cond.iterrows():
+                            monto_usd = float(serv['Monto_USD'])
+                            ganancia_usd = monto_usd * (st.session_state.porcentaje_prestador / 100)
+                            with st.expander(f"Servicio #{serv['ID_Servicio']} - [{serv['Estado']}]"):
+                                st.write(f"Cliente: {serv['Cliente']} | Origen: {serv['Origen']} ➡️ Destino: {serv['Destino']}")
+                                st.write(f"Tu Ganancia: **${ganancia_usd:.2f} USD**")
+                                
+                                estados_posibles = ["Asignado", "En Camino", "Llegue al Sitio", "En Trayecto", "Completado", "Cancelado"]
+                                idx_est = estados_posibles.index(serv['Estado']) if serv['Estado'] in estados_posibles else 0
+                                nuevo_estado = st.selectbox("Actualizar Estatus:", estados_posibles, index=idx_est, key=f"st_{serv['ID_Servicio']}")
+                                
+                                if st.button(f"Guardar Estatus #{serv['ID_Servicio']}", key=f"btn_st_{serv['ID_Servicio']}"):
+                                    filtro_c = df["ID_Servicio"] == int(serv['ID_Servicio'])
+                                    df.loc[filtro_c, "Estado"] = str(nuevo_estado)
+                                    guardar_datos(df)
+                                    
+                                    disparar_alerta_y_toast("¡Estatus actualizado y alerta emitida!")
+                                    st.success("Estatus actualizado")
+                                    st.rerun()
+                    else:
+                        st.info("No tienes servicios asignados.")
+                        
+                with tab_finanzas:
+                    completados = servicios_cond[servicios_cond["Estado"] == "Completado"]
+                    tot_usd = pd.to_numeric(completados["Monto_USD"], errors='coerce').sum() * (st.session_state.porcentaje_prestador / 100)
+                    st.metric("Ganancia Total USD", f"${tot_usd:,.2f}")
+                    if len(completados) > 0:
+                        st.dataframe(completados[["ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Monto_USD", "Valoracion"]], use_container_width=True)
+
+                with tab_liquidaciones:
+                    liq_prestador = df_liquidaciones[df_liquidaciones["Prestador"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
+                    if len(liq_prestador) > 0:
+                        st.dataframe(liq_prestador, use_container_width=True)
+                    else:
+                        st.info("Sin liquidaciones registradas.")
+    else:
+        st.info("💡 Ingrese su código de 4 dígitos otorgado por la administración para iniciar sesión.")
+
+# ==========================================
+# 3. VISTA ALIADO COMERCIAL
+# ==========================================
+elif "Portal de Aliado Comercial" in rol:
+    st.markdown("<h2>🏬 Portal de Aliados Comerciales - LLEGANDO</h2>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    num_suscripcion_ingresado = st.text_input("Ingrese su Código de 4 Dígitos:").strip()
+    
+    if num_suscripcion_ingresado:
+        aliado_valido = df_aliados[df_aliados["Numero_Suscripcion"].astype(str).str.strip() == num_suscripcion_ingresado]
+        
+        if len(aliado_valido) > 0:
+            info_aliado = aliado_valido.iloc[0]
+            estatus_aliado = str(info_aliado.get("Estatus", "Activo")).strip()
+            
+            if estatus_aliado.lower() == "suspendido":
+                st.error("⚠️ Su cuenta de aliado se encuentra suspendida temporalmente. Contacte a la administración.")
+            else:
+                nombre_aliado = info_aliado["Nombre"]
+                logo_aliado_path = str(info_aliado.get("Logo_Path", "")).strip()
+                if logo_aliado_path and os.path.exists(logo_aliado_path):
+                    st.image(logo_aliado_path, width=150)
+                    
+                st.success(f"✅ Bienvenido, comercio aliado: **{nombre_aliado}** (Ubicación: {info_aliado['Ubicacion']})")
+                
+                tab_p_aliado, tab_h_aliado = st.tabs(["📦 Solicitar Delivery Inmediato", "📋 Mis Deliveries Registrados"])
+                
+                with tab_p_aliado:
+                    with st.form("form_aliado_portal"):
+                        c_al1, c_al2 = st.columns(2)
+                        with c_al1:
+                            cliente_final = st.text_input("Cliente Final *")
+                            telefono_final = st.text_input("Teléfono Cliente Final *")
+                            monto_pedido = st.number_input("Monto Delivery USD ($)", min_value=1.0, value=3.0)
+                        with c_al2:
+                            origen_comercio = st.text_input("Dirección de su Local *", value=str(info_aliado['Ubicacion']))
+                            destino_cliente = st.text_input("Dirección de Entrega *")
+                            metodo_pago_comercio = st.selectbox("Método de Pago", ["Pago Móvil", "Efectivo", "Zelle", "Pagado al Comercio"])
+                        
+                        if st.form_submit_button("🚀 Solicitar Delivery"):
+                            if cliente_final and telefono_final and destino_cliente:
+                                nuevo_id = 1001 if len(df) == 0 else int(df["ID_Servicio"].max()) + 1
+                                nuevo_registro_aliado = {
+                                    "ID_Servicio": nuevo_id, "Fecha_Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                    "Tipo_Servicio": "Delivery", "Cliente": str(cliente_final), "Telefono_Cliente": str(telefono_final).strip(),
+                                    "Origen": str(origen_comercio), "Destino": str(destino_cliente), "Conductor": "Por Asignar", 
+                                    "Monto_USD": float(monto_pedido), "Metodo_Pago": str(metodo_pago_comercio), "Ref_Pago_Movil": "", 
+                                    "Pago_Verificado": "Sí", "Estado": "
