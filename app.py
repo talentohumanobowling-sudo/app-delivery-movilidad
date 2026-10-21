@@ -278,4 +278,97 @@ if "Cliente" in rol:
                                     cond_row = info_cond.iloc[0]
                                     foto_path = str(cond_row.get('Foto_Path', '')).strip()
                                     marca_v = str(cond_row.get('Marca', 'N/A')).strip()
-                                    modelo_v = str(cond_row.get('Modelo', 'N/A
+                                    modelo_v = str(cond_row.get('Modelo', 'N/A')).strip()
+                                    placa_v = str(cond_row.get('Placa', 'N/A')).strip()
+                                    tlf_cond = str(cond_row['Telefono']).strip().replace(" ", "").replace("+", "")
+                                    
+                                    col_info1, col_info2 = st.columns([1, 2])
+                                    with col_info1:
+                                        if foto_path and foto_path != "nan" and os.path.exists(foto_path):
+                                            st.image(foto_path, width=120, caption="Foto de Perfil")
+                                        else:
+                                            st.info("📷 [Sin foto registrada]")
+                                    with col_info2:
+                                        st.markdown(f"🚗 **Vehículo:** {cond_row['Vehiculo']}")
+                                        st.markdown(f"🏷️ **Marca / Modelo:** {marca_v} {modelo_v}")
+                                        st.markdown(f"🔢 **Placa:** `{placa_v}`")
+                                    
+                                    msg_c = f"Hola {serv['Conductor']}, le escribo desde LLEGANDO respecto al servicio #{serv['ID_Servicio']}."
+                                    url_wa_cond = f"https://wa.me/{tlf_cond}?text={urllib.parse.quote(msg_c)}"
+                                    st.link_button("💬 Contactar Conductor por WhatsApp", url_wa_cond)
+                                
+                                if estatus_s == "Completado":
+                                    st.markdown("---")
+                                    st.markdown("#### ⭐ Valora la Calidad de tu Servicio")
+                                    val_actual = str(serv.get("Valoracion", "Sin valorar"))
+                                    
+                                    escalas = ["Sin valorar", "Mal servicio", "Regular servicio", "Buen servicio", "Excelente servicio"]
+                                    idx_val = escalas.index(val_actual) if val_actual in escalas else 0
+                                    
+                                    nueva_valoracion = st.selectbox("Selecciona tu valoración:", escalas, index=idx_val, key=f"val_{serv['ID_Servicio']}")
+                                    if st.button(f"Guardar Valoración #{serv['ID_Servicio']}", key=f"btn_val_{serv['ID_Servicio']}"):
+                                        idx = df[df["ID_Servicio"] == serv['ID_Servicio']].index
+                                        df.at[idx[0], "Valoracion"] = nueva_valoracion
+                                        guardar_datos(df)
+                                        st.success("¡Gracias por valorar nuestro servicio!")
+                                        st.rerun()
+                            else:
+                                st.info("⏳ **Pago en proceso de verificación por el administrador.**")
+            else:
+                st.warning("No se encontró ningún servicio registrado con ese número de teléfono.")
+        else:
+            st.info("💡 Ingresa tu número de teléfono arriba para consultar tus viajes activos.")
+            
+        time.sleep(3)
+        st.rerun()
+
+# ==========================================
+# 2. VISTA PRESTADOR DE SERVICIOS
+# ==========================================
+elif "Prestador" in rol:
+    st.markdown("<h2 style='color: #0A2540;'>🚗 Panel Profesional del Prestador - LLEGANDO</h2>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    nom_prestador = st.text_input("Ingresa tu Nombre exacto autorizado para acceder:")
+    
+    if not nom_prestador:
+        st.info("💡 Por favor ingresa tu nombre exacto autorizado para ver tus viajes asignados y estatus de suscripción.")
+    else:
+        prestador_valido = df_prestadores[(df_prestadores["Nombre"].str.lower() == nom_prestador.strip().lower()) & (df_prestadores["Estatus"] == "Autorizado")]
+        
+        if len(prestador_valido) == 0:
+            st.warning("⚠️ Tu cuenta se encuentra suspendida, no existe o no ha sido autorizada por la administración.")
+        else:
+            st.success("✅ ¡Acceso Autorizado!")
+            
+            p_row = prestador_valido.iloc[0]
+            afiliacion_est = str(p_row.get("Pago_Afiliacion_5USD", "Pendiente"))
+            mensualidad_est = str(p_row.get("Pago_Mensualidad_5USD", "Pendiente"))
+            
+            st.markdown("### 📋 Estatus de Suscripción y Membresía ($5 Afiliación / $5 Mensualidad)")
+            col_s1, col_s2 = st.columns(2)
+            col_s1.metric("Afiliación ($5)", afiliacion_est)
+            col_s2.metric("Mensualidad ($5)", mensualidad_est)
+            
+            st.markdown("---")
+
+            servicios_cond = df[df["Conductor"].astype(str).str.strip().str.lower() == nom_prestador.strip().lower()]
+            viajes_activos_cond = servicios_cond[servicios_cond["Estado"].isin(["Asignado", "En Camino", "Llegué al Sitio", "En Trayecto"])]
+            
+            if len(viajes_activos_cond) > 0:
+                st.markdown(f'<div class="cintillo-alerta"><h3 style="color: #ffffff; margin: 0 0 5px 0;">🚗 LLEGANDO • ¡Nuevo Servicio Asignado!</h3><p style="margin: 0; font-size: 1.05em;">Tienes <b>{len(viajes_activos_cond)}</b> viaje(s) activo(s) esperando por atención.</p></div>', unsafe_allow_html=True)
+
+            tab_viajes, tab_finanzas, tab_liquidaciones = st.tabs(["📋 Mis Viajes Activos", "💰 Mis Ganancias", "🤝 Liquidaciones y Pagos"])
+            
+            with tab_viajes:
+                if len(servicios_cond) > 0:
+                    for idx, serv in servicios_cond.iterrows():
+                        monto_usd = float(serv['Monto_USD'])
+                        monto_ves = monto_usd * st.session_state.tasa_bcv
+                        ganancia_usd = monto_usd * (st.session_state.porcentaje_prestador / 100)
+                        ganancia_ves = ganancia_usd * st.session_state.tasa_bcv
+                        
+                        with st.expander(f"Servicio #{serv['ID_Servicio']} - {serv['Origen']} ➡️ {serv['Destino']} [{serv['Estado']}]"):
+                            st.write(f"**Cliente:** {serv['Cliente']} | **Teléfono:** {serv['Telefono_Cliente']}")
+                            st.write(f"**Monto Cobrar:** ${monto_usd:.2f} USD (Bs. {monto_ves:,.2f})")
+                            st.write(f"**Tu Ganancia ({st.session_state.porcentaje_prestador}%):** **${ganancia_usd:.2f} USD** (Bs. {ganancia_ves:,.
