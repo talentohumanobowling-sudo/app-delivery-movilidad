@@ -39,6 +39,10 @@ st.markdown("""
             background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
             color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px;
         }
+        .card-aliado {
+            background-color: #FFFFFF; padding: 15px; border-radius: 8px;
+            border-left: 5px solid #10B981; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -75,12 +79,13 @@ def cargar_datos():
         if "Pago_Verificado" not in df_temp.columns: df_temp["Pago_Verificado"] = "No"
         if "Liquidado" not in df_temp.columns: df_temp["Liquidado"] = "No"
         if "Valoracion" not in df_temp.columns: df_temp["Valoracion"] = "Sin valorar"
+        if "Aliado_Comercial" not in df_temp.columns: df_temp["Aliado_Comercial"] = "Particular"
         return df_temp
     else:
         df_inicial = pd.DataFrame(columns=[
             "ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Cliente", 
             "Telefono_Cliente", "Origen", "Destino", "Conductor", 
-            "Monto_USD", "Metodo_Pago", "Ref_Pago_Movil", "Pago_Verificado", "Estado", "Liquidado", "Valoracion", "Notas"
+            "Monto_USD", "Metodo_Pago", "Ref_Pago_Movil", "Pago_Verificado", "Estado", "Liquidado", "Valoracion", "Notas", "Aliado_Comercial"
         ])
         df_inicial.to_excel(DB_FILE, index=False)
         return df_inicial
@@ -90,6 +95,7 @@ def guardar_datos(df):
     df["Telefono_Cliente"] = df["Telefono_Cliente"].astype(str)
     df["Liquidado"] = df["Liquidado"].astype(str)
     df["Valoracion"] = df["Valoracion"].astype(str)
+    df["Aliado_Comercial"] = df["Aliado_Comercial"].astype(str)
     df.to_excel(DB_FILE, index=False)
 
 def cargar_prestadores():
@@ -137,6 +143,7 @@ st.sidebar.markdown("---")
 rol = st.sidebar.radio("Selecciona tu Panel:", [
     "Portal de Cliente", 
     "Portal de Prestador", 
+    "Portal de Aliado Comercial",
     "Panel Gerencial (Admin)"
 ])
 st.sidebar.markdown("---")
@@ -145,7 +152,7 @@ st.sidebar.metric("Tasa BCV Oficial", f"Bs. {st.session_state.tasa_bcv:,.2f}")
 # ==========================================
 # 1. VISTA CLIENTE
 # ==========================================
-if "Cliente" in rol:
+if "Portal de Cliente" in rol:
     st.markdown("<h2>LLEGANDO - Solicitud y Estatus</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
@@ -188,7 +195,7 @@ if "Cliente" in rol:
                         "Tipo_Servicio": tipo_serv, "Cliente": nombre, "Telefono_Cliente": str(telefono).strip(),
                         "Origen": origen, "Destino": destino, "Conductor": "Por Asignar", "Monto_USD": tarifa_sugerida,
                         "Metodo_Pago": metodo_pago, "Ref_Pago_Movil": "", "Pago_Verificado": "No",
-                        "Estado": "Solicitado", "Liquidado": "No", "Valoracion": "Sin valorar", "Notas": notas
+                        "Estado": "Solicitado", "Liquidado": "No", "Valoracion": "Sin valorar", "Notas": notas, "Aliado_Comercial": "Particular"
                     }
                     df = pd.concat([df, pd.DataFrame([nuevo_registro])], ignore_index=True)
                     guardar_datos(df)
@@ -298,7 +305,7 @@ if "Cliente" in rol:
 # ==========================================
 # 2. VISTA PRESTADOR DE SERVICIOS
 # ==========================================
-elif "Prestador" in rol:
+elif "Portal de Prestador" in rol:
     st.markdown("<h2>Panel Profesional del Prestador</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
@@ -318,7 +325,6 @@ elif "Prestador" in rol:
             st.success("Acceso Autorizado")
             p_row = prestador_valido.iloc[0]
             
-            # --- BILLETERA VIRTUAL (WALLET) VISIBLE AQUÍ ---
             saldo_wallet = float(p_row.get("Saldo_Wallet", 0.0) if pd.notna(p_row.get("Saldo_Wallet", 0.0)) else 0.0)
             
             st.markdown("### 💼 Billetera Virtual y Membresías")
@@ -348,7 +354,9 @@ elif "Prestador" in rol:
                     for idx, serv in servicios_cond.iterrows():
                         monto_usd = float(serv['Monto_USD'])
                         ganancia_usd = monto_usd * (st.session_state.porcentaje_prestador / 100)
-                        with st.expander(f"Servicio #{serv['ID_Servicio']} - [{serv['Estado']}]"):
+                        aliado_info = f" [Aliado: {serv.get('Aliado_Comercial', 'Particular')}]" if serv.get('Aliado_Comercial', 'Particular') != 'Particular' else ""
+                        
+                        with st.expander(f"Servicio #{serv['ID_Servicio']}{aliado_info} - [{serv['Estado']}]"):
                             st.write(f"Cliente: {serv['Cliente']} | Telefono: {serv['Telefono_Cliente']}")
                             st.write(f"Origen: {serv['Origen']} ➡️ Destino: {serv['Destino']}")
                             st.write(f"Tu Ganancia: **${ganancia_usd:.2f} USD**")
@@ -399,9 +407,83 @@ elif "Prestador" in rol:
         st.rerun()
 
 # ==========================================
-# 3. VISTA ADMINISTRADOR
+# 3. VISTA ALIADO COMERCIAL (COMERCIO / RESTAURANTE)
 # ==========================================
-elif "Admin" in rol or "Gerencial" in rol:
+elif "Portal de Aliado Comercial" in rol:
+    st.markdown("<h2>🏬 Portal de Aliados Comerciales - LLEGANDO Delivery</h2>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    nombre_aliado = st.text_input("Nombre de su Negocio / Comercio Aliado:")
+    
+    if nombre_aliado:
+        st.success(f"✅ Bienvenido, comercio: **{nombre_aliado}**")
+        
+        tab_pedido_aliado, tab_historial_aliado = st.tabs(["📦 Solicitar Delivery Inmediato", "📋 Mis Deliveries Registrados"])
+        
+        with tab_pedido_aliado:
+            with st.form("form_aliado_comercial"):
+                st.markdown("#### Datos de la Orden y Entrega")
+                c_al1, c_al2 = st.columns(2)
+                with c_al1:
+                    cliente_final = st.text_input("Nombre del Cliente Final *")
+                    telefono_final = st.text_input("Teléfono del Cliente Final *")
+                    monto_pedido = st.number_input("Monto del Delivery USD ($)", min_value=1.0, value=3.0, step=0.5)
+                with c_al2:
+                    direccion_origen_comercio = st.text_input("Dirección de su Local / Comercio *")
+                    direccion_destino_cliente = st.text_input("Dirección de Entrega (Cliente) *")
+                    metodo_pago_comercio = st.selectbox("Método de Pago del Pedido", ["Pago Móvil", "Efectivo", "Zelle", "Pagado al Comercio"])
+                
+                detalles_orden = st.text_area("Descripción del pedido o notas especiales (Ej. Comida caliente, frágil, etc.)")
+                
+                if st.form_submit_button("🚀 Solicitar Motorizado / Delivery"):
+                    if cliente_final and telefono_final and direccion_destino_cliente:
+                        nuevo_id = 1001 if len(df) == 0 else int(pd.to_numeric(df["ID_Servicio"], errors='coerce').max()) + 1
+                        nuevo_registro_aliado = {
+                            "ID_Servicio": nuevo_id,
+                            "Fecha_Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "Tipo_Servicio": "Delivery",
+                            "Cliente": cliente_final,
+                            "Telefono_Cliente": str(telefono_final).strip(),
+                            "Origen": direccion_origen_comercio if direccion_origen_comercio else f"Local de {nombre_aliado}",
+                            "Destino": direccion_destino_cliente,
+                            "Conductor": "Por Asignar",
+                            "Monto_USD": monto_pedido,
+                            "Metodo_Pago": metodo_pago_comercio,
+                            "Ref_Pago_Movil": "",
+                            "Pago_Verificado": "Sí",
+                            "Estado": "Solicitado",
+                            "Liquidado": "No",
+                            "Valoracion": "Sin valorar",
+                            "Notas": detalles_orden,
+                            "Aliado_Comercial": nombre_aliado
+                        }
+                        df = pd.concat([df, pd.DataFrame([nuevo_registro_aliado])], ignore_index=True)
+                        guardar_datos(df)
+                        st.success(f"¡Delivery solicitado con éxito! ID de orden asignado: **#{nuevo_id}**")
+                    else:
+                        st.error("Por favor completa los campos obligatorios (*).")
+                        
+        with tab_historial_aliado:
+            st.subheader(f"Historial de Deliveries solicitados por {nombre_aliado}")
+            mis_pedidos = df[df["Aliado_Comercial"].astype(str).str.strip().str.lower() == nombre_aliado.strip().lower()]
+            
+            if len(mis_pedidos) > 0:
+                for idx_p, ped in mis_pedidos.iterrows():
+                    st.markdown(f"""
+                        <div class="card-aliado">
+                            <b>Orden #{ped['ID_Servicio']}</b> | Cliente: {ped['Cliente']} | Destino: {ped['Destino']} <br>
+                            <b>Estatus:</b> <code>{ped['Estado']}</code> | <b>Motorizado Asignado:</b> {ped['Conductor']} | <b>Tarifa:</b> ${float(ped['Monto_USD']):.2f} USD
+                        </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.info("No hay órdenes de delivery registradas con este nombre de comercio.")
+    else:
+        st.info("💡 Ingresa el nombre de tu comercio o restaurante para acceder al panel de pedidos.")
+
+# ==========================================
+# 4. VISTA ADMINISTRADOR
+# ==========================================
+elif "Panel Gerencial" in rol:
     st.markdown("<h2>Panel Gerencial LLEGANDO</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
@@ -478,8 +560,9 @@ elif "Admin" in rol or "Gerencial" in rol:
             if len(pendientes) > 0:
                 p_aut = df_prestadores[df_prestadores["Estatus"] == "Autorizado"]["Nombre"].tolist()
                 for idx, serv in pendientes.iterrows():
-                    with st.expander(f"#{serv['ID_Servicio']} - {serv['Cliente']} ({serv['Tipo_Servicio']})"):
-                        st.write(f"Ref: {serv['Ref_Pago_Movil']}")
+                    aliado_txt = f" [Aliado: {serv.get('Aliado_Comercial', 'Particular')}]" if serv.get('Aliado_Comercial', 'Particular') != 'Particular' else ""
+                    with st.expander(f"#{serv['ID_Servicio']}{aliado_txt} - {serv['Cliente']} ({serv['Tipo_Servicio']})"):
+                        st.write(f"Ref: {serv['Ref_Pago_Movil']} | Origen: {serv['Origen']} ➡️ Destino: {serv['Destino']}")
                         c_asig = st.selectbox("Conductor", p_aut, key=f"c_{serv['ID_Servicio']}")
                         tarifa = st.number_input("Tarifa USD", value=float(serv['Monto_USD']), key=f"t_{serv['ID_Servicio']}")
                         v_pago = st.selectbox("Pago verificado", ["No", "Sí"], index=1 if str(serv.get('Pago_Verificado'))=="Sí" else 0, key=f"vp_{serv['ID_Servicio']}")
@@ -540,4 +623,4 @@ elif "Admin" in rol or "Gerencial" in rol:
     elif clave_ingresada != "":
         st.error("Contraseña incorrecta.")
     else:
-        st.info("Ingresa la contraseña `admin123`.")        
+        st.info("Ingresa la contraseña `admin123`.")
