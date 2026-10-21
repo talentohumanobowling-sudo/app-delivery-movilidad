@@ -356,7 +356,6 @@ elif "Portal de Aliado Comercial" in rol:
             info_aliado = aliado_valido.iloc[0]
             nombre_aliado = info_aliado["Nombre"]
             
-            # Mostrar logo del aliado si existe guardado
             logo_aliado_path = str(info_aliado.get("Logo_Path", "")).strip()
             if logo_aliado_path and os.path.exists(logo_aliado_path):
                 st.image(logo_aliado_path, width=150)
@@ -452,7 +451,6 @@ elif "Panel Gerencial" in rol:
                 
                 if st.form_submit_button("Registrar y Generar Número de Suscripción"):
                     if nombre_aliado_admin and ubicacion_aliado and telefono_aliado:
-                        # Generar número de suscripción único automático (Ej: ALIADO-101)
                         num_suscripcion = f"ALIADO-{101 if len(df_aliados) == 0 else int(df_aliados.index.max()) + 102}"
                         
                         logo_path_g = ""
