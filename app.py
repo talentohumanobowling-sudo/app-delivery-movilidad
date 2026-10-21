@@ -337,7 +337,7 @@ elif "Prestador" in rol:
         prestador_valido = df_prestadores[(df_prestadores["Nombre"].str.lower() == nom_prestador.strip().lower()) & (df_prestadores["Estatus"] == "Autorizado")]
         
         if len(prestador_valido) == 0:
-            st.warning("⚠️ Tu nombre no se encuentra registrado o aún no ha sido autorizado por la administración.")
+            st.warning("⚠️ Tu cuenta se encuentra suspendida, no existe o no ha sido autorizada por la administración.")
         else:
             st.success("✅ ¡Acceso Autorizado!")
             
@@ -482,10 +482,10 @@ elif "Admin" in rol or "Gerencial" in rol:
         ])
         
         if opcion_admin == "👥 Autorizar Prestadores":
-            st.subheader("👥 Gestión, Suscripción ($5) y Mensualidad ($5) de Prestadores")
+            st.subheader("👥 Gestión, Suscripción ($5), Mensualidad ($5) y Estatus de Prestadores")
             
             with st.form("form_nuevo_prestador"):
-                st.markdown("#### Datos Personales, Vehículo y Pagos Iniciales")
+                st.markdown("#### Registrar Nuevo Prestador")
                 c_p1, c_p2, c_p3 = st.columns(3)
                 with c_p1:
                     nombre_p = st.text_input("Nombre y Apellido *")
@@ -529,9 +529,37 @@ elif "Admin" in rol or "Gerencial" in rol:
                     else:
                         st.error("Completa los campos requeridos (*).")
                         
-            st.markdown("#### Prestadores Registrados y Estatus de Suscripción ($5 / $5):")
+            st.markdown("---")
+            st.markdown("#### ⚙️ Suspender, Reactivar o Eliminar Prestadores Registrados")
             if len(df_prestadores) > 0:
-                st.dataframe(df_prestadores, use_container_width=True)
+                for idx_p, p_item in df_prestadores.iterrows():
+                    estatus_actual = str(p_item.get("Estatus", "Autorizado"))
+                    color_est = "🟢" if estatus_actual == "Autorizado" else "🔴"
+                    
+                    with st.expander(f"{color_est} {p_item['Nombre']} - Vehículo: {p_item['Vehiculo']} [{estatus_actual}]"):
+                        st.write(f"📞 **Teléfono:** {p_item['Telefono']} | 🔢 **Placa:** {p_item['Placa']}")
+                        st.write(f"💵 **Afiliación ($5):** {p_item.get('Pago_Afiliacion_5USD', 'Pendiente')} | **Mensualidad ($5):** {p_item.get('Pago_Mensualidad_5USD', 'Pendiente')}")
+                        
+                        col_acc1, col_acc2, col_acc3 = st.columns(3)
+                        with col_acc1:
+                            if estatus_actual == "Autorizado":
+                                if st.button(f"🔴 Suspender Prestador", key=f"susp_{idx_p}"):
+                                    df_prestadores.at[idx_p, "Estatus"] = "Suspendido"
+                                    guardar_prestadores(df_prestadores)
+                                    st.warning(f"Prestador {p_item['Nombre']} suspendido.")
+                                    st.rerun()
+                            else:
+                                if st.button(f"🟢 Reactivar Prestador", key=f"react_{idx_p}"):
+                                    df_prestadores.at[idx_p, "Estatus"] = "Autorizado"
+                                    guardar_prestadores(df_prestadores)
+                                    st.success(f"Prestador {p_item['Nombre']} reactivado.")
+                                    st.rerun()
+                        with col_acc3:
+                            if st.button(f"🗑️ Eliminar Definitivamente", key=f"elim_{idx_p}"):
+                                df_prestadores = df_prestadores.drop(idx_p).reset_index(drop=True)
+                                guardar_prestadores(df_prestadores)
+                                st.error(f"Prestador eliminado del sistema.")
+                                st.rerun()
             else:
                 st.info("No hay prestadores registrados.")
 
