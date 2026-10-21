@@ -65,6 +65,15 @@ DATOS_PAGO_MOVIL = {
     "Titular": "Servicios de Movilidad"
 }
 
+def reproducir_alerta_sonora():
+    # Reproduce un tono de alerta usando HTML5 Audio integrado en la página
+    audio_html = """
+        <audio autoplay>
+          <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+        </audio>
+    """
+    st.markdown(audio_html, unsafe_allow_html=True)
+
 def cargar_datos():
     columnas_necesarias = [
         "ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Cliente", 
@@ -188,7 +197,11 @@ if "Portal de Cliente" in rol:
                     }
                     df = pd.concat([df, pd.DataFrame([nuevo_registro])], ignore_index=True)
                     guardar_datos(df)
-                    st.success(f"¡Solicitud enviada con éxito! Tu número de ID es #{nuevo_id}.")
+                    
+                    # Alerta sonora y mensaje flotante emergente
+                    reproducir_alerta_sonora()
+                    st.toast(f"¡Solicitud #{nuevo_id} enviada con éxito!", icon="🚨")
+                    st.success(f"¡Solicitud enviada! Tu número de ID es #{nuevo_id}.")
                 else:
                     st.error("Completa los campos obligatorios (*).")
                     
@@ -197,7 +210,6 @@ if "Portal de Cliente" in rol:
         telefono_busqueda = st.text_input("Ingresa tu número de teléfono registrado:").strip()
         
         if telefono_busqueda:
-            # Búsqueda flexible ignorando ceros a la izquierda para emparejar con Excel
             tlf_busqueda_limpio = telefono_busqueda.lstrip('0')
             
             def coincide_telefono(val):
@@ -242,6 +254,9 @@ if "Portal de Cliente" in rol:
                                         filtro = df["ID_Servicio"] == int(serv['ID_Servicio'])
                                         df.loc[filtro, "Ref_Pago_Movil"] = str(ref_ingresada)
                                         guardar_datos(df)
+                                        
+                                        reproducir_alerta_sonora()
+                                        st.toast("¡Referencia reportada exitosamente!", icon="🔔")
                                         st.success("¡Referencia reportada con éxito!")
                                         st.rerun()
                                     else:
