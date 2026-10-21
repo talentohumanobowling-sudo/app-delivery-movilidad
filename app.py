@@ -448,3 +448,92 @@ elif "Portal de Prestador" in rol:
                     df_liquidaciones = pd.concat([df_liquidaciones, pd.DataFrame([nueva_liq])], ignore_index=True)
                     guardar_liquidaciones(df_liquidaciones)
                     st.success(f"¡Solicitud de liquidación #{nuevo_id_liq} enviada al administrador!")
+# ==========================================
+# 3. VISTA ALIADO COMERCIAL
+# ==========================================
+elif "Portal de Aliado Comercial" in rol:
+    st.markdown("<h2>Portal de Aliados Comerciales</h2>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    nombre_aliado = st.text_input("Ingresa el Nombre de tu Comercio / Aliado:")
+    if nombre_aliado:
+        aliado_valido = df_aliados[df_aliados["Nombre"].str.lower() == nombre_aliado.strip().lower()]
+        if len(aliado_valido) == 0:
+            st.warning("Comercio no registrado en la red de aliados.")
+        else:
+            st.success(f"Bienvenido, comercio: {nombre_aliado}")
+            
+            with st.form("form_pedido_aliado"):
+                st.subheader("Solicitar Servicio de Delivery para tu Local")
+                c_cliente = st.text_input("Nombre del Cliente Final")
+                c_tlf = st.text_input("Teléfono del Cliente")
+                c_destino = st.text_input("Dirección de Entrega del Pedido")
+                c_monto = st.number_input("Monto del Pedido ($ USD)", min_value=1.0, value=10.0)
+                
+                if st.form_submit_button("Crear Delivery Express"):
+                    nuevo_id = 1001 if len(df) == 0 else int(pd.to_numeric(df["ID_Servicio"], errors='coerce').max()) + 1
+                    nuevo_reg = {
+                        "ID_Servicio": nuevo_id, "Fecha_Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Tipo_Servicio": "Delivery", "Cliente": c_cliente, "Telefono_Cliente": str(c_tlf).strip(),
+                        "Origen": nombre_aliado, "Destino": c_destino, "Conductor": "Por Asignar", "Monto_USD": c_monto,
+                        "Metodo_Pago": "Efectivo / POS", "Ref_Pago_Movil": "", "Pago_Verificado": "Sí",
+                        "Estado": "Solicitado", "Liquidado": "No", "Valoracion": "Sin valorar", "Notas": f"Pedido gestionado por Aliado: {nombre_aliado}", 
+                        "Aliado_Comercial": nombre_aliado, "Capture_Pago": ""
+                    }
+                    df = pd.concat([df, pd.DataFrame([nuevo_reg])], ignore_index=True)
+                    guardar_datos(df)
+                    st.success(f"¡Delivery creado con éxito! ID de servicio #{nuevo_id}")
+
+            st.markdown("### Tus Pedidos Recientes")
+            pedidos_aliado = df[df["Aliado_Comercial"].str.lower() == nombre_aliado.strip().lower()]
+            if len(pedidos_aliado) > 0:
+                st.dataframe(pedidos_aliado[["ID_Servicio", "Fecha_Hora", "Cliente", "Destino", "Monto_USD", "Estado", "Conductor"]])
+            else:
+                st.info("Aún no tienes pedidos registrados.")
+
+# ==========================================
+# 4. PANEL GERENCIAL (ADMIN)
+# ==========================================
+elif "Panel Gerencial (Admin)" in rol:
+    st.markdown("<h2>Panel Gerencial y de Control Admin</h2>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    clave = st.text_input("Contraseña de Administrador:", type="password")
+    if clave == CLAVE_ADMIN_SECRETA:
+        st.success("Acceso Gerencial Concedido")
+        
+        tab_serv, tab_prest, tab_conf = st.tabs(["Control de Servicios", "Prestadores Autorizados", "Configuración"])
+        
+        with tab_serv:
+            st.subheader("Gestión de Todos los Servicios")
+            st.dataframe(df)
+            
+            st.markdown("### Asignar Conductor y Verificar Pago")
+            id_a_editar = st.selectbox("Selecciona ID de Servicio a Gestionar", df["ID_Servicio"].tolist() if len(df) > 0 else [])
+            if id_a_editar:
+                fila_s = df[df["ID_Servicio"] == id_a_editar].iloc[0]
+                nuevo_cond = st.text_input("Conductor Asignado", value=str(fila_s["Conductor"]))
+                nuevo_estado = st.selectbox("Estado", ["Solicitado", "Asignado", "En Camino", "Llegue al Sitio", "En Trayecto", "Completado", "Cancelado"], index=["Solicitado", "Asignado", "En Camino", "Llegue al Sitio", "En Trayecto", "Completado", "Cancelado"].index(fila_s["Estado"]) if fila_s["Estado"] in ["Solicitado", "Asignado", "En Camino", "Llegue al Sitio", "En Trayecto", "Completado", "Cancelado"] else 0)
+                nuevo_pago_v = st.selectbox("Pago Verificado", ["No", "Sí"], index=0 if str(fila_s.get("Pago_Verificado","No")) == "No" else 1)
+                
+                if st.button("Guardar Cambios Admin"):
+                    idx_m = df[df["ID_Servicio"] == id_a_editar].index[0]
+                    df.at[idx_m, "Conductor"] = nuevo_cond
+                    df.at[idx_m, "Estado"] = nuevo_estado
+                    df.at[idx_m, "Pago_Verificado"] = nuevo_pago_v
+                    guardar_datos(df)
+                    st.success("¡Actualizado con éxito!")
+                    st.rerun()
+                    
+        with tab_prest:
+            st.subheader("Control de Prestadores")
+            st.dataframe(df_prestadores)
+            
+        with tab_conf:
+            st.subheader("Ajustes del Sistema")
+            nueva_tasa = st.number_input("Actualizar Tasa BCV Manual (Bs.)", value=float(st.session_state.tasa_bcv))
+            if st.button("Guardar Tasa"):
+                st.session_state.tasa_bcv = nueva_tasa
+                st.success(f"Tasa actualizada a Bs. {nueva_tasa:,.2f}")
+    elif clave:
+        st.error("Contraseña incorrecta.")
