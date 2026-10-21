@@ -59,7 +59,7 @@ DATOS_PAGO_MOVIL = {
     "Banco": "BDV (0102)",
     "Telefono": "0412-3349463",
     "Cedula_RIF": "V-13609424",
-    "Titular": "ANGEL INOJOSA"
+    "Titular": "Servicios de Movilidad"
 }
 
 def reproducir_alerta_sonora():
@@ -340,6 +340,9 @@ elif "Portal de Prestador" in rol:
                                     filtro_c = df["ID_Servicio"] == int(serv['ID_Servicio'])
                                     df.loc[filtro_c, "Estado"] = str(nuevo_estado)
                                     guardar_datos(df)
+                                    
+                                    reproducir_alerta_sonora()
+                                    st.toast("¡Estatus actualizado y alerta emitida!", icon="🚨")
                                     st.success("Estatus actualizado")
                                     st.rerun()
                     else:
@@ -366,7 +369,7 @@ elif "Portal de Aliado Comercial" in rol:
     st.markdown("<h2>🏬 Portal de Aliados Comerciales - LLEGANDO</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
-    num_suscripcion_ingresado = st.text_input("Ingrese su Número de Suscripción de Aliado (Ej: XXXXX-XXX):").strip()
+    num_suscripcion_ingresado = st.text_input("Ingrese su Número de Suscripción de Aliado (Ej: ALIADO-101):").strip()
     
     if num_suscripcion_ingresado:
         aliado_valido = df_aliados[df_aliados["Numero_Suscripcion"].astype(str).str.strip().str.lower() == num_suscripcion_ingresado.lower()]
@@ -412,6 +415,7 @@ elif "Portal de Aliado Comercial" in rol:
                                 }
                                 df = pd.concat([df, pd.DataFrame([nuevo_registro_aliado])], ignore_index=True)
                                 guardar_datos(df)
+                                
                                 reproducir_alerta_sonora()
                                 st.toast(f"¡Delivery #{nuevo_id} solicitado con éxito!", icon="🚀")
                                 st.success(f"¡Delivery solicitado! ID #{nuevo_id}")
@@ -443,7 +447,7 @@ elif "Panel Gerencial" in rol:
     st.markdown("<h2>Panel Gerencial LLEGANDO</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
-    clave_ingresada = st.text_input("Contraseña de Administrador (XXXXXXX):", type="password")
+    clave_ingresada = st.text_input("Contraseña de Administrador (admin123):", type="password")
     if clave_ingresada == CLAVE_ADMIN_SECRETA:
         st.success("Acceso Gerencial Autorizado")
         st.markdown("---")
@@ -495,6 +499,8 @@ elif "Panel Gerencial" in rol:
                         
                         df_aliados = pd.concat([df_aliados, nuevo_aliado_df], ignore_index=True)
                         guardar_aliados(df_aliados)
+                        
+                        reproducir_alerta_sonora()
                         st.success(f"¡Aliado registrado con éxito! Suscripción generada: **{num_suscripcion}**")
                         st.rerun()
                     else:
@@ -524,6 +530,8 @@ elif "Panel Gerencial" in rol:
                             if st.button(f"Actualizar Estatus #{suscripcion_num}", key=f"btn_est_aliado_{idx_al}"):
                                 df_aliados.at[idx_al, "Estatus"] = str(nuevo_estatus)
                                 guardar_aliados(df_aliados)
+                                
+                                reproducir_alerta_sonora()
                                 st.success("¡Estatus del aliado actualizado!")
                                 st.rerun()
                         with col_a2:
@@ -532,6 +540,8 @@ elif "Panel Gerencial" in rol:
                             if st.button(f"🗑️ Eliminar Aliado #{suscripcion_num}", key=f"btn_del_aliado_{idx_al}"):
                                 df_aliados = df_aliados.drop(idx_al).reset_index(drop=True)
                                 guardar_aliados(df_aliados)
+                                
+                                reproducir_alerta_sonora()
                                 st.warning("¡Aliado eliminado del sistema!")
                                 st.rerun()
             else:
@@ -561,6 +571,8 @@ elif "Panel Gerencial" in rol:
                             df.loc[filtro_adm, "Pago_Verificado"] = str(nuevo_verif)
                             df.loc[filtro_adm, "Estado"] = str(nuevo_est)
                             guardar_datos(df)
+                            
+                            reproducir_alerta_sonora()
                             st.success("¡Actualizado correctamente!")
                             st.rerun()
             else:
@@ -597,6 +609,8 @@ elif "Panel Gerencial" in rol:
                         }])
                         df_prestadores = pd.concat([df_prestadores, nuevo_p], ignore_index=True)
                         guardar_prestadores(df_prestadores)
+                        
+                        reproducir_alerta_sonora()
                         st.success("¡Prestador autorizado con éxito!")
                         st.rerun()
                     else:
@@ -625,6 +639,8 @@ elif "Panel Gerencial" in rol:
                             if st.button(f"Actualizar Estatus de {nombre_pres}", key=f"btn_est_pres_{idx_p}"):
                                 df_prestadores.at[idx_p, "Estatus"] = str(nuevo_estatus_p)
                                 guardar_prestadores(df_prestadores)
+                                
+                                reproducir_alerta_sonora()
                                 st.success("¡Estatus del prestador actualizado!")
                                 st.rerun()
                         with col_p2:
@@ -633,6 +649,8 @@ elif "Panel Gerencial" in rol:
                             if st.button(f"🗑️ Eliminar Prestador {nombre_pres}", key=f"btn_del_pres_{idx_p}"):
                                 df_prestadores = df_prestadores.drop(idx_p).reset_index(drop=True)
                                 guardar_prestadores(df_prestadores)
+                                
+                                reproducir_alerta_sonora()
                                 st.warning("¡Prestador eliminado del sistema!")
                                 st.rerun()
             else:
@@ -660,6 +678,8 @@ elif "Panel Gerencial" in rol:
                             }])
                             df_liquidaciones = pd.concat([df_liquidaciones, nueva_l], ignore_index=True)
                             guardar_liquidaciones(df_liquidaciones)
+                            
+                            reproducir_alerta_sonora()
                             st.success("¡Liquidación registrada con éxito!")
                             st.rerun()
                         else:
