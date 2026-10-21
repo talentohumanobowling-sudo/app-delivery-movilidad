@@ -184,8 +184,16 @@ rol = st.sidebar.radio("Selecciona tu Panel:", [
 st.sidebar.markdown("---")
 st.sidebar.metric("Tasa BCV Oficial", f"Bs. {st.session_state.tasa_bcv:,.2f}")
 
-if st.sidebar.button("🔄 Actualizar Información"):
-    st.rerun()
+# Fragmento nativo que se actualiza automáticamente cada 5 segundos en segundo plano sin pantalla en blanco
+@st.fragment(run_every=5)
+def bucle_actualizacion_automatica():
+    global df
+    df_nuevo = cargar_datos()
+    if len(df_nuevo) > len(df):
+        disparar_alerta_y_toast("¡Nuevo servicio o actualización detectada!")
+        st.rerun()
+
+bucle_actualizacion_automatica()
 
 # ==========================================
 # 1. VISTA CLIENTE
@@ -643,90 +651,3 @@ elif "Panel Gerencial" in rol:
                     estatus_p_actual = str(pres.get("Estatus", "Autorizado"))
                     nombre_pres = str(pres.get("Nombre", ""))
                     suscripcion_p_num = str(pres.get("Numero_Suscripcion", "N/A"))
-                    
-                    with st.expander(f"[Código: {suscripcion_p_num}] {nombre_pres} - Vehículo: {pres['Vehiculo']} [{estatus_p_actual}]"):
-                        st.write(f"**Teléfono:** {pres['Telefono']} | **Placa:** {pres['Placa']} | **Wallet:** ${float(pres['Saldo_Wallet'] if pd.notna(pres['Saldo_Wallet']) and str(pres['Saldo_Wallet']).strip() != '' else 0):,.2f}")
-                        if str(pres['Foto_Path']).strip() and os.path.exists(str(pres['Foto_Path'])):
-                            st.image(str(pres['Foto_Path']), width=100)
-                            
-                        col_p1, col_p2 = st.columns(2)
-                        with col_p1:
-                            nuevo_estatus_p = st.selectbox(
-                                "Cambiar Estatus:", 
-                                ["Autorizado", "Suspendido"], 
-                                index=0 if estatus_p_actual.lower() in ["autorizado", "activo"] else 1, 
-                                key=f"est_pres_{idx_p}"
-                            )
-                            if st.button(f"Actualizar Estatus #{suscripcion_p_num}", key=f"btn_est_pres_{idx_p}"):
-                                df_prestadores.at[idx_p, "Estatus"] = str(nuevo_estatus_p)
-                                guardar_prestadores(df_prestadores)
-                                
-                                disparar_alerta_y_toast("¡Estatus del prestador actualizado!")
-                                st.success("¡Estatus del prestador actualizado!")
-                                st.rerun()
-                        with col_p2:
-                            st.write("")
-                            st.write("")
-                            if st.button(f"🗑️ Eliminar Prestador #{suscripcion_p_num}", key=f"btn_del_pres_{idx_p}"):
-                                df_prestadores = df_prestadores.drop(idx_p).reset_index(drop=True)
-                                guardar_prestadores(df_prestadores)
-                                
-                                disparar_alerta_y_toast("¡Prestador eliminado del sistema!")
-                                st.warning("¡Prestador eliminado del sistema!")
-                                st.rerun()
-            else:
-                st.info("No hay prestadores registrados todavía.")
-
-        elif opcion_admin == "Liquidaciones a Prestadores":
-            st.subheader("Generar Liquidación a Prestador")
-            lista_cond_aut = list(df_prestadores[df_prestadores["Estatus"].str.lower() == "autorizado"]["Nombre"])
-            if len(lista_cond_aut) > 0:
-                with st.form("form_liq"):
-                    prestador_sel = st.selectbox("Seleccionar Prestador", lista_cond_aut)
-                    monto_liq = st.number_input("Monto a Liquidar en USD ($)", min_value=1.0, value=10.0)
-                    ref_pago_liq = st.text_input("Referencia de Pago Bancario realizado al Prestador *")
-                    
-                    if st.form_submit_button("Registrar y Enviar Liquidación"):
-                        if ref_pago_liq:
-                            nuevo_id_l = 1 if len(df_liquidaciones) == 0 else int(len(df_liquidaciones)) + 1
-                            nueva_l = pd.DataFrame([{
-                                "ID_Liquidacion": str(nuevo_id_l),
-                                "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                                "Prestador": str(prestador_sel),
-                                "Monto_USD": float(monto_liq),
-                                "Referencia_Pago": str(ref_pago_liq),
-                                "Estatus_Confirmacion": "Pendiente de Confirmar"
-                            }])
-                            df_liquidaciones = pd.concat([df_liquidaciones, nueva_l], ignore_index=True)
-                            guardar_liquidaciones(df_liquidaciones)
-                            
-                            disparar_alerta_y_toast("¡Liquidación registrada con éxito!")
-                            st.success("¡Liquidación registrada con éxito!")
-                            st.rerun()
-                        else:
-                            st.error("Ingresa la referencia de pago.")
-                
-                st.markdown("#### Historial de Liquidaciones:")
-                st.dataframe(df_liquidaciones, use_container_width=True)
-            else:
-                st.warning("No hay prestadores autorizados disponibles.")
-
-        elif opcion_admin == "Control General de Servicios":
-            st.subheader("Base de Datos Completa de Servicios")
-            st.dataframe(df, use_container_width=True)
-
-        elif opcion_admin == "Finanzas":
-            st.subheader("Resumen Financiero")
-            total_recaudado = pd.to_numeric(df[df["Pago_Verificado"].str.lower().isin(["sí", "si"])]["Monto_USD"], errors='coerce').sum()
-            st.metric("Total Recaudado (USD Verificado)", f"${total_recaudado:,.2f}")
-            st.dataframe(df[["ID_Servicio", "Fecha_Hora", "Cliente", "Monto_USD", "Metodo_Pago", "Pago_Verificado"]], use_container_width=True)
-
-        elif opcion_admin == "Descargar Excel":
-            st.subheader("Exportar Datos")
-            st.download_button("📥 Descargar Base de Datos Completa (Excel)", data=open(DB_FILE, "rb").read(), file_name="llegando_db.xlsx")
-
-    else:
-        if clave_ingresada:
-            st.error("Contraseña incorrecta.")
-        else:
-            st.info("🔒 Ingrese la contraseña de administrador en el campo superior para desbloquear el panel gerencial.")
