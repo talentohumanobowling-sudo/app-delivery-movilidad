@@ -75,12 +75,16 @@ DATOS_PAGO_MOVIL = {
 
 def cargar_datos():
     if os.path.exists(DB_FILE):
-        df_temp = pd.read_excel(DB_FILE, dtype={"Ref_Pago_Movil": str, "Telefono_Cliente": str, "ID_Servicio": int})
+        df_temp = pd.read_excel(DB_FILE, dtype={"Ref_Pago_Movil": str, "Telefono_Cliente": str, "ID_Servicio": int, "Capture_Pago": str})
         if "Pago_Verificado" not in df_temp.columns: df_temp["Pago_Verificado"] = "No"
         if "Liquidado" not in df_temp.columns: df_temp["Liquidado"] = "No"
         if "Valoracion" not in df_temp.columns: df_temp["Valoracion"] = "Sin valorar"
         if "Aliado_Comercial" not in df_temp.columns: df_temp["Aliado_Comercial"] = "Particular"
         if "Capture_Pago" not in df_temp.columns: df_temp["Capture_Pago"] = ""
+        
+        # Asegurar tipo texto para evitar errores de asignación
+        df_temp["Capture_Pago"] = df_temp["Capture_Pago"].fillna("").astype(str)
+        df_temp["Ref_Pago_Movil"] = df_temp["Ref_Pago_Movil"].fillna("").astype(str)
         return df_temp
     else:
         df_inicial = pd.DataFrame(columns=[
@@ -253,7 +257,7 @@ if "Portal de Cliente" in rol:
                                             path_capture = os.path.join("captures_pagos", f"servicio_{serv['ID_Servicio']}.jpg")
                                             with open(path_capture, "wb") as f:
                                                 f.write(capture_file.getbuffer())
-                                            df.loc[filtro, "Capture_Pago"] = path_capture
+                                            df.loc[filtro, "Capture_Pago"] = str(path_capture)
                                             
                                         guardar_datos(df)
                                         st.success("¡Comprobante y referencia reportados con éxito!")
@@ -296,7 +300,7 @@ if "Portal de Cliente" in rol:
                                     nueva_valoracion = st.selectbox("Valora tu servicio:", escalas, index=idx_val, key=f"val_{serv['ID_Servicio']}")
                                     if st.button(f"Guardar Valoracion #{serv['ID_Servicio']}", key=f"btn_val_{serv['ID_Servicio']}"):
                                         filtro = df["ID_Servicio"] == serv['ID_Servicio']
-                                        df.loc[filtro, "Valoracion"] = nueva_valoracion
+                                        df.loc[filtro, "Valoracion"] = str(nueva_valoracion)
                                         guardar_datos(df)
                                         st.success("¡Gracias por valorar!")
                                         st.rerun()
@@ -367,7 +371,7 @@ elif "Portal de Prestador" in rol:
                             with col_b1:
                                 if st.button(f"Guardar #{serv['ID_Servicio']}", key=f"btn_{serv['ID_Servicio']}"):
                                     filtro_c = df["ID_Servicio"] == serv['ID_Servicio']
-                                    df.loc[filtro_c, "Estado"] = nuevo_estado
+                                    df.loc[filtro_c, "Estado"] = str(nuevo_estado)
                                     guardar_datos(df)
                                     st.success("Estatus actualizado")
                                     st.rerun()
@@ -542,9 +546,9 @@ elif "Panel Gerencial" in rol:
                         
                         if st.button(f"Guardar Cambios Servicio #{row_a['ID_Servicio']}", key=f"save_admin_{row_a['ID_Servicio']}"):
                             filtro_adm = df["ID_Servicio"] == row_a['ID_Servicio']
-                            df.loc[filtro_adm, "Conductor"] = nuevo_cond
-                            df.loc[filtro_adm, "Pago_Verificado"] = nuevo_verif
-                            df.loc[filtro_adm, "Estado"] = nuevo_est
+                            df.loc[filtro_adm, "Conductor"] = str(nuevo_cond)
+                            df.loc[filtro_adm, "Pago_Verificado"] = str(nuevo_verif)
+                            df.loc[filtro_adm, "Estado"] = str(nuevo_est)
                             guardar_datos(df)
                             st.success("¡Actualizado correctamente!")
                             st.rerun()
