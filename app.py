@@ -384,4 +384,67 @@ elif "Portal de Prestador" in rol:
 
             tab_viajes, tab_finanzas, tab_liquidaciones = st.tabs(["Mis Viajes Activos", "Mis Ganancias", "Liquidaciones"])
             
+            with tab_viajes:tab_viajes, tab_finanzas, tab_liquidaciones = st.tabs(["Mis Viajes Activos", "Mis Ganancias", "Liquidaciones"])
+            
             with tab_viajes:
+                st.subheader("Servicios Asignados en Curso")
+                if len(viajes_activos_cond) == 0:
+                    st.info("No tienes servicios activos en este momento.")
+                else:
+                    for idx_v, v_row in viajes_activos_cond.iterrows():
+                        with st.expander(f"Servicio #{v_row['ID_Servicio']} - {v_row['Tipo_Seservicio'] if 'Tipo_Seservicio' in v_row else v_row['Tipo_Servicio']}", expanded=True):
+                            st.write(f"**Cliente:** {v_row['Cliente']} (Tlf: {v_row['Telefono_Cliente']})")
+                            st.write(f"**Origen:** {v_row['Origen']}")
+                            st.write(f"**Destino:** {v_row['Destino']}")
+                            st.write(f"**Monto:** ${float(v_row['Monto_USD']):,.2f} USD")
+                            
+                            estado_actual = v_row['Estado']
+                            nuevo_estado = st.selectbox(
+                                "Actualizar Estado del Servicio:",
+                                ["Asignado", "En Camino", "Llegue al Sitio", "En Trayecto", "Completado", "Cancelado"],
+                                index=["Asignado", "En Camino", "Llegue al Sitio", "En Trayecto", "Completado", "Cancelado"].index(estado_actual),
+                                key=f"est_{v_row['ID_Servicio']}"
+                            )
+                            
+                            if st.button(f"Guardar Estatus #{v_row['ID_Servicio']}", key=f"btn_est_{v_row['ID_Servicio']}"):
+                                idx_df = df[df["ID_Servicio"] == v_row['ID_Servicio']].index
+                                df.at[idx_df[0], "Estado"] = nuevo_estado
+                                if nuevo_estado == "Completado":
+                                    comision_sistema = float(v_row['Monto_USD']) * (1.0 - (st.session_state.porcentaje_prestador / 100.0))
+                                    ganancia_prestador = float(v_row['Monto_USD']) * (st.session_state.porcentaje_prestador / 100.0)
+                                    df.at[idx_df[0], "Liquidado"] = "No"
+                                    
+                                    # Actualizar wallet del prestador si aplica
+                                    p_idx = df_prestadores[df_prestadores["Nombre"].str.lower() == nom_prestador.strip().lower()].index
+                                    if len(p_idx) > 0:
+                                        wallet_actual = float(df_prestadores.at[p_idx[0], "Saldo_Wallet"] if pd.notna(df_prestadores.at[p_idx[0], "Saldo_Wallet"]) else 0.0)
+                                        df_prestadores.at[p_idx[0], "Saldo_Wallet"] = str(wallet_actual + ganancia_prestador)
+                                        guardar_prestadores(df_prestadores)
+                                        
+                                guardar_datos(df)
+                                st.success("¡Estatus actualizado con éxito!")
+                                st.rerun()
+
+            with tab_finanzas:
+                st.subheader("Resumen de Ganancias")
+                servicios_completados = servicios_cond[servicios_cond["Estado"] == "Completado"]
+                total_ganado = servicios_completados["Monto_USD"].astype(float).sum() * (st.session_state.porcentaje_prestador / 100.0)
+                st.metric("Total Acumulado Ganado", f"${total_ganado:,.2f} USD")
+                st.dataframe(servicios_completados[["ID_Servicio", "Fecha_Hora", "Tipo_Servicio", "Monto_USD", "Estado"]])
+
+            with tab_liquidaciones:
+                st.subheader("Solicitud de Liquidación de Fondos")
+                st.write("Puedes solicitar el pago de tus servicios completados pendientes de liquidación.")
+                if st.button("Solicitar Pago de Liquidación"):
+                    nuevo_id_liq = f"LIQ-{int(time.time())}"
+                    nueva_liq = {
+                        "ID_Liquidacion": nuevo_id_liq,
+                        "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Prestador": nom_prestador,
+                        "Monto_USD": str(total_ganado),
+                        "Referencia_Pago": "Pendiente",
+                        "Estatus_Confirmacion": "Solicitado"
+                    }
+                    df_liquidaciones = pd.concat([df_liquidaciones, pd.DataFrame([nueva_liq])], ignore_index=True)
+                    guardar_liquidaciones(df_liquidaciones)
+                    st.success(f"¡Solicitud de liquidación #{nuevo_id_liq} enviada al administrador!")
