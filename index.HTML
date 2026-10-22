@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LLEGANDO - Red Integral de Movilidad y Logística</title>
+    <title>LLEGANDO - Taxi, Mototaxi, Fletes y Delivery</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Leaflet CSS y JS para Mapas Interactivos -->
@@ -12,7 +12,7 @@
     <!-- FontAwesome para Iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        #map { height: 350px; width: 100%; border-radius: 0.75rem; z-index: 10; }
+        #map { height: 320px; width: 100%; border-radius: 0.75rem; z-index: 10; }
         .transition-sidebar { transition: transform 0.3s ease-in-out; }
     </style>
 </head>
@@ -40,13 +40,13 @@
             </div>
 
             <div class="flex items-center space-x-4">
-                <div class="hidden sm:flex flex-col text-right cursor-pointer" onclick="cambiarTasaBCV()" title="Clic para actualizar tasa">
-                    <span class="text-xs text-gray-400 font-semibold uppercase">Tasa BCV Oficial</span>
-                    <span class="text-sm font-bold text-red-600" id="bcv-rate-display">Bs. 884.75</span>
+                <div class="flex flex-col text-right cursor-pointer" onclick="cambiarTasaBCV()" title="Clic para modificar tasa">
+                    <span class="text-[10px] text-gray-400 font-semibold uppercase">Tasa BCV Oficial</span>
+                    <span class="text-xs sm:text-sm font-bold text-red-600" id="bcv-rate-display">Bs. 884.75</span>
                 </div>
-                <div class="flex items-center space-x-2 bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
+                <div class="hidden sm:flex items-center space-x-2 bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
                     <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                    <span id="current-portal-badge" class="text-xs font-semibold text-gray-700">Catálogo & Logística</span>
+                    <span class="text-xs font-semibold text-gray-700">Movilidad & Envíos</span>
                 </div>
             </div>
         </div>
@@ -64,20 +64,20 @@
             
             <nav class="space-y-1">
                 <button onclick="cambiarVista('catalogo'); toggleSidebar();" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition">
-                    <i class="fa-solid fa-store w-5"></i>
-                    <span>Catálogo de Productos</span>
+                    <i class="fa-solid fa-car-side w-5"></i>
+                    <span>Servicios de Transporte</span>
                 </button>
                 <button onclick="cambiarVista('nuevo'); toggleSidebar();" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition">
                     <i class="fa-solid fa-circle-plus w-5"></i>
-                    <span>Registrar Producto</span>
+                    <span>Registrar Nuevo Servicio</span>
                 </button>
                 <button onclick="cambiarVista('mapa'); toggleSidebar();" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition">
                     <i class="fa-solid fa-map-location-dot w-5"></i>
-                    <span>Rutas y Mapa Logístico</span>
+                    <span>Mapa y Cobertura</span>
                 </button>
                 <button onclick="cambiarVista('carrito'); toggleSidebar();" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition">
-                    <i class="fa-solid fa-cart-shopping w-5"></i>
-                    <span>Carrito de Pedidos</span>
+                    <i class="fa-solid fa-paper-plane w-5"></i>
+                    <span>Solicitud de Servicio</span>
                 </button>
             </nav>
         </div>
@@ -94,28 +94,50 @@
     <!-- Contenido Principal -->
     <main class="flex-1 max-w-4xl w-full mx-auto p-4 space-y-4">
 
-        <!-- VISTA 1: CATÁLOGO DE PRODUCTOS -->
+        <!-- VISTA 1: SERVICIOS Y CATEGORÍAS -->
         <div id="view-catalogo" class="space-y-4">
+            
+            <!-- Categorías rápidas -->
+            <div class="flex overflow-x-auto space-x-2 pb-2 scrollbar-none">
+                <button onclick="filtrarCategoria('Todos')" class="cat-btn bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm">Todos</button>
+                <button onclick="filtrarCategoria('Taxi')" class="cat-btn bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap hover:bg-gray-50"><i class="fa-solid fa-taxi text-yellow-500 mr-1"></i> Taxi</button>
+                <button onclick="filtrarCategoria('Mototaxi')" class="cat-btn bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap hover:bg-gray-50"><i class="fa-solid fa-motorcycle text-red-500 mr-1"></i> Mototaxi</button>
+                <button onclick="filtrarCategoria('Fletes')" class="cat-btn bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap hover:bg-gray-50"><i class="fa-solid fa-truck text-blue-500 mr-1"></i> Fletes</button>
+                <button onclick="filtrarCategoria('Delivery')" class="cat-btn bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap hover:bg-gray-50"><i class="fa-solid fa-box text-green-500 mr-1"></i> Delivery</button>
+                <button onclick="filtrarCategoria('Encomiendas')" class="cat-btn bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap hover:bg-gray-50"><i class="fa-solid fa-envelope text-purple-500 mr-1"></i> Encomiendas</button>
+            </div>
+
             <div class="relative">
                 <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-gray-400"></i>
-                <input type="text" id="search-input" oninput="renderizarCatalogo()" placeholder="Buscar productos o servicios..." class="w-full pl-11 pr-4 py-3 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm">
+                <input type="text" id="search-input" oninput="renderizarCatalogo()" placeholder="Buscar servicio de taxi, flete, delivery..." class="w-full pl-11 pr-4 py-3 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm">
             </div>
+
             <div id="catalogo-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <!-- Se inyecta dinámicamente -->
             </div>
         </div>
 
-        <!-- VISTA 2: NUEVO PRODUCTO -->
+        <!-- VISTA 2: NUEVO SERVICIO / TARIFA -->
         <div id="view-nuevo" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4 max-w-lg mx-auto">
             <h2 class="font-bold text-gray-800 text-lg border-b pb-3 flex items-center">
-                <i class="fa-solid fa-plus-circle text-red-600 mr-2"></i> Registrar Nuevo Producto
+                <i class="fa-solid fa-plus-circle text-red-600 mr-2"></i> Registrar Servicio o Tarifa
             </h2>
             <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Nombre del Producto / Servicio</label>
-                <input type="text" id="new-name" placeholder="Ej: Envío Express / Insumo" class="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Categoría</label>
+                <select id="new-category" class="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none">
+                    <option value="Taxi">Taxi (Vehículo Ejecutivo/Particular)</option>
+                    <option value="Mototaxi">Mototaxi (Traslado Rápido)</option>
+                    <option value="Fletes">Fletes (Carga / Mudanzas)</option>
+                    <option value="Delivery">Delivery (Comida / Compras)</option>
+                    <option value="Encomiendas">Encomiendas (Documentos / Paquetes)</option>
+                </select>
             </div>
             <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Precio Unitario en USD ($)</label>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Nombre o Nombre de Ruta</label>
+                <input type="text" id="new-name" placeholder="Ej: Carrera Corta Urbana / Flete Pesado" class="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Precio Base en USD ($)</label>
                 <input type="number" step="0.01" id="new-price" placeholder="0.00" class="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none">
             </div>
             <div>
@@ -123,39 +145,59 @@
                 <input type="text" id="new-img" placeholder="https://..." class="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none">
             </div>
             <button onclick="guardarProducto()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-red-700 transition">
-                Guardar y Publicar
+                Guardar Servicio
             </button>
         </div>
 
-        <!-- VISTA 3: MAPA Y LOGÍSTICA -->
+        <!-- VISTA 3: MAPA Y COBERTURA -->
         <div id="view-mapa" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
             <h2 class="font-bold text-gray-800 text-lg flex items-center">
-                <i class="fa-solid fa-map-location-dot text-red-600 mr-2"></i> Mapa y Cobertura Logística
+                <i class="fa-solid fa-map-location-dot text-red-600 mr-2"></i> Cobertura y Puntos de Salida
             </h2>
-            <p class="text-xs text-gray-500">Visualiza puntos de despacho y rutas activas en tiempo real.</p>
+            <p class="text-xs text-gray-500">Nuestra red cubre traslados locales e interurbanos.</p>
             <div id="map"></div>
         </div>
 
-        <!-- VISTA 4: CARRITO Y PEDIDOS -->
+        <!-- VISTA 4: SOLICITUD DE SERVICIO / FORMULARIO -->
         <div id="view-carrito" class="hidden space-y-4 max-w-lg mx-auto">
             <h2 class="font-bold text-gray-800 text-lg flex items-center">
-                <i class="fa-solid fa-cart-shopping text-red-600 mr-2"></i> Detalle del Pedido
+                <i class="fa-solid fa-paper-plane text-red-600 mr-2"></i> Solicitar Servicio
             </h2>
-            <div id="cart-list" class="space-y-2">
-                <!-- Se llena dinámicamente -->
-            </div>
-            <div class="bg-white p-5 rounded-2xl border border-gray-200 space-y-3 shadow-sm">
-                <div class="flex justify-between font-bold text-gray-700 text-sm">
-                    <span>Total USD:</span>
-                    <span id="cart-total-usd">$0.00</span>
+
+            <div class="bg-white p-5 rounded-2xl border border-gray-200 space-y-4 shadow-sm">
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fa-solid fa-location-dot text-green-600 mr-1"></i> Punto de Origen (Recogida)</label>
+                        <input type="text" id="order-origin" placeholder="Ej: Urb. La Estrella, Sector 2" class="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fa-solid fa-location-crosshairs text-red-600 mr-1"></i> Punto de Destino (Llegada)</label>
+                        <input type="text" id="order-destination" placeholder="Ej: Centro Comercial / Terminal" class="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fa-solid fa-comment-dots text-gray-400 mr-1"></i> Detalles adicionales (Opcional)</label>
+                        <input type="text" id="order-notes" placeholder="Ej: Carga pesada, 2 personas, paquete frágil" class="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none">
+                    </div>
                 </div>
-                <div class="flex justify-between font-extrabold text-red-600 text-lg border-t pt-2">
-                    <span>Total Bolívares (BCV):</span>
-                    <span id="cart-total-bs">Bs. 0.00</span>
+
+                <div id="cart-list" class="space-y-2 border-t pt-3">
+                    <!-- Se llena dinámicamente con los servicios seleccionados -->
                 </div>
+
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-2">
+                    <div class="flex justify-between font-bold text-gray-700 text-sm">
+                        <span>Total USD:</span>
+                        <span id="cart-total-usd">$0.00</span>
+                    </div>
+                    <div class="flex justify-between font-extrabold text-red-600 text-lg border-t pt-2">
+                        <span>Total Bolívares (BCV):</span>
+                        <span id="cart-total-bs">Bs. 0.00</span>
+                    </div>
+                </div>
+
                 <button onclick="enviarWhatsApp()" class="w-full bg-green-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-green-700 flex items-center justify-center space-x-2 transition">
                     <i class="fa-brands fa-whatsapp text-lg"></i>
-                    <span>Procesar Pedido por WhatsApp</span>
+                    <span>Enviar Solicitud por WhatsApp</span>
                 </button>
             </div>
         </div>
@@ -165,8 +207,8 @@
     <!-- NAVEGACIÓN INFERIOR FIJA -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-3 shadow-lg z-30 max-w-4xl mx-auto">
         <button onclick="cambiarVista('catalogo')" id="nav-catalogo" class="flex flex-col items-center text-red-600 font-medium">
-            <i class="fa-solid fa-store text-lg"></i>
-            <span class="text-[10px] mt-1">Catálogo</span>
+            <i class="fa-solid fa-taxi text-lg"></i>
+            <span class="text-[10px] mt-1">Servicios</span>
         </button>
         <button onclick="cambiarVista('nuevo')" id="nav-nuevo" class="flex flex-col items-center text-gray-400 font-medium">
             <i class="fa-solid fa-circle-plus text-lg"></i>
@@ -177,8 +219,8 @@
             <span class="text-[10px] mt-1">Mapa</span>
         </button>
         <button onclick="cambiarVista('carrito')" id="nav-carrito" class="flex flex-col items-center text-gray-400 font-medium relative">
-            <i class="fa-solid fa-cart-shopping text-lg"></i>
-            <span class="text-[10px] mt-1">Carrito</span>
+            <i class="fa-solid fa-paper-plane text-lg"></i>
+            <span class="text-[10px] mt-1">Solicitar</span>
             <span id="cart-badge" class="absolute -top-1 right-1 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
         </button>
     </nav>
@@ -186,10 +228,16 @@
     <!-- Script de Lógica de la App -->
     <script>
         let tasaBCV = parseFloat(localStorage.getItem('llegando_tasa')) || 884.75;
+        let categoriaActiva = 'Todos';
+        
         let productos = JSON.parse(localStorage.getItem('llegando_prods')) || [
-            { id: 1, nombre: 'Servicio de Envíos Express', precio: 10.00, img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300&auto=format&fit=crop&q=80' },
-            { id: 2, nombre: 'Paquete Logístico Standard', precio: 25.00, img: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=300&auto=format&fit=crop&q=80' }
+            { id: 1, categoria: 'Taxi', nombre: 'Servicio de Taxi (Carrera Corta)', precio: 3.00, img: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=300&auto=format&fit=crop&q=80' },
+            { id: 2, categoria: 'Mototaxi', nombre: 'Mototaxi Express (Urbano)', precio: 1.50, img: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=300&auto=format&fit=crop&q=80' },
+            { id: 3, categoria: 'Delivery', nombre: 'Delivery / Envío de Compras', precio: 2.00, img: 'https://images.unsplash.com/photo-1526367790999-0150786686a2?w=300&auto=format&fit=crop&q=80' },
+            { id: 4, categoria: 'Fletes', nombre: 'Flete Pequeño / Camioneta', precio: 15.00, img: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=300&auto=format&fit=crop&q=80' },
+            { id: 5, categoria: 'Encomiendas', nombre: 'Envío de Encomiendas y Sobres', precio: 2.50, img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300&auto=format&fit=crop&q=80' }
         ];
+
         let carrito = {};
         let mapInitialized = false;
         let map;
@@ -220,12 +268,12 @@
 
             if (vista === 'mapa' && !mapInitialized) {
                 setTimeout(() => {
-                    map = L.map('map').setView([10.1581, -66.8656], 13); // Charallave / zona central por defecto
+                    map = L.map('map').setView([10.1581, -66.8656], 13);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; OpenStreetMap contributors'
+                        attribution: '&copy; OpenStreetMap'
                     }).addTo(map);
                     L.marker([10.1581, -66.8656]).addTo(map)
-                        .bindPopup('<b>LLEGANDO Hub Central</b><br/>Operaciones de Logística.')
+                        .bindPopup('<b>LLEGANDO Central</b><br/>Punto de despacho.')
                         .openPopup();
                     mapInitialized = true;
                 }, 200);
@@ -243,25 +291,44 @@
             }
         }
 
+        function filtrarCategoria(cat) {
+            categoriaActiva = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if(btn.innerText.includes(cat)) {
+                    btn.className = 'cat-btn bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm';
+                } else {
+                    btn.className = 'cat-btn bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap hover:bg-gray-50';
+                }
+            });
+            renderizarCatalogo();
+        }
+
         function renderizarCatalogo() {
             const query = document.getElementById('search-input').value.toLowerCase();
             const grid = document.getElementById('catalogo-grid');
             grid.innerHTML = '';
 
-            productos.filter(p => p.nombre.toLowerCase().includes(query)).forEach(p => {
+            const filtrados = productos.filter(p => {
+                const coincideBusqueda = p.nombre.toLowerCase().includes(query) || (p.categoria && p.categoria.toLowerCase().includes(query));
+                const coincideCat = (categoriaActiva === 'Todos') || (p.categoria === categoriaActiva);
+                return coincideBusqueda && coincideCat;
+            });
+
+            filtrados.forEach(p => {
                 const bs = (p.precio * tasaBCV).toFixed(2);
                 grid.innerHTML += `
                     <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex space-x-4 items-center">
-                        <img src="${p.img}" class="w-20 h-20 object-cover rounded-xl bg-gray-100" onerror="this.src='https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300&auto=format&fit=crop&q=80'">
+                        <img src="${p.img}" class="w-20 h-20 object-cover rounded-xl bg-gray-100" onerror="this.src='https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=300&auto=format&fit=crop&q=80'">
                         <div class="flex-1">
-                            <h3 class="font-bold text-gray-800 text-sm">${p.nombre}</h3>
+                            <span class="text-[10px] font-bold uppercase text-red-600 bg-red-50 px-2 py-0.5 rounded-md">${p.categoria || 'Servicio'}</span>
+                            <h3 class="font-bold text-gray-800 text-sm mt-1">${p.nombre}</h3>
                             <div class="mt-1">
                                 <span class="text-red-600 font-extrabold text-base">$${p.precio.toFixed(2)}</span>
                                 <span class="block text-xs text-gray-500 font-semibold">Bs. ${bs}</span>
                             </div>
                         </div>
                         <button onclick="agregarCarrito(${p.id})" class="bg-red-600 text-white p-3 rounded-xl shadow hover:bg-red-700 transition">
-                            <i class="fa-solid fa-cart-plus"></i>
+                            <i class="fa-solid fa-plus"></i>
                         </button>
                     </div>
                 `;
@@ -270,29 +337,30 @@
         }
 
         function guardarProducto() {
+            const categoria = document.getElementById('new-category').value;
             const nombre = document.getElementById('new-name').value;
             const precio = parseFloat(document.getElementById('new-price').value);
-            const img = document.getElementById('new-img').value || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300&auto=format&fit=crop&q=80';
+            const img = document.getElementById('new-img').value || 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=300&auto=format&fit=crop&q=80';
 
             if (!nombre || isNaN(precio) || precio <= 0) {
                 alert("Por favor ingrese un nombre y precio válido.");
                 return;
             }
 
-            productos.push({ id: Date.now(), nombre, precio, img });
+            productos.push({ id: Date.now(), categoria, nombre, precio, img });
             guardarDatos();
             document.getElementById('new-name').value = '';
             document.getElementById('new-price').value = '';
             document.getElementById('new-img').value = '';
             cambiarVista('catalogo');
             renderizarCatalogo();
-            mostrarToast("Producto registrado exitosamente");
+            mostrarToast("Servicio registrado exitosamente");
         }
 
         function agregarCarrito(id) {
             carrito[id] = (carrito[id] || 0) + 1;
             renderizarCatalogo();
-            mostrarToast("Producto agregado al carrito");
+            mostrarToast("Servicio añadido a la solicitud");
         }
 
         function actualizarCarritoVista() {
@@ -309,10 +377,10 @@
                     totalUsd += subUsd;
                     totalCount += cant;
                     container.innerHTML += `
-                        <div class="bg-white p-4 rounded-xl border border-gray-200 flex justify-between items-center text-sm shadow-sm">
+                        <div class="bg-white p-3 rounded-xl border border-gray-200 flex justify-between items-center text-sm">
                             <div>
-                                <p class="font-bold text-gray-800">${prod.nombre}</p>
-                                <p class="text-xs text-gray-500">$${prod.precio.toFixed(2)} x ${cant}</p>
+                                <p class="font-bold text-gray-800 text-xs">${prod.nombre}</p>
+                                <p class="text-[11px] text-gray-500">$${prod.precio.toFixed(2)} x ${cant}</p>
                             </div>
                             <span class="font-extrabold text-red-600">$${subUsd.toFixed(2)}</span>
                         </div>
@@ -334,22 +402,35 @@
         }
 
         function enviarWhatsApp() {
-            let msg = "¡Hola LLEGANDO! Deseo confirmar el siguiente pedido:%0A%0A";
-            let totalUsd = 0;
+            const origen = document.getElementById('order-origin').value;
+            const destino = document.getElementById('order-destination').value;
+            const notas = document.getElementById('order-notes').value;
 
+            if(!origen || !destino) {
+                alert("Por favor ingrese el Punto de Origen y Punto de Destino.");
+                return;
+            }
+
+            let msg = "¡Hola LLEGANDO! Solicitud de Servicio:%0A%0A";
+            msg += `📍 *Origen:* ${origen}%0A`;
+            msg += `🏁 *Destino:* ${destino}%0A`;
+            if(notas) msg += `📝 *Detalles:* ${notas}%0A`;
+            msg += `%0A*Servicios Solicitados:*%0A`;
+
+            let totalUsd = 0;
             Object.keys(carrito).forEach(id => {
                 const prod = productos.find(p => p.id == id);
                 if (prod) {
                     const cant = carrito[id];
                     const subUsd = prod.precio * cant;
                     totalUsd += subUsd;
-                    msg += `• ${prod.nombre} x${cant} - $${subUsd.toFixed(2)}%0A`;
+                    msg += `• [${prod.categoria}] ${prod.nombre} (x${cant}) - $${subUsd.toFixed(2)}%0A`;
                 }
             });
 
             const totalBs = totalUsd * tasaBCV;
-            msg += `%0A*Total USD:* $${totalUsd.toFixed(2)}`;
-            msg += `%0A*Total BS (Tasa BCV ${tasaBCV}):* Bs. ${totalBs.toFixed(2)}`;
+            msg += `%0A*Monto Estimado USD:* $${totalUsd.toFixed(2)}`;
+            msg += `%0A*Monto Estimado BS (Tasa BCV ${tasaBCV}):* Bs. ${totalBs.toFixed(2)}`;
 
             window.open(`https://wa.me/?text=${msg}`, '_blank');
         }
@@ -366,4 +447,4 @@
         renderizarCatalogo();
     </script>
 </body>
-</html>
+</html>        
