@@ -22,7 +22,7 @@
                 <div class="bg-red-600 text-white p-2 rounded-lg shadow">
                     <i class="fa-solid fa-route"></i>
                 </div>
-                <span class="font-bold text-lg tracking-wide">LLEGANDO (Liquidaciones y Control)</span>
+                <span class="font-bold text-lg tracking-wide">LLEGANDO (Liquidaciones y Control con Foto)</span>
             </div>
             <div class="flex items-center space-x-3">
                 <div class="text-right cursor-pointer">
@@ -143,7 +143,7 @@
             </div>
         </div>
 
-        <!-- ================= 4. PANEL GERENCAL Y LIQUIDACIONES (ADMIN) ================= -->
+        <!-- ================= 4. PANEL GERENCIAL Y LIQUIDACIONES (ADMIN) ================= -->
         <div id="portal-admin" class="hidden space-y-4">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                 <h2 class="font-extrabold text-slate-900 text-xl flex items-center"><i class="fa-solid fa-gauge-high text-red-600 mr-2"></i> Panel Gerencial & Liquidaciones LLEGANDO</h2>
@@ -210,7 +210,7 @@
                                         <tr class="bg-slate-100 border-b text-slate-700">
                                             <th class="p-3">ID / Fecha</th>
                                             <th class="p-3">Cliente</th>
-                                            <th class="p-3">Prestador</th>
+                                            <th class="p-3">Prestador (Conductor)</th>
                                             <th class="p-3">Servicio</th>
                                             <th class="p-3">Monto ($ / Bs)</th>
                                             <th class="p-3">Estatus</th>
@@ -228,13 +228,13 @@
                     <!-- SUB-TAB 3: PRESTADORES -->
                     <div id="subadmin-prestadores" class="hidden space-y-4">
                         <div class="p-5 bg-white border rounded-2xl shadow-sm space-y-4">
-                            <h3 class="font-bold text-slate-800 text-sm border-b pb-2"><i class="fa-solid fa-id-card-clip text-red-600 mr-2"></i> Registro de Prestadores</h3>
+                            <h3 class="font-bold text-slate-800 text-sm border-b pb-2"><i class="fa-solid fa-id-card-clip text-red-600 mr-2"></i> Registro de Prestador (Con Foto Obligatoria)</h3>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border">
                                 <input type="text" id="p-nombre" placeholder="Nombre Completo *" class="p-2.5 border rounded-lg text-sm bg-white">
                                 <input type="text" id="p-cedula" placeholder="Cédula *" class="p-2.5 border rounded-lg text-sm bg-white">
                                 <input type="text" id="p-vehiculo" placeholder="Vehículo (Moto/Auto) *" class="p-2.5 border rounded-lg text-sm bg-white">
                                 <input type="text" id="p-placa" placeholder="Placa *" class="p-2.5 border rounded-lg text-sm bg-white">
-                                <input type="text" id="p-foto-url" placeholder="URL de Foto (Opcional)" class="sm:col-span-2 p-2.5 border rounded-lg text-sm bg-white">
+                                <input type="text" id="p-foto-url" placeholder="URL de la Foto del Prestador * (Ej: https://...)" class="sm:col-span-2 p-2.5 border rounded-lg text-sm bg-white border-red-300">
                                 <button type="button" onclick="registrarPrestadorAdmin()" class="sm:col-span-2 bg-red-600 text-white py-2.5 rounded-xl text-xs font-bold shadow hover:bg-red-700 transition">Dar de Alta Prestador</button>
                             </div>
                             <div id="lista-prestadores-admin" class="space-y-2 pt-2"></div>
@@ -419,7 +419,15 @@
                 } else if(s.montoUsd === 0) {
                     htmlAlerta = `<div class="p-3 bg-yellow-50 border rounded-xl text-xs">⏳ Esperando tarifa del Administrador...</div>`;
                 } else if(s.conductor !== "Por Asignar") {
-                    htmlAlerta = `<div class="p-3 bg-emerald-50 border rounded-xl text-xs flex items-center space-x-3"><img src="${s.fotoConductor}" class="w-12 h-12 rounded-full object-cover"><div><p class="font-bold">Conductor: ${s.conductor}</p><p>${s.vehiculoInfo}</p></div></div>`;
+                    // Muestra la foto real del prestador asignado
+                    htmlAlerta = `
+                        <div class="p-3 bg-emerald-50 border rounded-xl text-xs flex items-center space-x-3">
+                            <img src="${s.fotoConductor || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}" class="w-12 h-12 rounded-full object-cover border-2 border-emerald-600 shadow">
+                            <div>
+                                <p class="font-bold text-emerald-900">Conductor Asignado: ${s.conductor}</p>
+                                <p class="text-slate-600">${s.vehiculoInfo}</p>
+                            </div>
+                        </div>`;
                 }
 
                 let htmlPagoMovil = (s.montoUsd > 0 && s.estatus !== "Completado") ? `
@@ -530,7 +538,11 @@
                 } else if(!s.pagoConfirmado) {
                     htmlAccion = `<button type="button" onclick="validarPagoYConductor(${s.id})" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs font-bold">Validar y Asignar</button>`;
                 } else {
-                    htmlAccion = `<span class="text-emerald-600 font-bold text-xs">Asignado a ${s.conductor}</span>`;
+                    htmlAccion = `
+                        <div class="flex items-center space-x-2">
+                            <img src="${s.fotoConductor}" class="w-7 h-7 rounded-full object-cover border">
+                            <span class="text-emerald-600 font-bold text-xs">${s.conductor}</span>
+                        </div>`;
                 }
 
                 cont.innerHTML += `
@@ -545,7 +557,6 @@
             });
         }
 
-        // ================= NUEVA FUNCIÓN DE RELACIÓN Y LIQUIDACIONES =================
         function renderizarRelacionLiquidaciones() {
             const tbody = document.getElementById('tabla-relacion-cuerpo');
             const filtro = document.getElementById('filtro-tipo-relacion')?.value || 'todos';
@@ -574,8 +585,8 @@
             filtrados.forEach(s => {
                 const monto = s.montoUsd || 0;
                 const montoBs = (monto * tasaBCV).toFixed(2);
-                const comision = monto * 0.20; // 20% para la plataforma
-                const netoPrestador = monto * 0.80; // 80% para el conductor
+                const comision = monto * 0.20; 
+                const netoPrestador = monto * 0.80; 
 
                 if(s.estatus === 'Completado' || s.pagoConfirmado) {
                     totalUsdGlobal += monto;
@@ -587,11 +598,18 @@
                     `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold text-[10px]">Liquidado</span>` :
                     `<button onclick="liquidarServicio(${s.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded font-bold text-[10px]">Liquidar Pago</button>`;
 
+                // Incluye la foto del prestador en la tabla de relación gerencial
+                let infoConductorTabla = s.conductor !== "Por Asignar" ? `
+                    <div class="flex items-center space-x-2">
+                        <img src="${s.fotoConductor}" class="w-6 h-6 rounded-full object-cover">
+                        <span>${s.conductor}</span>
+                    </div>` : `<span class="text-slate-400">Por Asignar</span>`;
+
                 tbody.innerHTML += `
                     <tr class="border-b hover:bg-slate-50">
                         <td class="p-3"><b>#${s.id}</b><br><span class="text-[10px] text-slate-400">${s.fecha || ''}</span></td>
                         <td class="p-3">${s.nombre}<br><span class="text-[10px] text-slate-500">${s.telefono}</span></td>
-                        <td class="p-3 font-semibold text-slate-700">${s.conductor}</td>
+                        <td class="p-3">${infoConductorTabla}</td>
                         <td class="p-3">${s.tipo}</td>
                         <td class="p-3"><b>$${monto.toFixed(2)}</b><br><span class="text-[10px] text-slate-500">Bs. ${montoBs}</span></td>
                         <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-200 font-semibold">${s.estatus}</span></td>
@@ -611,7 +629,6 @@
                 alert("✅ Pago liquidado con éxito.");
             }
         }
-        // ===========================================================================
 
         function asignarPrecio(id) {
             const precio = parseFloat(document.getElementById(`p-in-${id}`).value);
@@ -640,12 +657,23 @@
             const cedula = document.getElementById('p-cedula').value.trim();
             const vehiculo = document.getElementById('p-vehiculo').value.trim();
             const placa = document.getElementById('p-placa').value.trim();
-            const foto = document.getElementById('p-foto-url').value.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';
+            const foto = document.getElementById('p-foto-url').value.trim();
 
-            if(!nombre || !cedula) { alert("Completa los campos obligatorios."); return; }
+            if(!nombre || !cedula || !foto) { 
+                alert("⚠️ Por favor completa los campos obligatorios, incluyendo obligatoriamente la URL de la foto del prestador."); 
+                return; 
+            }
+            
             const pId = Date.now();
             db.ref('prestadores/' + pId).set({ id: pId, nombre, cedula, vehiculo, placa, foto, estatus: "Activo", disponible: true });
-            alert("Prestador registrado en la nube.");
+            alert("✅ Prestador registrado con éxito en la nube con su fotografía.");
+            
+            // Limpiar campos
+            document.getElementById('p-nombre').value = '';
+            document.getElementById('p-cedula').value = '';
+            document.getElementById('p-vehiculo').value = '';
+            document.getElementById('p-placa').value = '';
+            document.getElementById('p-foto-url').value = '';
         }
 
         function renderizarPrestadoresAdmin() {
@@ -655,7 +683,10 @@
             prestadores.forEach((p, i) => {
                 cont.innerHTML += `
                     <div class="p-2 bg-white border rounded flex justify-between items-center text-xs">
-                        <span><b>${p.nombre}</b> (${p.vehiculo} - ${p.placa})</span>
+                        <div class="flex items-center space-x-2">
+                            <img src="${p.foto}" class="w-8 h-8 rounded-full object-cover border">
+                            <span><b>${p.nombre}</b> (${p.vehiculo} - ${p.placa})</span>
+                        </div>
                         <span class="text-emerald-600 font-bold">${p.estatus}</span>
                     </div>
                 `;
