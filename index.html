@@ -48,7 +48,7 @@
             <!-- Pestañas internas del cliente -->
             <div class="flex space-x-2 border-b pb-2">
                 <button onclick="verTabCliente('solicitar')" id="tab-cli-solicitar" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white">Solicitar Servicio</button>
-                <button onclick="verTabCliente('mis-servicios')" id="tab-cli-mis-servicios" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700">Mis Servicios / Alertas de Pago</button>
+                <button onclick="verTabCliente('mis-servicios')" id="tab-cli-mis-servicios" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700">Historial y Alertas de Pago</button>
             </div>
 
             <!-- TAB 1: FORMULARIO DE SOLICITUD -->
@@ -61,7 +61,7 @@
                         <input type="text" id="cli-nombre" placeholder="Ej: Juan Pérez" class="w-full p-3 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Teléfono de Contacto (Para consultar estatus) *</label>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Teléfono de Contacto (Para consultar historial) *</label>
                         <input type="text" id="cli-telefono" placeholder="Ej: 04121234567" class="w-full p-3 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500">
                     </div>
                     <div>
@@ -108,5 +108,208 @@
                 </button>
             </div>
 
-            <!-- TAB 2: CONSULTA DE SERVICIOS Y ALERTAS DE PAGO MÓVIL -->
-            <div id="subtab-mis-servicios"
+            <!-- TAB 2: HISTORIAL Y ALERTAS DE PAGO MÓVIL (ORDEN: MÁS ANTIGUO A MÁS NUEVO) -->
+            <div id="subtab-mis-servicios" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="font-bold text-slate-900 text-lg flex items-center"><i class="fa-solid fa-clock-rotate-left text-red-600 mr-2"></i> Historial de Servicios (Más antiguo al más nuevo)</h2>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-1 rounded">Orden Cronológico</span>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Ingresa tu Número de Teléfono Registrado:</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="consultar-tlf-cli" placeholder="Ej: 04121234567" class="w-full p-3 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500">
+                        <button onclick="buscarServiciosCliente()" class="bg-slate-900 text-white px-5 py-3 rounded-xl font-bold text-xs hover:bg-slate-800 whitespace-nowrap">Consultar</button>
+                    </div>
+                </div>
+
+                <div id="lista-servicios-cliente-resultado" class="space-y-3 pt-2">
+                    <p class="text-xs text-slate-400">Ingresa tu número para verificar el historial completo de tus solicitudes...</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= 2. PORTAL DE PRESTADOR ================= -->
+        <div id="portal-prestador" class="hidden space-y-4">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="font-bold text-slate-900 text-lg flex items-center"><i class="fa-solid fa-id-badge text-yellow-600 mr-2"></i> Panel de Prestador</h2>
+                    <button onclick="toggleDisponibilidad()" id="btn-disp" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow">DISPONIBLE</button>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tu Nombre Autorizado</label>
+                    <input type="text" id="pres-nombre-login" oninput="renderizarServiciosPrestador()" placeholder="Ingresa tu nombre exacto..." class="w-full p-3 border rounded-xl text-sm outline-none">
+                </div>
+
+                <div class="space-y-2 pt-2">
+                    <h3 class="font-bold text-slate-700 text-xs uppercase">Servicios Asignados a mi Ruta</h3>
+                    <div id="prestador-mis-servicios" class="space-y-2">
+                        <p class="text-xs text-slate-400">Ingresa tu nombre para ver las carreras asignadas...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 3. PORTAL DE ALIADO COMERCIAL ================= -->
+        <div id="portal-aliado" class="hidden space-y-4">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <h2 class="font-bold text-slate-900 text-lg flex items-center"><i class="fa-solid fa-store text-emerald-600 mr-2"></i> Portal de Aliados Comerciales</h2>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Número de Suscripción (Ej: ALIADO-101)</label>
+                    <input type="text" id="aliado-sus" placeholder="ALIADO-..." class="w-full p-3 border rounded-xl text-sm outline-none">
+                </div>
+                <div class="p-4 bg-slate-50 rounded-xl border text-center text-xs text-slate-500">
+                    Conéctate para solicitar deliveries inmediatos para tu local comercial.
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 4. PANEL GERENCIAL (ADMIN) ================= -->
+        <div id="portal-admin" class="hidden space-y-4">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <h2 class="font-extrabold text-slate-900 text-xl flex items-center"><i class="fa-solid fa-gauge-high text-red-600 mr-2"></i> Panel Gerencial LLEGANDO</h2>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Contraseña de Administrador (xxxxx):</label>
+                    <input type="password" id="admin-pass" oninput="verificarPasswordAdmin()" placeholder="Ingrese su contraseña..." class="w-full p-3 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500">
+                </div>
+
+                <!-- Contenido Protegido -->
+                <div id="admin-content" class="hidden space-y-4 pt-2 border-t">
+                    <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold">
+                        <i class="fa-solid fa-circle-check mr-1"></i> Acceso Gerencial Autorizado
+                    </div>
+
+                    <!-- Solicitudes Entrantes -->
+                    <div class="p-4 bg-white border rounded-2xl shadow-sm space-y-3">
+                        <h3 class="font-bold text-slate-800 text-sm border-b pb-2"><i class="fa-solid fa-bell text-red-600 mr-2"></i> Bandeja de Solicitudes y Pago Móvil de Clientes</h3>
+                        <div id="admin-lista-solicitudes" class="space-y-2">
+                            <!-- Se carga dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Registro de Prestadores -->
+                    <div class="p-5 bg-white border rounded-2xl shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-800 text-sm border-b pb-2"><i class="fa-solid fa-id-card-clip text-red-600 mr-2"></i> Registro y Control de Prestadores</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border">
+                            <input type="text" id="p-nombre" placeholder="Nombre Completo *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-cedula" placeholder="Cédula *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-vehiculo" placeholder="Vehículo (Moto/Auto) *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-placa" placeholder="Placa *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <button onclick="registrarPrestadorAdmin()" class="sm:col-span-2 bg-red-600 text-white py-2.5 rounded-xl text-xs font-bold shadow hover:bg-red-700 transition">Dar de Alta Prestador</button>
+                        </div>
+                        <div id="lista-prestadores-admin" class="space-y-2 pt-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Script de Lógica con Orden Cronológico Ascendente -->
+    <script>
+        let tasaBCV = 884.75;
+
+        // Datos oficiales para Pago Móvil de la app
+        const DATOS_PAGO_MOVIL = {
+            banco: "Banco de Venezuela (0102)",
+            telefono: "0412-3349463",
+            cedula: "V-13609424",
+            titular: "LLEGANDO Red Integrada"
+        };
+
+        // Bases de datos simuladas en localStorage
+        let servicios = JSON.parse(localStorage.getItem('llegando_servicios')) || [];
+        let prestadores = JSON.parse(localStorage.getItem('llegando_prestadores')) || [
+            { id: 1, nombre: "Carlos Mendoza", cedula: "V-15482910", vehiculo: "Moto", placa: "AB1C23D", estatus: "Activo", disponible: true }
+        ];
+
+        function cambiarPortal(portal) {
+            ['cliente', 'prestador', 'aliado', 'admin'].forEach(p => {
+                document.getElementById(`portal-${p}`).classList.add('hidden');
+                document.getElementById(`btn-${p}`).className = 'px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap'; }); document.getElementById(`portal-${portal}`).classList.remove('hidden');
+            document.getElementById(`btn-${portal}`).className = 'px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white transition whitespace-nowrap';  if(portal === 'admin') actualizarBadgeAdmin(); if(portal === 'prestador') renderizarServiciosPrestador(); }  function verTabCliente(tab) { document.getElementById('subtab-solicitar').classList.add('hidden'); document.getElementById('subtab-mis-servicios').classList.add('hidden'); document.getElementById('tab-cli-solicitar').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700'; document.getElementById('tab-cli-mis-servicios').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700';  if(tab === 'solicitar') { document.getElementById('subtab-solicitar').classList.remove('hidden'); document.getElementById('tab-cli-solicitar').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white'; } else { document.getElementById('subtab-mis-servicios').classList.remove('hidden'); document.getElementById('tab-cli-mis-servicios').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white'; } }  function actualizarCotizacion() { const tipo = document.getElementById('cli-tipo').value; const tarifas = { "Taxi": 5.00, "Mototaxi": 2.50, "Delivery": 3.00, "Fletes": 15.00, "Encomiendas": 2.50 }; const usd = tarifas[tipo] \vert{}\vert{} 3.00; const bs = usd * tasaBCV; document.getElementById('cotizacion-usd').innerText = `$${usd.toFixed(2)} USD`; document.getElementById('cotizacion-bs').innerText = `Bs. ${bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+        }
+
+        function enviarSolicitudCliente() {
+            const nombre = document.getElementById('cli-nombre').value.trim();
+            const telefono = document.getElementById('cli-telefono').value.trim();
+            const tipo = document.getElementById('cli-tipo').value;
+            const origen = document.getElementById('cli-origen').value.trim();
+            const destino = document.getElementById('cli-destino').value.trim();
+
+            if(!nombre || !telefono || !origen || !destino) {
+                alert("Por favor complete todos los campos obligatorios (*).");
+                return;
+            }
+
+            const tarifas = { "Taxi": 5.00, "Mototaxi": 2.50, "Delivery": 3.00, "Fletes": 15.00, "Encomiendas": 2.50 };
+            const montoUsd = tarifas[tipo] || 3.00;
+
+            const nuevoServicio = {
+                id: Date.now(),
+                nombre, telefono, tipo, origen, destino, montoUsd,
+                estatus: "Solicitado",
+                conductor: "Por Asignar",
+                refPago: "",
+                pagoConfirmado: false,
+                fecha: new Date().toLocaleTimeString()
+            };
+
+            servicios.push(nuevoServicio);
+            localStorage.setItem('llegando_servicios', JSON.stringify(servicios));
+
+            alert(`¡Solicitud enviada con éxito!`);
+            
+            document.getElementById('consultar-tlf-cli').value = telefono;
+            verTabCliente('mis-servicios');
+            buscarServiciosCliente();
+            actualizarBadgeAdmin();
+        }
+
+        // BUSCAR Y MOSTRAR HISTORIAL DEL CLIENTE DEL MÁS ANTIGUO AL MÁS NUEVO
+        function buscarServiciosCliente() {
+            const tlf = document.getElementById('consultar-tlf-cli').value.trim();
+            const cont = document.getElementById('lista-servicios-cliente-resultado');
+            if(!cont) return;
+            cont.innerHTML = '';
+
+            if(!tlf) {
+                cont.innerHTML = `<p class="text-xs text-red-500 font-bold">Por favor ingresa tu número de teléfono.</p>`;
+                return;
+            }
+
+            // Filtrar servicios del cliente
+            const misServicios = servicios.filter(s => s.telefono === tlf);
+
+            if(misServicios.length === 0) {
+                cont.innerHTML = `<p class="text-xs text-slate-500">No hay servicios registrados con el teléfono: <b>${tlf}</b></p>`;
+                return;
+            }
+
+            // Ordenar de forma ascendente (del id/fecha más antiguo al más reciente)
+            misServicios.sort((a, b) => a.id - b.id);
+
+            misServicios.forEach((s, index) => {
+                const montoBs = (s.montoUsd * tasaBCV).toFixed(2);
+                
+                let htmlAlerta = '';
+                if(s.conductor !== "Por Asignar") {
+                    htmlAlerta = `
+                        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs space-y-1">
+                            <p class="font-bold"><i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> ¡TU SERVICIO HA SIDO ASIGNADO!</p>
+                            <p>Prestador Asignado: <b>${s.conductor}</b></p>
+                        </div>
+                    `;
+                } else {
+                    htmlAlerta = `
+                        <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-800 text-xs">
+                            <i class="fa-solid fa-clock text-yellow-600 mr-1"></i> Esperando asignación de prestador por la administración...
+                        </div>
+                    `;
+                }
+
+                cont.innerHTML += `
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                        <div class="flex justify-
