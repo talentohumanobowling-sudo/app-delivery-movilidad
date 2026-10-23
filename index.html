@@ -277,3 +277,113 @@
                 content.classList.add('hidden');
             }
         }
+
+        function registrarPrestadorAdmin() {
+            const nombre = document.getElementById('p-nombre').value;
+            const cedula = document.getElementById('p-cedula').value;
+            const vehiculo = document.getElementById('p-vehiculo').value;
+            const marca = document.getElementById('p-marca').value;
+            const modelo = document.getElementById('p-modelo').value;
+            const placa = document.getElementById('p-placa').value;
+            const titulo = document.getElementById('p-titulo').value;
+            const foto = document.getElementById('p-foto').value || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';
+            const afiliacion = document.getElementById('p-afiliacion').value;
+            const mensualidad = document.getElementById('p-mensualidad').value;
+
+            if(!nombre || !cedula || !vehiculo || !placa) {
+                alert("Por favor completa los campos obligatorios del prestador.");
+                return;
+            }
+
+            prestadores.push({
+                id: Date.now(),
+                nombre, cedula, vehiculo, marca, modelo, placa, titulo, foto, afiliacion, mensualidad, estatus: "Activo"
+            });
+
+            localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores));
+            renderizarPrestadoresAdmin();
+            alert("¡Prestador registrado y dado de alta exitosamente!");
+            
+            // Limpiar campos
+            document.getElementById('p-nombre').value = '';
+            document.getElementById('p-cedula').value = '';
+            document.getElementById('p-vehiculo').value = '';
+            document.getElementById('p-marca').value = '';
+            document.getElementById('p-modelo').value = '';
+            document.getElementById('p-placa').value = '';
+            document.getElementById('p-titulo').value = '';
+            document.getElementById('p-foto').value = '';
+        }
+
+        function renderizarPrestadoresAdmin() {
+            const contenedor = document.getElementById('lista-prestadores-admin');
+            if(!contenedor) return;
+            contenedor.innerHTML = '';
+
+            prestadores.forEach((p, index) => {
+                const colorEstatus = p.estatus === 'Activo' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200';
+                contenedor.innerHTML += `
+                    <div class="p-3 bg-white border rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs">
+                        <div class="flex items-center space-x-3">
+                            <img src="${p.foto}" class="w-12 h-12 rounded-full object-cover border" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'">
+                            <div>
+                                <p class="font-bold text-slate-900 text-sm">${p.nombre} (<span class="text-slate-500">${p.cedula}</span>)</p>
+                                <p class="text-slate-600">🚗 ${p.vehiculo}: ${p.marca} ${p.modelo} | Placa: <b>${p.placa}</b> | Título: ${p.titulo}</p>
+                                <p class="text-slate-500 mt-0.5">Afiliación: <span class="font-semibold">${p.afiliacion}</span> | Mensualidad: <span class="font-semibold">${p.mensualidad}</span></p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                            <span class="px-2.5 py-1 rounded-md border font-bold text-[10px] ${colorEstatus}">${p.estatus}</span>
+                            <button onclick="cambiarEstatusPrestador(${index})" class="px-3 py-1.5 bg-slate-800 text-white rounded-lg font-semibold hover:bg-slate-700">
+                                ${p.estatus === 'Activo' ? 'Suspender' : 'Activar'}
+                            </button>
+                            <button onclick="eliminarPrestador(${index})" class="px-3 py-1.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700">
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function cambiarEstatusPrestador(index) {
+            prestadores[index].estatus = prestadores[index].estatus === 'Activo' ? 'Suspendido' : 'Activo';
+            localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores));
+            renderizarPrestadoresAdmin();
+        }
+
+        function eliminarPrestador(index) {
+            if(confirm("¿Estás seguro de eliminar este prestador de servicio?")) {
+                prestadores.splice(index, 1);
+                localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores));
+                renderizarPrestadoresAdmin();
+            }
+        }
+
+        function toggleDisponibilidad(btn) {
+            if(btn.innerText === "DISPONIBLE") {
+                btn.innerText = "FUERA DE SERVICIO";
+                btn.className = "bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow";
+            } else {
+                btn.innerText = "DISPONIBLE";
+                btn.className = "bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow";
+            }
+        }
+
+        function enviarSolicitudCliente() {
+            const nombre = document.getElementById('cli-nombre').value;
+            const telefono = document.getElementById('cli-telefono').value;
+            const origen = document.getElementById('cli-origen').value;
+            const destino = document.getElementById('cli-destino').value;
+
+            if(!nombre || !telefono || !origen || !destino) {
+                alert("Por favor complete los campos obligatorios (*).");
+                return;
+            }
+            alert(`¡Solicitud enviada con éxito, ${nombre}! Un prestador autorizado ha sido notificado.`);
+        }
+
+        actualizarCotizacion();
+    </script>
+</body>
+</html>
