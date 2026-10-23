@@ -21,7 +21,7 @@
             <div class="flex items-center space-x-3">
                 <div class="text-right">
                     <span class="text-[10px] text-slate-400 font-semibold block uppercase">Tasa BCV Oficial</span>
-                    <span class="text-xs sm:text-sm font-extrabold text-red-400" id="bcv-display">Bs. 36.50</span>
+                    <span class="text-xs sm:text-sm font-extrabold text-red-400" id="bcv-display">Bs. 884.75</span>
                 </div>
             </div>
         </div>
@@ -33,7 +33,7 @@
             <button onclick="cambiarPortal('cliente')" id="btn-cliente" class="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white transition whitespace-nowrap"><i class="fa-solid fa-user mr-1"></i> Portal Cliente</button>
             <button onclick="cambiarPortal('prestador')" id="btn-prestador" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap"><i class="fa-solid fa-id-badge mr-1"></i> Portal Prestador</button>
             <button onclick="cambiarPortal('aliado')" id="btn-aliado" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap"><i class="fa-solid fa-store mr-1"></i> Aliado Comercial</button>
-            <button onclick="cambiarPortal('admin')" id="btn-admin" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap"><i class="fa-solid fa-gauge-high mr-1"></i> Panel Admin</button>
+            <button onclick="cambiarPortal('admin')" id="btn-admin" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap"><i class="fa-solid fa-gauge-high mr-1"></i> Panel Gerencial</button>
         </div>
     </nav>
 
@@ -44,7 +44,6 @@
         <div id="portal-cliente" class="space-y-4">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                 <h2 class="font-bold text-slate-900 text-lg flex items-center"><i class="fa-solid fa-taxi text-red-600 mr-2"></i> Solicitar Nuevo Servicio</h2>
-                
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Tu Nombre Completo *</label>
@@ -80,7 +79,6 @@
                         <input type="text" id="cli-destino" placeholder="Dirección de llegada" class="w-full p-3 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500">
                     </div>
                 </div>
-
                 <button onclick="registrarServicioCliente()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-sm shadow hover:bg-red-700 transition">
                     Enviar Solicitud Ahora
                 </button>
@@ -109,3 +107,113 @@
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Número de Suscripción (Ej: ALIADO-101)</label>
                     <input type="text" id="aliado-sus" placeholder="ALIADO-..." class="w-full p-3 border rounded-xl text-sm outline-none">
                 </div>
+                <div class="p-4 bg-slate-50 rounded-xl border text-center text-xs text-slate-500">
+                    Conéctate para solicitar deliveries inmediatos para tu local comercial.
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. PANEL ADMIN (GERENCIAL) -->
+        <div id="portal-admin" class="hidden space-y-4">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <h2 class="font-extrabold text-slate-900 text-xl flex items-center"><i class="fa-solid fa-gauge-high text-red-600 mr-2"></i> Panel Gerencial LLEGANDO</h2>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Contraseña de Administrador (Sky1012#):</label>
+                    <input type="password" id="admin-pass" oninput="verificarPasswordAdmin()" placeholder="Ingrese su contraseña..." class="w-full p-3 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500">
+                </div>
+
+                <!-- Contenido Protegido del Administrador -->
+                <div id="admin-content" class="hidden space-y-4 pt-2 border-t">
+                    <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold">
+                        <i class="fa-solid fa-circle-check mr-1"></i> Acceso Gerencial Autorizado
+                    </div>
+
+                    <!-- Configuración General -->
+                    <div class="p-4 bg-slate-50 rounded-xl border space-y-2">
+                        <span class="text-xs font-bold uppercase text-slate-500"><i class="fa-solid fa-gear mr-1"></i> Configuración General del Sistema</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Actualizar Tasa BCV Oficial (Bs./$)</label>
+                                <input type="number" step="0.01" id="input-nueva-tasa" value="884.75" class="w-full p-2.5 border rounded-lg text-sm bg-white">
+                            </div>
+                            <div class="flex items-end">
+                                <button onclick="actualizarTasaBCV()" class="w-full bg-slate-900 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-slate-800 transition">Guardar Nueva Tasa</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección Gerencial -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Seleccione Sección Gerencial:</label>
+                        <select id="admin-seccion" class="w-full p-3 border rounded-xl text-sm outline-none bg-white">
+                            <option value="aliados">Gestionar Aliados Comerciales</option>
+                            <option value="pagos">Asignar y Confirmar Pagos</option>
+                            <option value="prestadores">Autorizar Prestadores</option>
+                            <option value="liquidaciones">Liquidaciones a Prestadores</option>
+                            <option value="control">Control General de Servicios</option>
+                        </select>
+                    </div>
+
+                    <div class="p-5 bg-white border rounded-2xl shadow-sm space-y-3">
+                        <h3 class="font-bold text-slate-800 text-sm border-b pb-2">🏬 Registro y Control de Aliados Comerciales</h3>
+                        <p class="text-xs text-slate-500">Desde aquí la administración puede dar de alta nuevos comercios y generar sus números de suscripción exclusivos.</p>
+                        <div class="space-y-3">
+                            <input type="text" placeholder="Nombre del Comercio / Aliado" class="w-full p-3 border rounded-xl text-sm outline-none">
+                            <input type="text" placeholder="Ubicación / Dirección del Local" class="w-full p-3 border rounded-xl text-sm outline-none">
+                            <button onclick="alert('Aliado registrado exitosamente en el sistema.')" class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow hover:bg-emerald-700 transition">Registrar y Generar Suscripción</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Script Funcional -->
+    <script>
+        let tasaBCV = 884.75;
+
+        function cambiarPortal(portal) {
+            ['cliente', 'prestador', 'aliado', 'admin'].forEach(p => {
+                document.getElementById(`portal-${p}`).classList.add('hidden');
+                document.getElementById(`btn-${p}`).className = 'px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap';
+            });
+            document.getElementById(`portal-${portal}`).classList.remove('hidden');
+            document.getElementById(`btn-${portal}`).className = 'px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white transition whitespace-nowrap';
+        }
+
+        function verificarPasswordAdmin() {
+            const pass = document.getElementById('admin-pass').value;
+            const content = document.getElementById('admin-content');
+            if(pass === "Sky1012#") {
+                content.classList.remove('hidden');
+            } else {
+                content.classList.add('hidden');
+            }
+        }
+
+        function actualizarTasaBCV() {
+            const nueva = parseFloat(document.getElementById('input-nueva-tasa').value);
+            if(!isNaN(nueva) && nueva > 0) {
+                tasaBCV = nueva;
+                document.getElementById('bcv-display').innerText = `Bs. ${tasaBCV.toFixed(2)}`;
+                alert(`¡Tasa BCV actualizada exitosamente a Bs. ${tasaBCV.toFixed(2)}!`);
+            }
+        }
+
+        function registrarServicioCliente() {
+            const nombre = document.getElementById('cli-nombre').value;
+            const telefono = document.getElementById('cli-telefono').value;
+            const origen = document.getElementById('cli-origen').value;
+            const destino = document.getElementById('cli-destino').value;
+
+            if(!nombre || !telefono || !origen || !destino) {
+                alert("Por favor complete todos los campos obligatorios (*).");
+                return;
+            }
+            alert(`¡Solicitud enviada con éxito, ${nombre}! Un operador asignará tu servicio de inmediato.`);
+        }
+    </script>
+</body>
+</html>
