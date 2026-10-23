@@ -109,11 +109,11 @@
                 </button>
             </div>
 
-            <!-- TAB 2: HISTORIAL -->
+            <!-- TAB 2: HISTORIAL (Ordenado: más nuevo al más antiguo) -->
             <div id="subtab-mis-servicios" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                 <div class="flex justify-between items-center">
                     <h2 class="font-bold text-slate-900 text-lg flex items-center"><i class="fa-solid fa-clock-rotate-left text-red-600 mr-2"></i> Historial de Servicios</h2>
-                    <span class="text-[11px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-1 rounded">Antiguo a Nuevo</span>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-1 rounded">Más nuevo a más antiguo</span>
                 </div>
                 
                 <div>
@@ -209,7 +209,7 @@
 
     </main>
 
-    <!-- Script de Lógica Simplificado y Directo -->
+    <!-- Script de Lógica -->
     <script>
         const tasaBCV = 884.75;
         const DATOS_PAGO_MOVIL = { banco: "Banco de Venezuela (0102)", telefono: "0412-3349463", cedula: "V-13609424", titular: "LLEGANDO Red Integrada" };
@@ -332,7 +332,8 @@
                 return;
             }
 
-            misServicios.sort((a, b) => a.id - b.id);
+            // ORDEN DESCENDENTE: Del más nuevo al más antiguo
+            misServicios.sort((a, b) => b.id - a.id);
 
             misServicios.forEach((s, index) => {
                 const montoBs = (s.montoUsd * tasaBCV).toFixed(2);
@@ -362,13 +363,14 @@
                 cont.innerHTML += `
                     <div class="p-4 bg-slate-50 border rounded-2xl space-y-3">
                         <div class="flex justify-between items-center border-b pb-2">
-                            <span class="font-bold text-slate-900 text-xs">Servicio #${index + 1} (${s.tipo})</span>
+                            <span class="font-bold text-slate-900 text-xs">Servicio (${s.tipo}) - Solicitud #${s.id}</span>
                             <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200 text-slate-700">${s.estatus}</span>
                         </div>
                         ${htmlAlerta}
                         <div class="text-xs text-slate-600 space-y-1">
                             <p>📍 <b>Origen:</b> ${s.origen}</p>
                             <p>🏁 <b>Destino:</b> ${s.destino}</p>
+                            <p>🕒 <b>Hora:</b> ${s.fecha}</p>
                             <p>💵 <b>Monto:</b> <span class="font-extrabold text-red-600">$${s.montoUsd.toFixed(2)} USD</span> (Bs. ${montoBs})</p>
                         </div>
                         <div class="p-3 bg-slate-900 text-white rounded-xl text-xs space-y-1">
@@ -426,7 +428,7 @@
             cont.innerHTML = '';
             if(servicios.length === 0) { cont.innerHTML = `<p class="text-xs text-slate-400">Sin solicitudes.</p>`; return; }
 
-            servicios.slice().forEach((s) => {
+            servicios.slice().reverse().forEach((s) => {
                 const montoBs = (s.montoUsd * tasaBCV).toFixed(2);
                 cont.innerHTML += `
                     <div class="p-3 bg-slate-50 border rounded-xl flex justify-between items-center text-xs">
@@ -480,55 +482,4 @@
                 nombre, 
                 cedula, 
                 vehiculo, 
-                placa, 
-                foto: fotoFinal, 
-                estatus: "Activo", 
-                disponible: true 
-            });
-
-            localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores));
-            renderizarPrestadoresAdmin();
-            alert("¡Prestador registrado exitosamente!");
-
-            document.getElementById('p-nombre').value = "";
-            document.getElementById('p-cedula').value = "";
-            document.getElementById('p-vehiculo').value = "";
-            document.getElementById('p-placa').value = "";
-            document.getElementById('p-foto-url').value = "";
-        }
-
-        function renderizarPrestadoresAdmin() {
-            const cont = document.getElementById('lista-prestadores-admin');
-            if(!cont) return;
-            cont.innerHTML = '';
-            prestadores.forEach((p, i) => {
-                cont.innerHTML += `
-                    <div class="p-2.5 bg-white border rounded-xl flex justify-between items-center text-xs">
-                        <div class="flex items-center space-x-3">
-                            <img src="${p.foto}" class="w-10 h-10 rounded-full object-cover border shadow" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'">
-                            <div>
-                                <p class="font-bold text-slate-900">${p.nombre} (<span class="text-slate-500">${p.cedula}</span>)</p>
-                                <p class="text-slate-600">${p.vehiculo} | Placa: <b>${p.placa}</b></p>
-                            </div>
-                        </div>
-                        <button onclick="prestadores[${i}].estatus = prestadores[${i}].estatus==='Activo'?'Suspendido':'Activo'; localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores)); renderizarPrestadoresAdmin();" class="px-3 py-1.5 bg-slate-800 text-white font-bold rounded-lg">
-                            ${p.estatus}
-                        </button>
-                    </div>
-                `;
-            });
-        }
-
-        function toggleDisponibilidad() {
-            const btn = document.getElementById('btn-disp');
-            if(!btn) return;
-            if(btn.innerText === "DISPONIBLE") { btn.innerText = "FUERA"; btn.className = "bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
-            else { btn.innerText = "DISPONIBLE"; btn.className = "bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
-        }
-
-        function renderizarServiciosPrestador() {}
-        actualizarCotizacion();
-        actualizarBadgeAdmin();
-    </script>
-</body>
-</html>
+                placa,
