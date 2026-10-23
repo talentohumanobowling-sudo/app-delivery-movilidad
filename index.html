@@ -109,11 +109,11 @@
                 </button>
             </div>
 
-            <!-- TAB 2: HISTORIAL (Ordenado: más nuevo al más antiguo) -->
+            <!-- TAB 2: HISTORIAL (Ordenado: más antiguo al más nuevo) -->
             <div id="subtab-mis-servicios" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                 <div class="flex justify-between items-center">
                     <h2 class="font-bold text-slate-900 text-lg flex items-center"><i class="fa-solid fa-clock-rotate-left text-red-600 mr-2"></i> Historial de Servicios</h2>
-                    <span class="text-[11px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-1 rounded">Más nuevo a más antiguo</span>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-1 rounded">Más antiguo a más nuevo</span>
                 </div>
                 
                 <div>
@@ -332,8 +332,8 @@
                 return;
             }
 
-            // ORDEN DESCENDENTE: Del más nuevo al más antiguo
-            misServicios.sort((a, b) => b.id - a.id);
+            // ORDEN ASCENDENTE: Del más antiguo al más nuevo
+            misServicios.sort((a, b) => a.id - b.id);
 
             misServicios.forEach((s, index) => {
                 const montoBs = (s.montoUsd * tasaBCV).toFixed(2);
@@ -482,4 +482,55 @@
                 nombre, 
                 cedula, 
                 vehiculo, 
-                placa,
+                placa, 
+                foto: fotoFinal, 
+                estatus: "Activo", 
+                disponible: true 
+            });
+
+            localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores));
+            renderizarPrestadoresAdmin();
+            alert("¡Prestador registrado exitosamente!");
+
+            document.getElementById('p-nombre').value = "";
+            document.getElementById('p-cedula').value = "";
+            document.getElementById('p-vehiculo').value = "";
+            document.getElementById('p-placa').value = "";
+            document.getElementById('p-foto-url').value = "";
+        }
+
+        function renderizarPrestadoresAdmin() {
+            const cont = document.getElementById('lista-prestadores-admin');
+            if(!cont) return;
+            cont.innerHTML = '';
+            prestadores.forEach((p, i) => {
+                cont.innerHTML += `
+                    <div class="p-2.5 bg-white border rounded-xl flex justify-between items-center text-xs">
+                        <div class="flex items-center space-x-3">
+                            <img src="${p.foto}" class="w-10 h-10 rounded-full object-cover border shadow" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'">
+                            <div>
+                                <p class="font-bold text-slate-900">${p.nombre} (<span class="text-slate-500">${p.cedula}</span>)</p>
+                                <p class="text-slate-600">${p.vehiculo} | Placa: <b>${p.placa}</b></p>
+                            </div>
+                        </div>
+                        <button onclick="prestadores[${i}].estatus = prestadores[${i}].estatus==='Activo'?'Suspendido':'Activo'; localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores)); renderizarPrestadoresAdmin();" class="px-3 py-1.5 bg-slate-800 text-white font-bold rounded-lg">
+                            ${p.estatus}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleDisponibilidad() {
+            const btn = document.getElementById('btn-disp');
+            if(!btn) return;
+            if(btn.innerText === "DISPONIBLE") { btn.innerText = "FUERA"; btn.className = "bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
+            else { btn.innerText = "DISPONIBLE"; btn.className = "bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
+        }
+
+        function renderizarServiciosPrestador() {}
+        actualizarCotizacion();
+        actualizarBadgeAdmin();
+    </script>
+</body>
+</html>
