@@ -386,3 +386,94 @@
             const passEl = document.getElementById('admin-pass');
             const content = document.getElementById('admin-content');
             if(!passEl || !content) return;
+            if(passEl.value === "Sky1012#") {
+                content.classList.remove('hidden');
+                renderizarAdminSolicitudes();
+                renderizarPrestadoresAdmin();
+            } else {
+                content.classList.add('hidden');
+            }
+        }
+
+        function actualizarBadgeAdmin() {
+            const pendientes = servicios.filter(s => s.refPago !== "" && !s.pagoConfirmado).length;
+            const badge = document.getElementById('admin-badge');
+            if(!badge) return;
+            if(pendientes > 0) { badge.innerText = pendientes; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+        }
+
+        function renderizarAdminSolicitudes() {
+            const cont = document.getElementById('admin-lista-solicitudes');
+            if(!cont) return;
+            cont.innerHTML = '';
+            if(servicios.length === 0) { cont.innerHTML = `<p class="text-xs text-slate-400">Sin solicitudes.</p>`; return; }
+
+            servicios.slice().forEach((s) => {
+                const montoBs = (s.montoUsd * tasaBCV).toFixed(2);
+                cont.innerHTML += `
+                    <div class="p-3 bg-slate-50 border rounded-xl flex justify-between items-center text-xs">
+                        <div>
+                            <p class="font-bold">#${s.id} - ${s.tipo} | Cliente: ${s.nombre} (${s.telefono})</p>
+                            <p class="text-slate-600">Ref: <b>${s.refPago || 'Sin ref'}</b> | Estatus: ${s.estatus}</p>
+                        </div>
+                        <div>
+                            ${!s.pagoConfirmado ? `<button onclick="confirmarPagoYAsignarAuto(${s.id})" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-bold">Validar y Asignar</button>` : `<span class="text-emerald-600 font-bold">Asignado</span>`}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function confirmarPagoYAsignarAuto(id) {
+            const serv = servicios.find(s => s.id === id);
+            const prestadorDisponible = prestadores.find(p => p.estatus === 'Activo' && p.disponible);
+            if(!prestadorDisponible) { alert("⚠️ No hay prestadores disponibles."); return; }
+            serv.pagoConfirmado = true;
+            serv.estatus = "Pago Confirmado y En Ruta";
+            serv.conductor = prestadorDisponible.nombre;
+            prestadorDisponible.disponible = false;
+            localStorage.setItem('llegando_servicios', JSON.stringify(servicios));
+            localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores));
+            renderizarAdminSolicitudes();
+            alert(`✅ Conductor asignado: ${prestadorDisponible.nombre}`);
+        }
+
+        function registrarPrestadorAdmin() {
+            const nombre = document.getElementById('p-nombre')?.value;
+            const cedula = document.getElementById('p-cedula')?.value;
+            const vehiculo = document.getElementById('p-vehiculo')?.value;
+            const placa = document.getElementById('p-placa')?.value;
+            if(!nombre || !cedula) { alert("Completa los datos."); return; }
+            prestadores.push({ id: Date.now(), nombre, cedula, vehiculo, placa, estatus: "Activo", disponible: true });
+            localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores));
+            renderizarPrestadoresAdmin();
+            alert("Prestador registrado.");
+        }
+
+        function renderizarPrestadoresAdmin() {
+            const cont = document.getElementById('lista-prestadores-admin');
+            if(!cont) return;
+            cont.innerHTML = '';
+            prestadores.forEach((p, i) => {
+                cont.innerHTML += `
+                    <div class="p-2 bg-white border rounded-lg flex justify-between items-center text-xs">
+                        <span><b>${p.nombre}</b> (${p.vehiculo} - Placa: ${p.placa})</span>
+                        <button onclick="prestadores[${i}].estatus = prestadores[${i}].estatus==='Activo'?'Suspendido':'Activo'; localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores)); renderizarPrestadoresAdmin();" class="px-2 py-1 bg-slate-800 text-white rounded">${p.estatus}</button>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleDisponibilidad() {
+            const btn = document.getElementById('btn-disp');
+            if(!btn) return;
+            if(btn.innerText === "DISPONIBLE") { btn.innerText = "FUERA"; btn.className = "bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
+            else { btn.innerText = "DISPONIBLE"; btn.className = "bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
+        }
+
+        function renderizarServiciosPrestador() {}
+        actualizarCotizacion();
+        actualizarBadgeAdmin();
+    </script>
+</body>
+</html>
