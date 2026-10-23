@@ -6,10 +6,10 @@
     <title>LLEGANDO - Red Integral de Movilidad y Logística</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Leaflet CSS y JS para Mapas -->
+    <!-- Leaflet CSS y JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- FontAwesome para Iconos -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         #map-admin, #map-cliente { height: 300px; width: 100%; border-radius: 0.75rem; z-index: 10; }
@@ -35,7 +35,7 @@
         </div>
     </header>
 
-    <!-- Navegación por Pestañas / Portales -->
+    <!-- Navegación por Portales -->
     <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-16 z-20 overflow-x-auto">
         <div class="max-w-7xl mx-auto px-4 flex space-x-2 py-2">
             <button onclick="cambiarPortal('cliente')" id="btn-cliente" class="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white transition whitespace-nowrap shadow-sm"><i class="fa-solid fa-user mr-1"></i> 1. Portal Cliente</button>
@@ -107,7 +107,6 @@
                 </button>
             </div>
 
-            <!-- Tracking Live Map -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-3">
                 <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-location-crosshairs text-red-600 mr-2"></i> Rastreo y Geolocalización (Tracking Live)</h3>
                 <div id="map-cliente"></div>
@@ -118,32 +117,15 @@
         <div id="portal-prestador" class="hidden space-y-4">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                 <div class="flex justify-between items-center">
-                    <h2 class="font-bold text-slate-900 text-lg flex items-center"><i class="fa-solid fa-id-badge text-yellow-600 mr-2"></i> Panel de Prestador (Conductor/Repartidor)</h2>
+                    <h2 class="font-bold text-slate-900 text-lg flex items-center"><i class="fa-solid fa-id-badge text-yellow-600 mr-2"></i> Panel de Prestador</h2>
                     <button onclick="toggleDisponibilidad(this)" id="btn-disp" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow">DISPONIBLE</button>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Autorizado del Prestador</label>
                     <input type="text" id="pres-nombre" placeholder="Ej: Roberto Gómez" class="w-full p-3 border rounded-xl text-sm outline-none">
                 </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div class="p-4 bg-slate-50 rounded-xl border text-center">
-                        <span class="text-[10px] text-slate-400 font-bold uppercase block">Ingresos del Día</span>
-                        <span class="text-lg font-extrabold text-slate-800">$45.00</span>
-                    </div>
-                    <div class="p-4 bg-slate-50 rounded-xl border text-center">
-                        <span class="text-[10px] text-slate-400 font-bold uppercase block">Afiliación</span>
-                        <span class="text-lg font-extrabold text-emerald-600">Al Día ($5)</span>
-                    </div>
-                    <div class="p-4 bg-slate-50 rounded-xl border text-center">
-                        <span class="text-[10px] text-slate-400 font-bold uppercase block">Billetera Virtual</span>
-                        <span class="text-lg font-extrabold text-blue-600">$12.50</span>
-                    </div>
-                </div>
-
-                <h3 class="font-bold text-slate-800 text-sm border-t pt-3">Solicitudes y Carreras Disponibles</h3>
                 <div class="p-4 bg-slate-50 rounded-xl border text-center text-xs text-slate-500">
-                    Esperando llamadas de clientes cercanos... (Se emite alerta sonora automática).
+                    Ingrese su nombre para verificar su estatus con la administración y recibir carreras.
                 </div>
             </div>
         </div>
@@ -156,13 +138,8 @@
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Número de Suscripción (Ej: ALIADO-101)</label>
                     <input type="text" id="aliado-sus" placeholder="ALIADO-..." class="w-full p-3 border rounded-xl text-sm outline-none">
                 </div>
-
-                <div class="space-y-3 border-t pt-3">
-                    <h3 class="font-bold text-slate-800 text-sm">Crear Pedido / Delivery Masivo</h3>
-                    <input type="text" placeholder="Cliente Final" class="w-full p-3 border rounded-xl text-sm outline-none">
-                    <input type="text" placeholder="Teléfono del Cliente" class="w-full p-3 border rounded-xl text-sm outline-none">
-                    <input type="text" placeholder="Dirección de Destino" class="w-full p-3 border rounded-xl text-sm outline-none">
-                    <button onclick="alert('Delivery solicitado y asignado a repartidor cercano.')" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow hover:bg-emerald-700 transition">Solicitar Delivery Inmediato</button>
+                <div class="p-4 bg-slate-50 rounded-xl border text-center text-xs text-slate-500">
+                    Conéctate para solicitar deliveries inmediatos para tu local comercial.
                 </div>
             </div>
         </div>
@@ -183,12 +160,12 @@
                         <i class="fa-solid fa-circle-check mr-1"></i> Acceso Gerencial Autorizado
                     </div>
 
-                    <!-- Configuración General y Tasa BCV -->
+                    <!-- Configuración Tasa BCV -->
                     <div class="p-4 bg-slate-50 rounded-xl border space-y-2">
-                        <span class="text-xs font-bold uppercase text-slate-500"><i class="fa-solid fa-gear mr-1"></i> Configuración de Tasa BCV y Comisiones</span>
+                        <span class="text-xs font-bold uppercase text-slate-500"><i class="fa-solid fa-gear mr-1"></i> Configuración de Tasa BCV Oficial</span>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                             <div>
-                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tasa BCV Oficial (Bs./$)</label>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tasa BCV (Bs./$)</label>
                                 <input type="number" step="0.01" id="input-nueva-tasa" value="884.75" class="w-full p-2.5 border rounded-lg text-sm bg-white">
                             </div>
                             <div class="flex items-end">
@@ -197,18 +174,45 @@
                         </div>
                     </div>
 
-                    <!-- Torre de Control (Mapa Global) -->
-                    <div class="p-4 bg-white border rounded-xl space-y-2">
-                        <span class="text-xs font-bold uppercase text-slate-500"><i class="fa-solid fa-earth-americas mr-1"></i> Torre de Control (Flota Activa)</span>
-                        <div id="map-admin"></div>
-                    </div>
+                    <!-- MÓDULO DE GESTIÓN DE PRESTADORES -->
+                    <div class="p-5 bg-white border rounded-2xl shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-800 text-sm border-b pb-2"><i class="fa-solid fa-id-card-clip text-red-600 mr-2"></i> Gestión, Registro y Autorización de Prestadores</h3>
+                        
+                        <!-- Formulario de Registro -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border">
+                            <input type="text" id="p-nombre" placeholder="Nombre Completo *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-cedula" placeholder="Cédula de Identidad *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-vehiculo" placeholder="Tipo de Vehículo (Moto/Auto/Camión) *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-marca" placeholder="Marca *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-modelo" placeholder="Modelo *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-placa" placeholder="Número de Placa *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-titulo" placeholder="Nro. Título de Propiedad *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-foto" placeholder="URL de Foto del Prestador" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600">Pago Afiliación ($5)</label>
+                                <select id="p-afiliacion" class="w-full p-2 border rounded-lg text-sm bg-white">
+                                    <option value="Pagado">Pagado ($5)</option>
+                                    <option value="Pendiente">Pendiente</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600">Pago Mensualidad ($5)</label>
+                                <select id="p-mensualidad" class="w-full p-2 border rounded-lg text-sm bg-white">
+                                    <option value="Pagado">Pagado ($5)</option>
+                                    <option value="Pendiente">Pendiente</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2 pt-2">
+                                <button onclick="registrarPrestadorAdmin()" class="w-full bg-red-600 text-white py-2.5 rounded-xl text-xs font-bold shadow hover:bg-red-700 transition">Dar de Alta / Registrar Prestador</button>
+                            </div>
+                        </div>
 
-                    <!-- Gestión de Secciones Gerenciales -->
-                    <div class="p-5 bg-white border rounded-2xl shadow-sm space-y-3">
-                        <h3 class="font-bold text-slate-800 text-sm border-b pb-2">🏬 Gestión de Aliados y Prestadores</h3>
-                        <div class="space-y-3">
-                            <input type="text" placeholder="Nombre del nuevo Aliado Comercial" class="w-full p-3 border rounded-xl text-sm outline-none">
-                            <button onclick="alert('Aliado registrado y suscripción generada.')" class="bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow hover:bg-slate-800 transition">Registrar Aliado / Generar Suscripción</button>
+                        <!-- Lista de Prestadores Registrados -->
+                        <div class="space-y-2 pt-2">
+                            <h4 class="font-bold text-slate-700 text-xs uppercase">Listado de Prestadores Activos / Suspendidos</h4>
+                            <div id="lista-prestadores-admin" class="space-y-2">
+                                <!-- Se carga dinámicamente -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -217,10 +221,15 @@
 
     </main>
 
-    <!-- Script de Lógica Interactiva -->
+    <!-- Script de Lógica -->
     <script>
         let tasaBCV = 884.75;
-        let mapCliente, mapAdmin;
+        let mapCliente;
+
+        // Base de datos local de prestadores en memoria/localStorage
+        let prestadores = JSON.parse(localStorage.getItem('llegando_prestadores')) || [
+            { id: 1, nombre: "Carlos Mendoza", cedula: "V-15482910", vehiculo: "Moto", marca: "Empire", modelo: "Owen 150", placa: "AB1C23D", titulo: "TP-984125", foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150", afiliacion: "Pagado", mensualidad: "Pagado", estatus: "Activo" }
+        ];
 
         function cambiarPortal(portal) {
             ['cliente', 'prestador', 'aliado', 'admin'].forEach(p => {
@@ -230,11 +239,10 @@
             document.getElementById(`portal-${portal}`).classList.remove('hidden');
             document.getElementById(`btn-${portal}`).className = 'px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white transition whitespace-nowrap';
 
-            // Inicializar mapas si se muestran
             if (portal === 'cliente' && !mapCliente) {
                 setTimeout(() => {
                     mapCliente = L.map('map-cliente').setView([10.1581, -66.8656], 13);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(mapCliente);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapCliente);
                     L.marker([10.1581, -66.8656]).addTo(mapCliente).bindPopup('<b>Tu Ubicación</b>').openPopup();
                 }, 200);
             }
@@ -264,42 +272,8 @@
             const content = document.getElementById('admin-content');
             if(pass === "Sky1012#") {
                 content.classList.remove('hidden');
-                if (!mapAdmin) {
-                    setTimeout(() => {
-                        mapAdmin = L.map('map-admin').setView([10.1581, -66.8656], 13);
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapAdmin);
-                        L.marker([10.1581, -66.8656]).addTo(mapAdmin).bindPopup('<b>Torre de Control LLEGANDO</b>');
-                    }, 200);
-                }
+                renderizarPrestadoresAdmin();
             } else {
                 content.classList.add('hidden');
             }
         }
-
-        function toggleDisponibilidad(btn) {
-            if(btn.innerText === "DISPONIBLE") {
-                btn.innerText = "FUERA DE SERVICIO";
-                btn.className = "bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow";
-            } else {
-                btn.innerText = "DISPONIBLE";
-                btn.className = "bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow";
-            }
-        }
-
-        function enviarSolicitudCliente() {
-            const nombre = document.getElementById('cli-nombre').value;
-            const telefono = document.getElementById('cli-telefono').value;
-            const origen = document.getElementById('cli-origen').value;
-            const destino = document.getElementById('cli-destino').value;
-
-            if(!nombre || !telefono || !origen || !destino) {
-                alert("Por favor complete los campos obligatorios (*).");
-                return;
-            }
-            alert(`¡Solicitud enviada con éxito, ${nombre}! Un prestador cercano ha sido notificado.`);
-        }
-
-        actualizarCotizacion();
-    </script>
-</body>
-</html>
