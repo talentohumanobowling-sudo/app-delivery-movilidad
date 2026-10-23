@@ -205,6 +205,7 @@
     <!-- Script de Lógica -->
     <script>
         const tasaBCV = 884.75;
+        const ADMIN_TELEFONO = "584123349463"; // Número oficial del admin para WhatsApp
         const DATOS_PAGO_MOVIL = { banco: "Banco de Venezuela (0102)", telefono: "0412-3349463", cedula: "V-13609424", titular: "LLEGANDO Red Integrada" };
 
         let servicios = JSON.parse(localStorage.getItem('llegando_servicios')) || [];
@@ -272,13 +273,14 @@
             const nuevoServicio = {
                 id: Date.now(),
                 nombre, telefono, tipo, origen, destino,
-                montoUsd: 0, // El administrador asignará este precio
+                montoUsd: 0,
                 estatus: "Solicitado (Pendiente de Tarifa)",
                 conductor: "Por Asignar",
                 fotoConductor: "",
                 vehiculoInfo: "",
                 refPago: "",
                 pagoConfirmado: false,
+                calificacion: 0,
                 fecha: new Date().toLocaleTimeString()
             };
 
@@ -310,24 +312,31 @@
                 return;
             }
 
-            // Orden ascendente: más antiguo al más nuevo
             misServicios.sort((a, b) => a.id - b.id);
 
-            misServicios.forEach((s, index) => {
+            misServicios.forEach((s) => {
                 const montoBs = (s.montoUsd * tasaBCV).toFixed(2);
                 let htmlAlerta = '';
 
-                if(s.montoUsd === 0) {
+                if(s.estatus === "Completado") {
+                    let htmlEstrellas = '';
+                    for(let i = 1; i <= 5; i++) {
+                        htmlEstrellas += `<i class="fa-solid fa-star cursor-pointer ${i <= s.calificacion ? 'text-yellow-400' : 'text-slate-300'}" onclick="calificarServicio(${s.id}, ${i})"></i>`;
+                    }
                     htmlAlerta = `
-                        <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-800 text-xs">
-                            <i class="fa-solid fa-clock mr-1"></i> Solicitud recibida. Administrador asignando precio...
+                        <div class="p-3 bg-slate-100 border rounded-xl text-xs space-y-1">
+                            <p class="font-bold text-slate-800"><i class="fa-solid fa-flag-checkered text-emerald-600 mr-1"></i> Servicio Finalizado</p>
+                            <p>Valora la atención de tu prestador:</p>
+                            <div class="flex space-x-1 text-base pt-1">${htmlEstrellas}</div>
                         </div>
                     `;
+                } else if(s.montoUsd === 0) {
+                    htmlAlerta = `<div class="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-800 text-xs"><i class="fa-solid fa-clock mr-1"></i> Solicitud recibida. Administrador asignando precio...</div>`;
                 } else if(s.conductor !== "Por Asignar") {
                     htmlAlerta = `
                         <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs space-y-2">
                             <div class="flex items-center space-x-3">
-                                <img src="${s.fotoConductor || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}" class="w-14 h-14 rounded-full object-cover border-2 border-emerald-600 shadow" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'">
+                                <img src="${s.fotoConductor}" class="w-14 h-14 rounded-full object-cover border-2 border-emerald-600 shadow" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'">
                                 <div>
                                     <p class="font-bold text-sm"><i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> ¡Servicio Asignado!</p>
                                     <p>Conductor: <b>${s.conductor}</b></p>
@@ -337,14 +346,10 @@
                         </div>
                     `;
                 } else {
-                    htmlAlerta = `
-                        <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs">
-                            <i class="fa-solid fa-check mr-1"></i> Precio asignado. Realice su Pago Móvil y reporte la referencia.
-                        </div>
-                    `;
+                    htmlAlerta = `<div class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs"><i class="fa-solid fa-check mr-1"></i> Precio asignado. Realice su Pago Móvil y reporte la referencia.</div>`;
                 }
 
-                let htmlPagoMovil = s.montoUsd > 0 ? `
+                let htmlPagoMovil = (s.montoUsd > 0 && s.estatus !== "Completado") ? `
                     <div class="p-3 bg-slate-900 text-white rounded-xl text-xs space-y-1">
                         <p class="font-bold text-red-400 text-[11px] uppercase">Pago Móvil Oficial</p>
                         <p>• Banco: ${DATOS_PAGO_MOVIL.banco}</p>
@@ -369,12 +374,22 @@
                             <p>📍 <b>Origen:</b> ${s.origen}</p>
                             <p>🏁 <b>Destino:</b> ${s.destino}</p>
                             <p>🕒 <b>Hora:</b> ${s.fecha}</p>
-                            <p>💵 <b>Precio Asignado:</b> <span class="font-extrabold text-red-600">${s.montoUsd > 0 ? `$${s.montoUsd.toFixed(2)} USD (Bs. ${montoBs})` : 'Pendiente por Administrador'}</span></p>
+                            <p>💵 <b>Precio:</b> <span class="font-extrabold text-red-600">${s.montoUsd > 0 ? `$${s.montoUsd.toFixed(2)} USD (Bs.${montoBs})` : 'Pendiente'}</span></p>
                         </div>
                         ${htmlPagoMovil}
                     </div>
                 `;
             });
+        }
+
+        function calificarServicio(id, estrellas) {
+            const serv = servicios.find(s => s.id === id);
+            if(serv) {
+                serv.calificacion = estrellas;
+                localStorage.setItem('llegando_servicios', JSON.stringify(servicios));
+                buscarServiciosCliente();
+                alert(`⭐ ¡Gracias por valorar nuestro servicio con ${estrellas} estrellas!`);
+            }
         }
 
         function reportarReferenciaCliente(id) {
@@ -388,6 +403,72 @@
                 alert("¡Referencia enviada con éxito!");
                 buscarServiciosCliente();
                 actualizarBadgeAdmin();
+            }
+        }
+
+        // ================= PORTAL PRESTADOR (WHATSAPP + FINALIZAR) =================
+        function renderizarServiciosPrestador() {
+            const nombreInput = document.getElementById('pres-nombre-login').value.trim().toLowerCase();
+            const cont = document.getElementById('prestador-mis-servicios');
+            if(!cont) return;
+            cont.innerHTML = '';
+
+            if(!nombreInput) {
+                cont.innerHTML = `<p class="text-xs text-slate-400">Escribe tu nombre exacto para ver tus carreras.</p>`;
+                return;
+            }
+
+            const misCarreras = servicios.filter(s => s.conductor.toLowerCase() === nombreInput && s.estatus !== "Completado");
+            if(misCarreras.length === 0) {
+                cont.innerHTML = `<p class="text-xs text-slate-500">No tienes servicios asignados activos en este momento.</p>`;
+                return;
+            }
+
+            misCarreras.forEach(c => {
+                const tlfCliente = c.telefono.replace(/\D/g,'');
+                const msgCliente = encodeURIComponent(`Hola ${c.nombre}, soy tu prestador ${c.conductor} de LLEGANDO. Voy en camino a tu servicio.`);
+                const msgAdmin = encodeURIComponent(`Hola Admin, el prestador ${c.conductor} está atendiendo el servicio #${c.id} de ${c.nombre} (${c.tipo}).`);
+
+                cont.innerHTML += `
+                    <div class="p-4 bg-slate-50 border rounded-xl text-xs space-y-3">
+                        <div>
+                            <p class="font-bold text-slate-800 text-sm">Servicio #${c.id} - ${c.tipo}</p>
+                            <p>Cliente: <b>${c.nombre}</b> (${c.telefono})</p>
+                            <p>Ruta: 📍 ${c.origen} ➡️ 🏁 ${c.destino}</p>
+                            <p class="text-emerald-600 font-bold pt-1">Estatus: ${c.estatus}</p>
+                        </div>
+                        
+                        <!-- BOTONES WHATSAPP -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                            <a href="https://wa.me/58${tlfCliente}?text=${msgCliente}" target="_blank" class="bg-emerald-600 text-white py-2 px-3 rounded-lg font-bold text-center flex items-center justify-center space-x-1 hover:bg-emerald-700">
+                                <i class="fa-brands fa-whatsapp text-sm"></i> <span>WhatsApp Cliente</span>
+                            </a>
+                            <a href="https://wa.me/${ADMIN_TELEFONO}?text=${msgAdmin}" target="_blank" class="bg-blue-600 text-white py-2 px-3 rounded-lg font-bold text-center flex items-center justify-center space-x-1 hover:bg-blue-700">
+                                <i class="fa-brands fa-whatsapp text-sm"></i> <span>WhatsApp Admin</span>
+                            </a>
+                        </div>
+
+                        <!-- BOTÓN FINALIZAR SERVICIO -->
+                        <button onclick="finalizarServicioPrestador(${c.id})" class="w-full bg-slate-900 text-white py-2.5 rounded-xl font-bold hover:bg-slate-800 transition">
+                            <i class="fa-solid fa-flag-checkered mr-1"></i> Finalizar Servicio
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function finalizarServicioPrestador(id) {
+            const serv = servicios.find(s => s.id === id);
+            if(serv) {
+                serv.estatus = "Completado";
+                const pres = prestadores.find(p => p.nombre.toLowerCase() === serv.conductor.toLowerCase());
+                if(pres) {
+                    pres.disponible = true; // Liberar prestador
+                    localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores));
+                }
+                localStorage.setItem('llegando_servicios', JSON.stringify(servicios));
+                alert("✅ ¡Servicio finalizado con éxito! El cliente ya puede valorarlo.");
+                renderizarServiciosPrestador();
             }
         }
 
@@ -427,135 +508,4 @@
                             <button onclick="asignarPrecioAdmin(${s.id})" class="px-3 py-1.5 bg-red-600 text-white rounded-lg font-bold text-xs">Asignar Precio</button>
                         </div>
                     `;
-                } else if(!s.pagoConfirmado) {
-                    htmlAccionAdmin = `
-                        <button onclick="confirmarPagoYAsignarAuto(${s.id})" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-bold text-xs">Validar Pago y Conductor</button>
-                    `;
-                } else {
-                    htmlAccionAdmin = `<span class="text-emerald-600 font-bold text-xs"><i class="fa-solid fa-check-double mr-1"></i> Asignado (${s.conductor})</span>`;
-                }
-
-                cont.innerHTML += `
-                    <div class="p-3 bg-slate-50 border rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
-                        <div>
-                            <p class="font-bold text-slate-900">#${s.id} - ${s.tipo} | Cliente: ${s.nombre} (${s.telefono})</p>
-                            <p class="text-slate-600">Ruta: ${s.origen} ➡️ ${s.destino}</p>
-                            <p class="text-slate-500">Precio: <b class="text-red-600">${s.montoUsd > 0 ? `$${s.montoUsd.toFixed(2)} USD (Bs. ${montoBs})` : 'Sin asignar'}</b> | Ref: <b>${s.refPago || 'Sin reportar'}</b></p>
-                        </div>
-                        <div>
-                            ${htmlAccionAdmin}
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function asignarPrecioAdmin(id) {
-            const input = document.getElementById(`precio-input-${id}`);
-            const precio = parseFloat(input.value);
-            if(!precio || precio <= 0) {
-                alert("Por favor ingrese un monto válido en USD.");
-                return;
-            }
-
-            const serv = servicios.find(s => s.id === id);
-            if(serv) {
-                serv.montoUsd = precio;
-                serv.estatus = "Precio Asignado (Pendiente de Pago)";
-                localStorage.setItem('llegando_servicios', JSON.stringify(servicios));
-                renderizarAdminSolicitudes();
-                actualizarBadgeAdmin();
-                alert(`✅ Precio de $${precio.toFixed(2)} USD asignado con éxito a la solicitud #${id}.`);
-            }
-        }
-
-        function confirmarPagoYAsignarAuto(id) {
-            const serv = servicios.find(s => s.id === id);
-            const prestadorDisponible = prestadores.find(p => p.estatus === 'Activo' && p.disponible);
-            if(!prestadorDisponible) { alert("⚠️ No hay prestadores disponibles."); return; }
-            
-            serv.pagoConfirmado = true;
-            serv.estatus = "Pago Confirmado y En Ruta";
-            serv.conductor = prestadorDisponible.nombre;
-            serv.fotoConductor = prestadorDisponible.foto;
-            serv.vehiculoInfo = `${prestadorDisponible.vehiculo} - Placa: ${prestadorDisponible.placa}`;
-            
-            prestadorDisponible.disponible = false;
-            localStorage.setItem('llegando_servicios', JSON.stringify(servicios));
-            localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores));
-
-            renderizarAdminSolicitudes();
-            actualizarBadgeAdmin();
-            alert(`✅ Conductor asignado: ${prestadorDisponible.nombre}`);
-        }
-
-        function registrarPrestadorAdmin() {
-            const nombre = document.getElementById('p-nombre').value.trim();
-            const cedula = document.getElementById('p-cedula').value.trim();
-            const vehiculo = document.getElementById('p-vehiculo').value.trim();
-            const placa = document.getElementById('p-placa').value.trim();
-            const urlFoto = document.getElementById('p-foto-url').value.trim();
-
-            const fotoFinal = urlFoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';
-
-            if(!nombre || !cedula || !vehiculo || !placa) { 
-                alert("Completa todos los datos obligatorios del prestador."); 
-                return; 
-            }
-
-            prestadores.push({ 
-                id: Date.now(), 
-                nombre, 
-                cedula, 
-                vehiculo, 
-                placa, 
-                foto: fotoFinal, 
-                estatus: "Activo", 
-                disponible: true 
-            });
-
-            localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores));
-            renderizarPrestadoresAdmin();
-            alert("¡Prestador registrado exitosamente!");
-
-            document.getElementById('p-nombre').value = "";
-            document.getElementById('p-cedula').value = "";
-            document.getElementById('p-vehiculo').value = "";
-            document.getElementById('p-placa').value = "";
-            document.getElementById('p-foto-url').value = "";
-        }
-
-        function renderizarPrestadoresAdmin() {
-            const cont = document.getElementById('lista-prestadores-admin');
-            if(!cont) return;
-            cont.innerHTML = '';
-            prestadores.forEach((p, i) => {
-                cont.innerHTML += `
-                    <div class="p-2.5 bg-white border rounded-xl flex justify-between items-center text-xs">
-                        <div class="flex items-center space-x-3">
-                            <img src="${p.foto}" class="w-10 h-10 rounded-full object-cover border shadow" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'">
-                            <div>
-                                <p class="font-bold text-slate-900">${p.nombre} (<span class="text-slate-500">${p.cedula}</span>)</p>
-                                <p class="text-slate-600">${p.vehiculo} | Placa: <b>${p.placa}</b></p>
-                            </div>
-                        </div>
-                        <button onclick="prestadores[${i}].estatus = prestadores[${i}].estatus==='Activo'?'Suspendido':'Activo'; localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores)); renderizarPrestadoresAdmin();" class="px-3 py-1.5 bg-slate-800 text-white font-bold rounded-lg">
-                            ${p.estatus}
-                        </button>
-                    </div>
-                `;
-            });
-        }
-
-        function toggleDisponibilidad() {
-            const btn = document.getElementById('btn-disp');
-            if(!btn) return;
-            if(btn.innerText === "DISPONIBLE") { btn.innerText = "FUERA"; btn.className = "bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
-            else { btn.innerText = "DISPONIBLE"; btn.className = "bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
-        }
-
-        function renderizarServiciosPrestador() {}
-        actualizarBadgeAdmin();
-    </script>
-</body>
-</html>
+                } else if
