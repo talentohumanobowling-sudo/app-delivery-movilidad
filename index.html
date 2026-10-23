@@ -9,7 +9,7 @@
     <!-- FontAwesome para Iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Firebase SDK (Compat Version para fácil integración) -->
+    <!-- Firebase SDK Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
@@ -22,7 +22,7 @@
                 <div class="bg-red-600 text-white p-2 rounded-lg shadow">
                     <i class="fa-solid fa-route"></i>
                 </div>
-                <span class="font-bold text-sm sm:text-lg tracking-wide">LLEGANDO (100% Funcional - 4 Portales)</span>
+                <span class="font-bold text-lg tracking-wide">LLEGANDO (Nube Sincronizada)</span>
             </div>
             <div class="flex items-center space-x-3">
                 <div class="text-right cursor-pointer">
@@ -110,7 +110,7 @@
                     </div>
                 </div>
                 <div id="lista-servicios-cliente-resultado" class="space-y-3 pt-2">
-                    <p class="text-xs text-slate-400">Ingresa tu número para verificar tus servicios en tiempo real...</p>
+                    <p class="text-xs text-slate-400">Ingresa tu número para verificar tus servicios y montos asignados...</p>
                 </div>
             </div>
         </div>
@@ -123,8 +123,8 @@
                     <button type="button" onclick="toggleDisponibilidad()" id="btn-disp" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow">DISPONIBLE</button>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tu Nombre Autorizado (Exacto como se registró)</label>
-                    <input type="text" id="pres-nombre-login" oninput="renderizarServiciosPrestador()" placeholder="Ingresa tu nombre..." class="w-full p-3 border rounded-xl text-sm outline-none">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tu Nombre Autorizado</label>
+                    <input type="text" id="pres-nombre-login" oninput="renderizarServiciosPrestador()" placeholder="Ingresa tu nombre exacto..." class="w-full p-3 border rounded-xl text-sm outline-none">
                 </div>
                 <div class="space-y-2 pt-2">
                     <h3 class="font-bold text-slate-700 text-xs uppercase">Servicios Asignados a mi Ruta</h3>
@@ -139,36 +139,11 @@
         <div id="portal-aliado" class="hidden space-y-4">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                 <h2 class="font-bold text-slate-900 text-lg flex items-center"><i class="fa-solid fa-store text-emerald-600 mr-2"></i> Portal de Aliados Comerciales</h2>
-                <p class="text-xs text-slate-600">Gestión exclusiva para comercios afiliados, restaurantes y tiendas que requieren logística de última milla recurrente.</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Código de Aliado / Tienda *</label>
-                        <input type="text" id="aliado-codigo" placeholder="Ej: ALIADO-CARACAS-01" class="w-full p-3 border rounded-xl text-sm outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Persona de Contacto *</label>
-                        <input type="text" id="aliado-contacto" placeholder="Encargado de tienda" class="w-full p-3 border rounded-xl text-sm outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Dirección de Retiro (Local Comercial) *</label>
-                        <input type="text" id="aliado-origen" placeholder="Dirección del local..." class="w-full p-3 border rounded-xl text-sm outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Dirección de Destino (Cliente Final) *</label>
-                        <input type="text" id="aliado-destino" placeholder="Dirección de entrega..." class="w-full p-3 border rounded-xl text-sm outline-none">
-                    </div>
-                </div>
-                <button type="button" onclick="enviarPedidoAliado()" class="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold text-sm shadow hover:bg-emerald-700 transition">Solicitar Despacho Comercial</button>
-                <div class="pt-4 border-t">
-                    <h3 class="font-bold text-xs text-slate-700 uppercase mb-2">Despachos Activos del Aliado</h3>
-                    <div id="lista-pedidos-aliado" class="space-y-2">
-                        <p class="text-xs text-slate-400">Ingresa tu código de aliado para ver tus despachos...</p>
-                    </div>
-                </div>
+                <input type="text" id="aliado-sus" placeholder="ALIADO-..." class="w-full p-3 border rounded-xl text-sm outline-none">
             </div>
         </div>
 
-        <!-- ================= 4. PANEL GERENCIAL Y LIQUIDACIONES (ADMIN) ================= -->
+        <!-- ================= 4. PANEL GERENCIAL & LIQUIDACIONES ================= -->
         <div id="portal-admin" class="hidden space-y-4">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                 <h2 class="font-extrabold text-slate-900 text-xl flex items-center"><i class="fa-solid fa-gauge-high text-red-600 mr-2"></i> Panel Gerencial & Liquidaciones LLEGANDO</h2>
@@ -178,92 +153,68 @@
                     <input type="password" id="admin-pass" oninput="verificarPasswordAdmin()" placeholder="Ingrese su contraseña..." class="w-full p-3 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500">
                 </div>
 
-                <div id="admin-content" class="hidden space-y-6 pt-2 border-t">
+                <div id="admin-content" class="hidden space-y-4 pt-2 border-t">
                     
-                    <!-- Pestañas internas de Admin -->
-                    <div class="flex space-x-2 border-b pb-2 overflow-x-auto">
-                        <button type="button" onclick="verTabAdmin('operaciones')" id="tab-adm-op" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white whitespace-nowrap">Operaciones en Vivo</button>
-                        <button type="button" onclick="verTabAdmin('relacion')" id="tab-adm-rel" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700 whitespace-nowrap">Relación y Liquidaciones</button>
-                        <button type="button" onclick="verTabAdmin('prestadores')" id="tab-adm-pres" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700 whitespace-nowrap">Gestión de Prestadores</button>
+                    <!-- Sub-pestañas Admin -->
+                    <div class="flex space-x-2 border-b pb-2">
+                        <button type="button" onclick="verTabAdmin('operaciones')" id="tab-admin-operaciones" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white">Operaciones en Vivo</button>
+                        <button type="button" onclick="verTabAdmin('relacion')" id="tab-admin-relacion" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700">Relación y Liquidaciones</button>
+                        <button type="button" onclick="verTabAdmin('prestadores')" id="tab-admin-prestadores" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700">Gestión de Prestadores</button>
                     </div>
 
-                    <!-- SUB-TAB 1: OPERACIONES -->
-                    <div id="subadmin-operaciones" class="space-y-4">
-                        <div class="p-4 bg-white border rounded-2xl shadow-sm space-y-3">
-                            <h3 class="font-bold text-slate-800 text-sm border-b pb-2"><i class="fa-solid fa-bell text-red-600 mr-2"></i> Solicitudes Recientes y Validación de Pagos</h3>
-                            <div id="admin-lista-solicitudes" class="space-y-2"></div>
-                        </div>
+                    <!-- TAB ADMIN 1: OPERACIONES EN VIVO -->
+                    <div id="subtab-admin-operaciones" class="space-y-3">
+                        <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-bell text-red-600 mr-2"></i> Solicitudes Recientes y Validación de Pagos</h3>
+                        <div id="admin-lista-solicitudes" class="space-y-2"></div>
                     </div>
 
-                    <!-- SUB-TAB 2: RELACIÓN Y LIQUIDACIONES -->
-                    <div id="subadmin-relacion" class="hidden space-y-4">
-                        <div class="flex flex-col sm:flex-row justify-between items-center gap-2 bg-slate-50 p-4 rounded-xl border">
+                    <!-- TAB ADMIN 2: RELACIÓN Y LIQUIDACIONES -->
+                    <div id="subtab-admin-relacion" class="hidden space-y-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-slate-50 p-4 rounded-xl border">
                             <div>
-                                <h3 class="font-bold text-slate-800 text-sm">Resumen de Cuentas y Liquidación</h3>
-                                <p class="text-xs text-slate-500">Filtra y liquida servicios por cliente o prestador.</p>
+                                <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-calculator text-red-600 mr-1"></i> Reporte y Control de Liquidaciones</h3>
+                                <p class="text-xs text-slate-500">Filtra la relación por prestador o cliente para consultar y cerrar cuentas.</p>
                             </div>
-                            <div class="flex space-x-2">
-                                <select id="filtro-tipo-relacion" onchange="renderizarRelacionLiquidaciones()" class="p-2 border rounded-lg text-xs bg-white">
-                                    <option value="todos">Todos los Servicios</option>
-                                    <option value="completados">Solo Completados</option>
-                                    <option value="pendientes-pago">Pendientes por Liquidar</option>
+                            <div class="flex space-x-2 w-full sm:w-auto">
+                                <select id="filtro-liquidar" onchange="renderizarRelacionLiquidaciones()" class="p-2 border rounded-xl text-xs bg-white font-bold outline-none">
+                                    <option value="todos">Todos los Registros</option>
+                                    <option value="pendientes">Solo Pendientes por Liquidar</option>
+                                    <option value="liquidados">Solo Liquidados / Pagados</option>
                                 </select>
                             </div>
                         </div>
 
-                        <!-- Resumen Financiero Rápido -->
+                        <!-- Resumen Totalizador -->
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div class="p-4 bg-slate-900 text-white rounded-xl">
-                                <span class="text-[10px] text-slate-400 block uppercase">Total Acumulado USD</span>
-                                <span class="text-lg font-bold" id="kpi-total-usd">$0.00</span>
+                            <div class="p-4 bg-red-50 border border-red-200 rounded-xl">
+                                <span class="text-[10px] font-bold text-red-600 uppercase block">Total USD Procesado</span>
+                                <span class="text-xl font-extrabold text-slate-900" id="total-liq-usd">$0.00 USD</span>
                             </div>
-                            <div class="p-4 bg-emerald-900 text-white rounded-xl">
-                                <span class="text-[10px] text-emerald-300 block uppercase">Comisión Plataforma (20%)</span>
-                                <span class="text-lg font-bold" id="kpi-comision-usd">$0.00</span>
+                            <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                                <span class="text-[10px] font-bold text-blue-600 uppercase block">Total Bolívares (BCV)</span>
+                                <span class="text-xl font-extrabold text-slate-900" id="total-liq-bs">Bs. 0.00</span>
                             </div>
-                            <div class="p-4 bg-blue-900 text-white rounded-xl">
-                                <span class="text-[10px] text-blue-300 block uppercase">A Liquidar a Prestadores</span>
-                                <span class="text-lg font-bold" id="kpi-prestador-usd">$0.00</span>
+                            <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                <span class="text-[10px] font-bold text-emerald-600 uppercase block">Servicios Concluidos</span>
+                                <span class="text-xl font-extrabold text-slate-900" id="total-liq-cant">0 Carreras</span>
                             </div>
                         </div>
 
-                        <!-- Tabla detallada de relación -->
-                        <div class="bg-white border rounded-2xl overflow-hidden shadow-sm">
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left border-collapse text-xs">
-                                    <thead>
-                                        <tr class="bg-slate-100 border-b text-slate-700">
-                                            <th class="p-3">ID / Fecha</th>
-                                            <th class="p-3">Cliente / Aliado</th>
-                                            <th class="p-3">Prestador (Conductor)</th>
-                                            <th class="p-3">Servicio</th>
-                                            <th class="p-3">Monto ($ / Bs)</th>
-                                            <th class="p-3">Estatus</th>
-                                            <th class="p-3 text-center">Acción / Liquidación</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tabla-relacion-cuerpo">
-                                        <!-- Inyectado dinámicamente -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <div id="admin-tabla-relacion" class="space-y-2"></div>
                     </div>
 
-                    <!-- SUB-TAB 3: PRESTADORES -->
-                    <div id="subadmin-prestadores" class="hidden space-y-4">
-                        <div class="p-5 bg-white border rounded-2xl shadow-sm space-y-4">
-                            <h3 class="font-bold text-slate-800 text-sm border-b pb-2"><i class="fa-solid fa-id-card-clip text-red-600 mr-2"></i> Registro de Prestador (Con Foto Obligatoria)</h3>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border">
-                                <input type="text" id="p-nombre" placeholder="Nombre Completo *" class="p-2.5 border rounded-lg text-sm bg-white">
-                                <input type="text" id="p-cedula" placeholder="Cédula *" class="p-2.5 border rounded-lg text-sm bg-white">
-                                <input type="text" id="p-vehiculo" placeholder="Vehículo (Moto/Auto) *" class="p-2.5 border rounded-lg text-sm bg-white">
-                                <input type="text" id="p-placa" placeholder="Placa *" class="p-2.5 border rounded-lg text-sm bg-white">
-                                <input type="text" id="p-foto-url" placeholder="URL de la Foto del Prestador * (Ej: https://...)" class="sm:col-span-2 p-2.5 border rounded-lg text-sm bg-white border-red-300">
-                                <button type="button" onclick="registrarPrestadorAdmin()" class="sm:col-span-2 bg-red-600 text-white py-2.5 rounded-xl text-xs font-bold shadow hover:bg-red-700 transition">Dar de Alta Prestador</button>
-                            </div>
-                            <div id="lista-prestadores-admin" class="space-y-2 pt-2"></div>
+                    <!-- TAB ADMIN 3: PRESTADORES -->
+                    <div id="subtab-admin-prestadores" class="hidden p-5 bg-white border rounded-2xl shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-800 text-sm border-b pb-2"><i class="fa-solid fa-id-card-clip text-red-600 mr-2"></i> Registro de Prestadores</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border">
+                            <input type="text" id="p-nombre" placeholder="Nombre Completo *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-cedula" placeholder="Cédula *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-vehiculo" placeholder="Vehículo (Moto/Auto) *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-placa" placeholder="Placa *" class="p-2.5 border rounded-lg text-sm bg-white">
+                            <input type="text" id="p-foto-url" placeholder="URL de Foto (Opcional)" class="sm:col-span-2 p-2.5 border rounded-lg text-sm bg-white">
+                            <button type="button" onclick="registrarPrestadorAdmin()" class="sm:col-span-2 bg-red-600 text-white py-2.5 rounded-xl text-xs font-bold shadow hover:bg-red-700 transition">Dar de Alta Prestador</button>
                         </div>
+                        <div id="lista-prestadores-admin" class="space-y-2 pt-2"></div>
                     </div>
 
                 </div>
@@ -272,22 +223,23 @@
 
     </main>
 
-    <!-- Script Conectado a Firebase Realtime Database -->
     <script>
-        // ========= CONFIGURACIÓN DE FIREBASE (Reemplaza con tus datos) =========
+        // Configuración de Firebase
         const firebaseConfig = {
-            apiKey: "TU_API_KEY",
-            authDomain: "tu-proyecto.firebaseapp.com",
-            databaseURL: "https://tu-proyecto-default-rtdb.firebaseio.com",
-            projectId: "tu-proyecto",
-            storageBucket: "tu-proyecto.appspot.com",
-            messagingSenderId: "TU_SENDER_ID",
-            appId: "TU_APP_ID"
+            apiKey: "AIzaSy_REEMPLAZAR_AQUI",
+            authDomain: "llegando-app.firebaseapp.com",
+            databaseURL: "https://llegando-app-default-rtdb.firebaseio.com",
+            projectId: "llegando-app",
+            storageBucket: "llegando-app.appspot.com",
+            messagingSenderId: "000000000000",
+            appId: "1:000000000000:web:000000000000"
         };
 
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+        } catch(e) { console.warn("Firebase no configurado aún:", e); }
 
         const tasaBCV = 884.75;
         const ADMIN_TELEFONO = "584123349463";
@@ -296,11 +248,28 @@
         let servicios = [];
         let prestadores = [];
 
-        // Escuchar cambios en Tiempo Real desde la Nube
-        db.ref('servicios').on('value', (snapshot) => {
-            const data = snapshot.val();
-            servicios = data ? Object.values(data) : [];
-            actualizarBadgeAdmin();
+        // Carga inicial y fallback local
+        if (db) {
+            db.ref('servicios').on('value', (snapshot) => {
+                const data = snapshot.val();
+                servicios = data ? Object.values(data) : [];
+                actualizarBadgeAdmin();
+                renderizarPantallas();
+            });
+
+            db.ref('prestadores').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    prestadores = Object.values(data);
+                } else {
+                    prestadores = [{ id: 1, nombre: "Carlos Mendoza", cedula: "V-15482910", vehiculo: "Moto", placa: "AB1C23D", foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150", estatus: "Activo", disponible: true }];
+                    db.ref('prestadores/1').set(prestadores[0]);
+                }
+                if(!document.getElementById('portal-admin').classList.contains('hidden')) renderizarPrestadoresAdmin();
+            });
+        }
+
+        function renderizarPantallas() {
             if(!document.getElementById('portal-admin').classList.contains('hidden')) {
                 renderizarAdminSolicitudes();
                 renderizarRelacionLiquidaciones();
@@ -308,20 +277,7 @@
             const tlfVal = document.getElementById('consultar-tlf-cli')?.value.trim();
             if(tlfVal) buscarServiciosCliente();
             if(!document.getElementById('portal-prestador').classList.contains('hidden')) renderizarServiciosPrestador();
-            const aliCod = document.getElementById('aliado-codigo')?.value.trim();
-            if(aliCod) renderizarPedidosAliado();
-        });
-
-        db.ref('prestadores').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                prestadores = Object.values(data);
-            } else {
-                prestadores = [{ id: 1, nombre: "Carlos Mendoza", cedula: "V-15482910", vehiculo: "Moto", placa: "AB1C23D", foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150", estatus: "Activo", disponible: true }];
-                db.ref('prestadores/1').set(prestadores[0]);
-            }
-            if(!document.getElementById('portal-admin').classList.contains('hidden')) renderizarPrestadoresAdmin();
-        });
+        }
 
         function cambiarPortal(portal) {
             ['cliente', 'prestador', 'aliado', 'admin'].forEach(p => {
@@ -340,50 +296,43 @@
         }
 
         function verTabCliente(tab) {
-            const subSolicitar = document.getElementById('subtab-solicitar');
-            const subServicios = document.getElementById('subtab-mis-servicios');
-            const tabSolicitar = document.getElementById('tab-cli-solicitar');
-            const tabServicios = document.getElementById('tab-cli-mis-servicios');
-
-            if(subSolicitar) subSolicitar.classList.add('hidden');
-            if(subServicios) subServicios.classList.add('hidden');
-            if(tabSolicitar) tabSolicitar.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700';
-            if(tabServicios) tabServicios.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700';
+            document.getElementById('subtab-solicitar').classList.add('hidden');
+            document.getElementById('subtab-mis-servicios').classList.add('hidden');
+            document.getElementById('tab-cli-solicitar').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700';
+            document.getElementById('tab-cli-mis-servicios').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700';
 
             if(tab === 'solicitar') {
-                if(subSolicitar) subSolicitar.classList.remove('hidden');
-                if(tabSolicitar) tabSolicitar.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white';
+                document.getElementById('subtab-solicitar').classList.remove('hidden');
+                document.getElementById('tab-cli-solicitar').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white';
             } else {
-                if(subServicios) subServicios.classList.remove('hidden');
-                if(tabServicios) tabServicios.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white';
+                document.getElementById('subtab-mis-servicios').classList.remove('hidden');
+                document.getElementById('tab-cli-mis-servicios').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white';
             }
         }
 
         function verTabAdmin(tab) {
-            ['operaciones', 'relacion', 'prestadores'].forEach(t => {
-                const sub = document.getElementById(`subadmin-${t}`);
-                const btn = document.getElementById(`tab-adm-${t === 'operaciones' ? 'op' : t === 'relacion' ? 'rel' : 'pres'}`);
-                if(sub) sub.classList.add('hidden');
-                if(btn) btn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700';
-            });
-            const selSub = document.getElementById(`subadmin-${tab}`);
-            const selBtn = document.getElementById(`tab-adm-${tab === 'operaciones' ? 'op' : tab === 'relacion' ? 'rel' : 'pres'}`);
-            if(selSub) selSub.classList.remove('hidden');
-            if(selBtn) selBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white';
+            document.getElementById('subtab-admin-operaciones').classList.add('hidden');
+            document.getElementById('subtab-admin-relacion').classList.add('hidden');
+            document.getElementById('subtab-admin-prestadores').classList.add('hidden');
+            document.getElementById('tab-admin-operaciones').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700';
+            document.getElementById('tab-admin-relacion').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700';
+            document.getElementById('tab-admin-prestadores').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700';
 
-            if(tab === 'relacion') renderizarRelacionLiquidaciones();
+            if(tab === 'operaciones') {
+                document.getElementById('subtab-admin-operaciones').classList.remove('hidden');
+                document.getElementById('tab-admin-operaciones').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white';
+                renderizarAdminSolicitudes();
+            } else if(tab === 'relacion') {
+                document.getElementById('subtab-admin-relacion').classList.remove('hidden');
+                document.getElementById('tab-admin-relacion').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white';
+                renderizarRelacionLiquidaciones();
+            } else {
+                document.getElementById('subtab-admin-prestadores').classList.remove('hidden');
+                document.getElementById('tab-admin-prestadores').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white';
+                renderizarPrestadoresAdmin();
+            }
         }
 
-        function mostrarMensajeFormulario(texto, tipo) {
-            const msg = document.getElementById('form-mensaje');
-            if(!msg) return;
-            msg.innerText = texto;
-            msg.className = `p-3 rounded-xl text-xs font-bold ${tipo === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`;
-            msg.classList.remove('hidden');
-            setTimeout(() => msg.classList.add('hidden'), 4000);
-        }
-
-        // ================= 1. FUNCIONES CLIENTE =================
         function enviarSolicitudCliente() {
             const nombre = document.getElementById('cli-nombre').value.trim();
             const telefono = document.getElementById('cli-telefono').value.trim();
@@ -392,7 +341,7 @@
             const destino = document.getElementById('cli-destino').value.trim();
 
             if(!nombre || !telefono || !origen || !destino) {
-                mostrarMensajeFormulario("⚠️ Complete todos los campos (*).", "error");
+                alert("Por favor complete todos los campos obligatorios.");
                 return;
             }
 
@@ -409,13 +358,11 @@
                 pagoConfirmado: false,
                 liquidado: false,
                 calificacion: 0,
-                esAliado: false,
                 fecha: new Date().toLocaleTimeString()
             };
 
-            db.ref('servicios/' + servicioId).set(nuevoServicio);
-
-            mostrarMensajeFormulario("✅ ¡Solicitud enviada con éxito a la nube!", "exito");
+            if (db) db.ref('servicios/' + servicioId).set(nuevoServicio);
+            alert("✅ ¡Solicitud enviada con éxito!");
             document.getElementById('consultar-tlf-cli').value = telefono;
             verTabCliente('mis-servicios');
             buscarServiciosCliente();
@@ -427,7 +374,7 @@
             if(!cont || !tlf) return;
             cont.innerHTML = '';
 
-            const misServicios = servicios.filter(s => s.telefono === tlf && !s.esAliado);
+            const misServicios = servicios.filter(s => s.telefono === tlf);
             if(misServicios.length === 0) {
                 cont.innerHTML = `<p class="text-xs text-slate-500">No hay servicios con el teléfono: <b>${tlf}</b></p>`;
                 return;
@@ -444,25 +391,19 @@
                     for(let i = 1; i <= 5; i++) {
                         htmlEstrellas += `<i class="fa-solid fa-star cursor-pointer ${i <= s.calificacion ? 'text-yellow-400' : 'text-slate-300'}" onclick="calificarServicio(${s.id}, ${i})"></i>`;
                     }
-                    htmlAlerta = `<div class="p-3 bg-slate-100 border rounded-xl text-xs space-y-1"><p class="font-bold">Servicio Finalizado</p><div class="flex space-x-1 text-base pt-1">${htmlEstrellas}</div></div>`;
+                    htmlAlerta = `<div class="p-3 bg-slate-100 border rounded-xl text-xs space-y-1"><p class="font-bold text-slate-800">Servicio Finalizado</p><p>Valoración:</p><div class="flex space-x-1 text-base pt-1">${htmlEstrellas}</div></div>`;
                 } else if(s.montoUsd === 0) {
-                    htmlAlerta = `<div class="p-3 bg-yellow-50 border rounded-xl text-xs">⏳ Esperando tarifa del Administrador...</div>`;
+                    htmlAlerta = `<div class="p-3 bg-yellow-50 border rounded-xl text-xs text-yellow-800">⏳ Administrador asignando precio...</div>`;
                 } else if(s.conductor !== "Por Asignar") {
-                    htmlAlerta = `
-                        <div class="p-3 bg-emerald-50 border rounded-xl text-xs flex items-center space-x-3">
-                            <img src="${s.fotoConductor || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}" class="w-12 h-12 rounded-full object-cover border-2 border-emerald-600 shadow">
-                            <div>
-                                <p class="font-bold text-emerald-900">Conductor Asignado: ${s.conductor}</p>
-                                <p class="text-slate-600">${s.vehiculoInfo}</p>
-                            </div>
-                        </div>`;
+                    htmlAlerta = `<div class="p-3 bg-emerald-50 border rounded-xl text-xs flex items-center space-x-3"><img src="${s.fotoConductor}" class="w-12 h-12 rounded-full object-cover"><div><p class="font-bold">Conductor: ${s.conductor}</p><p>${s.vehiculoInfo}</p></div></div>`;
                 }
 
                 let htmlPagoMovil = (s.montoUsd > 0 && s.estatus !== "Completado") ? `
                     <div class="p-3 bg-slate-900 text-white rounded-xl text-xs space-y-1">
                         <p class="font-bold text-red-400">PAGO MÓVIL OFICIAL</p>
-                        <p>Banco: ${DATOS_PAGO_MOVIL.banco} | Tlf: ${DATOS_PAGO_MOVIL.telefono}</p>
-                        <p>Monto: <b>$${s.montoUsd.toFixed(2)} USD (Bs. ${montoBs})</b></p>
+                        <p>• Banco: ${DATOS_PAGO_MOVIL.banco} | Tlf: ${DATOS_PAGO_MOVIL.telefono}</p>
+                        <p>• Cédula: ${DATOS_PAGO_MOVIL.cedula}</p>
+                        <p>• Monto: <b>$${s.montoUsd.toFixed(2)} USD (Bs. ${montoBs})</b></p>
                     </div>
                     <div class="flex space-x-2">
                         <input type="text" id="ref-input-${s.id}" value="${s.refPago}" placeholder="Número de referencia..." class="w-full p-2 border rounded-xl text-xs bg-white">
@@ -488,17 +429,64 @@
         }
 
         function calificarServicio(id, estrellas) {
-            db.ref('servicios/' + id).update({ calificacion: estrellas });
+            if(db) db.ref('servicios/' + id).update({ calificacion: estrellas });
         }
 
         function reportarReferenciaCliente(id) {
             const ref = document.getElementById(`ref-input-${id}`).value.trim();
             if(!ref) { alert("Ingresa la referencia."); return; }
-            db.ref('servicios/' + id).update({ refPago: ref, estatus: "Pago Reportado (Por Verificar)" });
-            alert("¡Referencia enviada a la nube!");
+            if(db) db.ref('servicios/' + id).update({ refPago: ref, estatus: "Pago Reportado (Por Verificar)" });
+            alert("¡Referencia reportada!");
         }
 
-        // ================= 2. FUNCIONES PRESTADOR =================
+        function renderizarRelacionLiquidaciones() {
+            const cont = document.getElementById('admin-tabla-relacion');
+            const filtro = document.getElementById('filtro-liquidar')?.value || 'todos';
+            if(!cont) return;
+            cont.innerHTML = '';
+
+            let lista = servicios.filter(s => s.montoUsd > 0);
+            if(filtro === 'pendientes') lista = lista.filter(s => !s.liquidado);
+            if(filtro === 'liquidados') lista = lista.filter(s => s.liquidado);
+
+            let totalUsd = 0;
+            lista.forEach(s => totalUsd += parseFloat(s.montoUsd || 0));
+            const totalBs = totalUsd * tasaBCV;
+
+            document.getElementById('total-liq-usd').innerText = `$${totalUsd.toFixed(2)} USD`;
+            document.getElementById('total-liq-bs').innerText = `Bs. ${totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+            document.getElementById('total-liq-cant').innerText = `${lista.length} Servicios`;
+
+            if(lista.length === 0) {
+                cont.innerHTML = `<p class="text-xs text-slate-400 p-4 border rounded-xl">No hay registros de liquidación disponibles.</p>`;
+                return;
+            }
+
+            lista.slice().reverse().forEach(s => {
+                const montoBs = (s.montoUsd * tasaBCV).toFixed(2);
+                cont.innerHTML += `
+                    <div class="p-3 bg-slate-50 border rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
+                        <div>
+                            <p class="font-bold text-slate-900">#${s.id} - ${s.tipo} | Cliente: ${s.nombre} (${s.telefono})</p>
+                            <p class="text-slate-600">Prestador: <b>${s.conductor}</b> | Ruta: ${s.origen} ➡️ ${s.destino}</p>
+                            <p class="text-slate-500">Monto: <b class="text-red-600">$${s.montoUsd.toFixed(2)} USD (Bs. ${montoBs})</b> | Ref: <b>${s.refPago || 'Sin ref'}</b></p>
+                        </div>
+                        <div>
+                            ${!s.liquidado ? 
+                                `<button type="button" onclick="liquidarServicio(${s.id})" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-bold text-xs shadow hover:bg-emerald-700"><i class="fa-solid fa-check-double mr-1"></i> Liquidar / Pagar</button>` : 
+                                `<span class="px-2.5 py-1 bg-slate-200 text-slate-700 font-bold rounded-lg"><i class="fa-solid fa-lock text-emerald-600 mr-1"></i> Liquidado</span>`
+                            }
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function liquidarServicio(id) {
+            if(db) db.ref('servicios/' + id).update({ liquidado: true });
+            alert("✅ Servicio marcado como Liquidado.");
+        }
+
         function renderizarServiciosPrestador() {
             const nombreInput = document.getElementById('pres-nombre-login').value.trim().toLowerCase();
             const cont = document.getElementById('prestador-mis-servicios');
@@ -515,10 +503,10 @@
                 const tlfCliente = c.telefono.replace(/\D/g,'');
                 cont.innerHTML += `
                     <div class="p-4 bg-slate-50 border rounded-xl text-xs space-y-3">
-                        <p class="font-bold">#${c.id} - ${c.tipo} | Cliente/Aliado: ${c.nombre}</p>
+                        <p class="font-bold">#${c.id} - ${c.tipo} | Cliente: ${c.nombre}</p>
                         <p>📍 ${c.origen} ➡️ 🏁 ${c.destino}</p>
                         <div class="grid grid-cols-2 gap-2">
-                            <a href="https://wa.me/58${tlfCliente}" target="_blank" class="bg-emerald-600 text-white py-2 rounded text-center font-bold">WhatsApp Contacto</a>
+                            <a href="https://wa.me/58${tlfCliente}" target="_blank" class="bg-emerald-600 text-white py-2 rounded text-center font-bold">WhatsApp Cliente</a>
                             <a href="https://wa.me/${ADMIN_TELEFONO}" target="_blank" class="bg-blue-600 text-white py-2 rounded text-center font-bold">WhatsApp Admin</a>
                         </div>
                         <button type="button" onclick="finalizarServicioPrestador(${c.id}, '${c.conductor}')" class="w-full bg-slate-900 text-white py-2.5 rounded-xl font-bold">Finalizar Servicio</button>
@@ -528,95 +516,25 @@
         }
 
         function finalizarServicioPrestador(id, conductorNombre) {
-            db.ref('servicios/' + id).update({ estatus: "Completado" });
-            const pres = prestadores.find(p => p.nombre.toLowerCase() === conductorNombre.toLowerCase());
-            if(pres) {
-                db.ref('prestadores/' + (pres.id || 1)).update({ disponible: true });
+            if(db) {
+                db.ref('servicios/' + id).update({ estatus: "Completado" });
+                const pres = prestadores.find(p => p.nombre.toLowerCase() === conductorNombre.toLowerCase());
+                if(pres) db.ref('prestadores/' + (pres.id || 1)).update({ disponible: true });
             }
-            alert("¡Servicio finalizado con éxito!");
+            alert("¡Servicio finalizado!");
         }
 
-        function toggleDisponibilidad() {
-            const btn = document.getElementById('btn-disp');
-            if(btn.innerText === "DISPONIBLE") { btn.innerText = "FUERA"; btn.className = "bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
-            else { btn.innerText = "DISPONIBLE"; btn.className = "bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
-        }
-
-        // ================= 3. FUNCIONES ALIADO COMERCIAL =================
-        function enviarPedidoAliado() {
-            const codigo = document.getElementById('aliado-codigo').value.trim();
-            const contacto = document.getElementById('aliado-contacto').value.trim();
-            const origen = document.getElementById('aliado-origen').value.trim();
-            const destino = document.getElementById('aliado-destino').value.trim();
-
-            if(!codigo || !contacto || !origen || !destino) {
-                alert("⚠️ Todos los campos de comercio son obligatorios.");
-                return;
-            }
-
-            const servicioId = Date.now();
-            const nuevoDespacho = {
-                id: servicioId,
-                nombre: `[Aliado] ${codigo} (${contacto})`,
-                telefono: "04120000000",
-                tipo: "Delivery Masivo",
-                origen, destino,
-                montoUsd: 5.00, // Tarifa comercial fija por defecto o modificable por admin
-                estatus: "Precio Asignado (Pendiente de Pago)",
-                conductor: "Por Asignar",
-                fotoConductor: "",
-                vehiculoInfo: "",
-                refPago: "Comercio Corporativo",
-                pagoConfirmado: true, // Auto-aprobado para comercios con crédito
-                liquidado: false,
-                calificacion: 5,
-                esAliado: true,
-                fecha: new Date().toLocaleTimeString()
-            };
-
-            db.ref('servicios/' + servicioId).set(nuevoDespacho);
-            alert("✅ Despacho corporativo registrado exitosamente.");
-            renderizarPedidosAliado();
-        }
-
-        function renderizarPedidosAliado() {
-            const codigoInput = document.getElementById('aliado-codigo')?.value.trim().toLowerCase();
-            const cont = document.getElementById('lista-pedidos-aliado');
-            if(!cont || !codigoInput) return;
-            cont.innerHTML = '';
-
-            const misDespachos = servicios.filter(s => s.esAliado && s.nombre.toLowerCase().includes(codigoInput));
-            if(misDespachos.length === 0) {
-                cont.innerHTML = `<p class="text-xs text-slate-500">No hay despachos activos para este código de aliado.</p>`;
-                return;
-            }
-
-            misDespachos.forEach(d => {
-                cont.innerHTML += `
-                    <div class="p-3 bg-slate-50 border rounded-xl text-xs space-y-1">
-                        <p class="font-bold">Despacho #${d.id} | Estatus: <span class="text-red-600">${d.estatus}</span></p>
-                        <p>📍 Retiro: ${d.origen}</p>
-                        <p>🏁 Entrega: ${d.destino}</p>
-                        <p>🚗 Conductor: <b>${d.conductor}</b></p>
-                    </div>
-                `;
-            });
-        }
-
-        // ================= 4. FUNCIONES PANEL GERENCIAL / ADMIN =================
         function verificarPasswordAdmin() {
             if(document.getElementById('admin-pass').value === "Sky1012#") {
                 document.getElementById('admin-content').classList.remove('hidden');
-                renderizarAdminSolicitudes();
-                renderizarPrestadoresAdmin();
-                renderizarRelacionLiquidaciones();
+                verTabAdmin('operaciones');
             } else {
                 document.getElementById('admin-content').classList.add('hidden');
             }
         }
 
         function actualizarBadgeAdmin() {
-            const pendientes = servicios.filter(s => (s.montoUsd === 0) || (s.refPago !== "" && !s.pagoConfirmado && !s.esAliado)).length;
+            const pendientes = servicios.filter(s => (s.montoUsd === 0) || (s.refPago !== "" && !s.pagoConfirmado)).length;
             const badge = document.getElementById('admin-badge');
             if(!badge) return;
             if(pendientes > 0) { badge.innerText = pendientes; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
@@ -634,14 +552,8 @@
                     htmlAccion = `<input type="number" id="p-in-${s.id}" placeholder="USD" class="w-20 p-1 border text-xs"><button type="button" onclick="asignarPrecio(${s.id})" class="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold">Asignar</button>`;
                 } else if(!s.pagoConfirmado) {
                     htmlAccion = `<button type="button" onclick="validarPagoYConductor(${s.id})" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs font-bold">Validar y Asignar</button>`;
-                } else if(s.conductor === "Por Asignar") {
-                    htmlAccion = `<button type="button" onclick="validarPagoYConductor(${s.id})" class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">Asignar Conductor</button>`;
                 } else {
-                    htmlAccion = `
-                        <div class="flex items-center space-x-2">
-                            <img src="${s.fotoConductor}" class="w-7 h-7 rounded-full object-cover border">
-                            <span class="text-emerald-600 font-bold text-xs">Asignado: ${s.conductor}</span>
-                        </div>`;
+                    htmlAccion = `<span class="text-emerald-600 font-bold text-xs">Asignado a ${s.conductor}</span>`;
                 }
 
                 cont.innerHTML += `
@@ -659,23 +571,25 @@
         function asignarPrecio(id) {
             const precio = parseFloat(document.getElementById(`p-in-${id}`).value);
             if(!precio) { alert("Ingresa un precio válido"); return; }
-            db.ref('servicios/' + id).update({ montoUsd: precio, estatus: "Precio Asignado (Pendiente de Pago)" });
+            if(db) db.ref('servicios/' + id).update({ montoUsd: precio, estatus: "Precio Asignado (Pendiente de Pago)" });
         }
 
         function validarPagoYConductor(id) {
             const prestadorDisponible = prestadores.find(p => p.estatus === 'Activo' && p.disponible);
-            if(!prestadorDisponible) { alert("⚠️ No hay prestadores disponibles en este momento."); return; }
+            if(!prestadorDisponible) { alert("⚠️ No hay prestadores disponibles."); return; }
 
-            db.ref('servicios/' + id).update({
-                pagoConfirmado: true,
-                estatus: "Pago Confirmado y En Ruta",
-                conductor: prestadorDisponible.nombre,
-                fotoConductor: prestadorDisponible.foto,
-                vehiculoInfo: `${prestadorDisponible.vehiculo} - Placa: ${prestadorDisponible.placa}`
-            });
+            if(db) {
+                db.ref('servicios/' + id).update({
+                    pagoConfirmado: true,
+                    estatus: "Pago Confirmado y En Ruta",
+                    conductor: prestadorDisponible.nombre,
+                    fotoConductor: prestadorDisponible.foto,
+                    vehiculoInfo: `${prestadorDisponible.vehiculo} - Placa: ${prestadorDisponible.placa}`
+                });
 
-            db.ref('prestadores/' + (prestadorDisponible.id || 1)).update({ disponible: false });
-            alert(`✅ Conductor asignado con éxito: ${prestadorDisponible.nombre}`);
+                db.ref('prestadores/' + (prestadorDisponible.id || 1)).update({ disponible: false });
+            }
+            alert(`✅ Conductor asignado: ${prestadorDisponible.nombre}`);
         }
 
         function registrarPrestadorAdmin() {
@@ -683,22 +597,12 @@
             const cedula = document.getElementById('p-cedula').value.trim();
             const vehiculo = document.getElementById('p-vehiculo').value.trim();
             const placa = document.getElementById('p-placa').value.trim();
-            const foto = document.getElementById('p-foto-url').value.trim();
+            const foto = document.getElementById('p-foto-url').value.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';
 
-            if(!nombre || !cedula || !foto) { 
-                alert("⚠️ Por favor completa los campos obligatorios, incluyendo obligatoriamente la URL de la foto del prestador."); 
-                return; 
-            }
-            
+            if(!nombre || !cedula) { alert("Completa los campos obligatorios."); return; }
             const pId = Date.now();
-            db.ref('prestadores/' + pId).set({ id: pId, nombre, cedula, vehiculo, placa, foto, estatus: "Activo", disponible: true });
-            alert("✅ Prestador registrado con éxito en la nube con su fotografía.");
-            
-            document.getElementById('p-nombre').value = '';
-            document.getElementById('p-cedula').value = '';
-            document.getElementById('p-vehiculo').value = '';
-            document.getElementById('p-placa').value = '';
-            document.getElementById('p-foto-url').value = '';
+            if(db) db.ref('prestadores/' + pId).set({ id: pId, nombre, cedula, vehiculo, placa, foto, estatus: "Activo", disponible: true });
+            alert("Prestador registrado en la nube.");
         }
 
         function renderizarPrestadoresAdmin() {
@@ -708,86 +612,17 @@
             prestadores.forEach((p) => {
                 cont.innerHTML += `
                     <div class="p-2 bg-white border rounded flex justify-between items-center text-xs">
-                        <div class="flex items-center space-x-2">
-                            <img src="${p.foto}" class="w-8 h-8 rounded-full object-cover border">
-                            <span><b>${p.nombre}</b> (${p.vehiculo} - ${p.placa})</span>
-                        </div>
+                        <span><b>${p.nombre}</b> (${p.vehiculo} - ${p.placa})</span>
                         <span class="text-emerald-600 font-bold">${p.estatus}</span>
                     </div>
                 `;
             });
         }
 
-        function renderizarRelacionLiquidaciones() {
-            const tbody = document.getElementById('tabla-relacion-cuerpo');
-            const filtro = document.getElementById('filtro-tipo-relacion')?.value || 'todos';
-            if(!tbody) return;
-            tbody.innerHTML = '';
-
-            let totalUsdGlobal = 0;
-            let totalComisionGlobal = 0;
-            let totalPrestadoresGlobal = 0;
-
-            let filtrados = servicios.slice();
-            if(filtro === 'completados') {
-                filtrados = filtrados.filter(s => s.estatus === 'Completado');
-            } else if(filtro === 'pendientes-pago') {
-                filtrados = filtrados.filter(s => s.montoUsd > 0 && !s.liquidado);
-            }
-
-            if(filtrados.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No hay registros bajo este filtro.</td></tr>`;
-                document.getElementById('kpi-total-usd').innerText = `$0.00`;
-                document.getElementById('kpi-comision-usd').innerText = `$0.00`;
-                document.getElementById('kpi-prestador-usd').innerText = `$0.00`;
-                return;
-            }
-
-            filtrados.forEach(s => {
-                const monto = s.montoUsd || 0;
-                const montoBs = (monto * tasaBCV).toFixed(2);
-                const comision = monto * 0.20; 
-                const netoPrestador = monto * 0.80; 
-
-                if(s.estatus === 'Completado' || s.pagoConfirmado) {
-                    totalUsdGlobal += monto;
-                    totalComisionGlobal += comision;
-                    totalPrestadoresGlobal += netoPrestador;
-                }
-
-                let badgeLiq = s.liquidado ? 
-                    `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold text-[10px]">Liquidado</span>` :
-                    `<button onclick="liquidarServicio(${s.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded font-bold text-[10px]">Liquidar Pago</button>`;
-
-                let infoConductorTabla = s.conductor !== "Por Asignar" ? `
-                    <div class="flex items-center space-x-2">
-                        <img src="${s.fotoConductor}" class="w-6 h-6 rounded-full object-cover">
-                        <span>${s.conductor}</span>
-                    </div>` : `<span class="text-slate-400">Por Asignar</span>`;
-
-                tbody.innerHTML += `
-                    <tr class="border-b hover:bg-slate-50">
-                        <td class="p-3"><b>#${s.id}</b><br><span class="text-[10px] text-slate-400">${s.fecha || ''}</span></td>
-                        <td class="p-3">${s.nombre}<br><span class="text-[10px] text-slate-500">${s.telefono}</span></td>
-                        <td class="p-3">${infoConductorTabla}</td>
-                        <td class="p-3">${s.tipo}</td>
-                        <td class="p-3"><b>$${monto.toFixed(2)}</b><br><span class="text-[10px] text-slate-500">Bs. ${montoBs}</span></td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-200 font-semibold">${s.estatus}</span></td>
-                        <td class="p-3 text-center">${s.montoUsd > 0 ? badgeLiq : '<span class="text-slate-400 text-[10px]">Sin Tarifa</span>'}</td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById('kpi-total-usd').innerText = `$${totalUsdGlobal.toFixed(2)}`;
-            document.getElementById('kpi-comision-usd').innerText = `$${totalComisionGlobal.toFixed(2)}`;
-            document.getElementById('kpi-prestador-usd').innerText = `$${totalPrestadoresGlobal.toFixed(2)}`;
-        }
-
-        function liquidarServicio(id) {
-            if(confirm(`¿Deseas marcar el servicio #${id} como liquidado y procesar el pago al prestador?`)) {
-                db.ref('servicios/' + id).update({ liquidado: true });
-                alert("✅ Pago liquidado con éxito.");
-            }
+        function toggleDisponibilidad() {
+            const btn = document.getElementById('btn-disp');
+            if(btn.innerText === "DISPONIBLE") { btn.innerText = "FUERA"; btn.className = "bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
+            else { btn.innerText = "DISPONIBLE"; btn.className = "bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
         }
     </script>
 </body>
