@@ -22,7 +22,7 @@
                 <div class="bg-red-600 text-white p-2 rounded-lg shadow">
                     <i class="fa-solid fa-route"></i>
                 </div>
-                <span class="font-bold text-lg tracking-wide">LLEGANDO (Liquidaciones y Control con Foto)</span>
+                <span class="font-bold text-sm sm:text-lg tracking-wide">LLEGANDO (100% Funcional - 4 Portales)</span>
             </div>
             <div class="flex items-center space-x-3">
                 <div class="text-right cursor-pointer">
@@ -39,7 +39,7 @@
             <button type="button" onclick="cambiarPortal('cliente')" id="btn-cliente" class="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white transition whitespace-nowrap shadow-sm"><i class="fa-solid fa-user mr-1"></i> 1. Portal Cliente</button>
             <button type="button" onclick="cambiarPortal('prestador')" id="btn-prestador" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap"><i class="fa-solid fa-id-badge mr-1"></i> 2. Portal Prestador</button>
             <button type="button" onclick="cambiarPortal('aliado')" id="btn-aliado" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap"><i class="fa-solid fa-store mr-1"></i> 3. Aliado Comercial</button>
-            <button type="button" onclick="cambiarPortal('admin')" id="btn-admin" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap relative"><i class="fa-solid fa-gauge-high mr-1"></i> 4. Panel Gerencial & Liquidaciones <span id="admin-badge" class="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] px-1.5 py-0.2 rounded-full hidden">0</span></button>
+            <button type="button" onclick="cambiarPortal('admin')" id="btn-admin" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap relative"><i class="fa-solid fa-gauge-high mr-1"></i> 4. Panel Gerencial <span id="admin-badge" class="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] px-1.5 py-0.2 rounded-full hidden">0</span></button>
         </div>
     </nav>
 
@@ -123,8 +123,8 @@
                     <button type="button" onclick="toggleDisponibilidad()" id="btn-disp" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow">DISPONIBLE</button>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tu Nombre Autorizado</label>
-                    <input type="text" id="pres-nombre-login" oninput="renderizarServiciosPrestador()" placeholder="Ingresa tu nombre exacto..." class="w-full p-3 border rounded-xl text-sm outline-none">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tu Nombre Autorizado (Exacto como se registró)</label>
+                    <input type="text" id="pres-nombre-login" oninput="renderizarServiciosPrestador()" placeholder="Ingresa tu nombre..." class="w-full p-3 border rounded-xl text-sm outline-none">
                 </div>
                 <div class="space-y-2 pt-2">
                     <h3 class="font-bold text-slate-700 text-xs uppercase">Servicios Asignados a mi Ruta</h3>
@@ -139,7 +139,32 @@
         <div id="portal-aliado" class="hidden space-y-4">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                 <h2 class="font-bold text-slate-900 text-lg flex items-center"><i class="fa-solid fa-store text-emerald-600 mr-2"></i> Portal de Aliados Comerciales</h2>
-                <input type="text" id="aliado-sus" placeholder="ALIADO-..." class="w-full p-3 border rounded-xl text-sm outline-none">
+                <p class="text-xs text-slate-600">Gestión exclusiva para comercios afiliados, restaurantes y tiendas que requieren logística de última milla recurrente.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Código de Aliado / Tienda *</label>
+                        <input type="text" id="aliado-codigo" placeholder="Ej: ALIADO-CARACAS-01" class="w-full p-3 border rounded-xl text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Persona de Contacto *</label>
+                        <input type="text" id="aliado-contacto" placeholder="Encargado de tienda" class="w-full p-3 border rounded-xl text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Dirección de Retiro (Local Comercial) *</label>
+                        <input type="text" id="aliado-origen" placeholder="Dirección del local..." class="w-full p-3 border rounded-xl text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Dirección de Destino (Cliente Final) *</label>
+                        <input type="text" id="aliado-destino" placeholder="Dirección de entrega..." class="w-full p-3 border rounded-xl text-sm outline-none">
+                    </div>
+                </div>
+                <button type="button" onclick="enviarPedidoAliado()" class="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold text-sm shadow hover:bg-emerald-700 transition">Solicitar Despacho Comercial</button>
+                <div class="pt-4 border-t">
+                    <h3 class="font-bold text-xs text-slate-700 uppercase mb-2">Despachos Activos del Aliado</h3>
+                    <div id="lista-pedidos-aliado" class="space-y-2">
+                        <p class="text-xs text-slate-400">Ingresa tu código de aliado para ver tus despachos...</p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -156,10 +181,10 @@
                 <div id="admin-content" class="hidden space-y-6 pt-2 border-t">
                     
                     <!-- Pestañas internas de Admin -->
-                    <div class="flex space-x-2 border-b pb-2">
-                        <button type="button" onclick="verTabAdmin('operaciones')" id="tab-adm-op" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white">Operaciones en Vivo</button>
-                        <button type="button" onclick="verTabAdmin('relacion')" id="tab-adm-rel" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700">Relación de Servicios y Liquidaciones</button>
-                        <button type="button" onclick="verTabAdmin('prestadores')" id="tab-adm-pres" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700">Gestión de Prestadores</button>
+                    <div class="flex space-x-2 border-b pb-2 overflow-x-auto">
+                        <button type="button" onclick="verTabAdmin('operaciones')" id="tab-adm-op" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white whitespace-nowrap">Operaciones en Vivo</button>
+                        <button type="button" onclick="verTabAdmin('relacion')" id="tab-adm-rel" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700 whitespace-nowrap">Relación y Liquidaciones</button>
+                        <button type="button" onclick="verTabAdmin('prestadores')" id="tab-adm-pres" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700 whitespace-nowrap">Gestión de Prestadores</button>
                     </div>
 
                     <!-- SUB-TAB 1: OPERACIONES -->
@@ -209,7 +234,7 @@
                                     <thead>
                                         <tr class="bg-slate-100 border-b text-slate-700">
                                             <th class="p-3">ID / Fecha</th>
-                                            <th class="p-3">Cliente</th>
+                                            <th class="p-3">Cliente / Aliado</th>
                                             <th class="p-3">Prestador (Conductor)</th>
                                             <th class="p-3">Servicio</th>
                                             <th class="p-3">Monto ($ / Bs)</th>
@@ -283,6 +308,8 @@
             const tlfVal = document.getElementById('consultar-tlf-cli')?.value.trim();
             if(tlfVal) buscarServiciosCliente();
             if(!document.getElementById('portal-prestador').classList.contains('hidden')) renderizarServiciosPrestador();
+            const aliCod = document.getElementById('aliado-codigo')?.value.trim();
+            if(aliCod) renderizarPedidosAliado();
         });
 
         db.ref('prestadores').on('value', (snapshot) => {
@@ -356,6 +383,7 @@
             setTimeout(() => msg.classList.add('hidden'), 4000);
         }
 
+        // ================= 1. FUNCIONES CLIENTE =================
         function enviarSolicitudCliente() {
             const nombre = document.getElementById('cli-nombre').value.trim();
             const telefono = document.getElementById('cli-telefono').value.trim();
@@ -381,6 +409,7 @@
                 pagoConfirmado: false,
                 liquidado: false,
                 calificacion: 0,
+                esAliado: false,
                 fecha: new Date().toLocaleTimeString()
             };
 
@@ -398,7 +427,7 @@
             if(!cont || !tlf) return;
             cont.innerHTML = '';
 
-            const misServicios = servicios.filter(s => s.telefono === tlf);
+            const misServicios = servicios.filter(s => s.telefono === tlf && !s.esAliado);
             if(misServicios.length === 0) {
                 cont.innerHTML = `<p class="text-xs text-slate-500">No hay servicios con el teléfono: <b>${tlf}</b></p>`;
                 return;
@@ -419,7 +448,6 @@
                 } else if(s.montoUsd === 0) {
                     htmlAlerta = `<div class="p-3 bg-yellow-50 border rounded-xl text-xs">⏳ Esperando tarifa del Administrador...</div>`;
                 } else if(s.conductor !== "Por Asignar") {
-                    // Muestra la foto real del prestador asignado
                     htmlAlerta = `
                         <div class="p-3 bg-emerald-50 border rounded-xl text-xs flex items-center space-x-3">
                             <img src="${s.fotoConductor || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}" class="w-12 h-12 rounded-full object-cover border-2 border-emerald-600 shadow">
@@ -470,6 +498,7 @@
             alert("¡Referencia enviada a la nube!");
         }
 
+        // ================= 2. FUNCIONES PRESTADOR =================
         function renderizarServiciosPrestador() {
             const nombreInput = document.getElementById('pres-nombre-login').value.trim().toLowerCase();
             const cont = document.getElementById('prestador-mis-servicios');
@@ -486,10 +515,10 @@
                 const tlfCliente = c.telefono.replace(/\D/g,'');
                 cont.innerHTML += `
                     <div class="p-4 bg-slate-50 border rounded-xl text-xs space-y-3">
-                        <p class="font-bold">#${c.id} - ${c.tipo} | Cliente: ${c.nombre}</p>
+                        <p class="font-bold">#${c.id} - ${c.tipo} | Cliente/Aliado: ${c.nombre}</p>
                         <p>📍 ${c.origen} ➡️ 🏁 ${c.destino}</p>
                         <div class="grid grid-cols-2 gap-2">
-                            <a href="https://wa.me/58${tlfCliente}" target="_blank" class="bg-emerald-600 text-white py-2 rounded text-center font-bold">WhatsApp Cliente</a>
+                            <a href="https://wa.me/58${tlfCliente}" target="_blank" class="bg-emerald-600 text-white py-2 rounded text-center font-bold">WhatsApp Contacto</a>
                             <a href="https://wa.me/${ADMIN_TELEFONO}" target="_blank" class="bg-blue-600 text-white py-2 rounded text-center font-bold">WhatsApp Admin</a>
                         </div>
                         <button type="button" onclick="finalizarServicioPrestador(${c.id}, '${c.conductor}')" class="w-full bg-slate-900 text-white py-2.5 rounded-xl font-bold">Finalizar Servicio</button>
@@ -504,9 +533,77 @@
             if(pres) {
                 db.ref('prestadores/' + (pres.id || 1)).update({ disponible: true });
             }
-            alert("¡Servicio finalizado!");
+            alert("¡Servicio finalizado con éxito!");
         }
 
+        function toggleDisponibilidad() {
+            const btn = document.getElementById('btn-disp');
+            if(btn.innerText === "DISPONIBLE") { btn.innerText = "FUERA"; btn.className = "bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
+            else { btn.innerText = "DISPONIBLE"; btn.className = "bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
+        }
+
+        // ================= 3. FUNCIONES ALIADO COMERCIAL =================
+        function enviarPedidoAliado() {
+            const codigo = document.getElementById('aliado-codigo').value.trim();
+            const contacto = document.getElementById('aliado-contacto').value.trim();
+            const origen = document.getElementById('aliado-origen').value.trim();
+            const destino = document.getElementById('aliado-destino').value.trim();
+
+            if(!codigo || !contacto || !origen || !destino) {
+                alert("⚠️ Todos los campos de comercio son obligatorios.");
+                return;
+            }
+
+            const servicioId = Date.now();
+            const nuevoDespacho = {
+                id: servicioId,
+                nombre: `[Aliado] ${codigo} (${contacto})`,
+                telefono: "04120000000",
+                tipo: "Delivery Masivo",
+                origen, destino,
+                montoUsd: 5.00, // Tarifa comercial fija por defecto o modificable por admin
+                estatus: "Precio Asignado (Pendiente de Pago)",
+                conductor: "Por Asignar",
+                fotoConductor: "",
+                vehiculoInfo: "",
+                refPago: "Comercio Corporativo",
+                pagoConfirmado: true, // Auto-aprobado para comercios con crédito
+                liquidado: false,
+                calificacion: 5,
+                esAliado: true,
+                fecha: new Date().toLocaleTimeString()
+            };
+
+            db.ref('servicios/' + servicioId).set(nuevoDespacho);
+            alert("✅ Despacho corporativo registrado exitosamente.");
+            renderizarPedidosAliado();
+        }
+
+        function renderizarPedidosAliado() {
+            const codigoInput = document.getElementById('aliado-codigo')?.value.trim().toLowerCase();
+            const cont = document.getElementById('lista-pedidos-aliado');
+            if(!cont || !codigoInput) return;
+            cont.innerHTML = '';
+
+            const misDespachos = servicios.filter(s => s.esAliado && s.nombre.toLowerCase().includes(codigoInput));
+            if(misDespachos.length === 0) {
+                cont.innerHTML = `<p class="text-xs text-slate-500">No hay despachos activos para este código de aliado.</p>`;
+                return;
+            }
+
+            misDespachos.forEach(d => {
+                cont.innerHTML += `
+                    <div class="p-3 bg-slate-50 border rounded-xl text-xs space-y-1">
+                        <p class="font-bold">Despacho #${d.id} | Estatus: <span class="text-red-600">${d.estatus}</span></p>
+                        <p>📍 Retiro: ${d.origen}</p>
+                        <p>🏁 Entrega: ${d.destino}</p>
+                        <p>🚗 Conductor: <b>${d.conductor}</b></p>
+                    </div>
+                `;
+            });
+        }
+
+        // ================= 4. FUNCIONES PANEL GERENCIAL / ADMIN =================
         function verificarPasswordAdmin() {
             if(document.getElementById('admin-pass').value === "Sky1012#") {
                 document.getElementById('admin-content').classList.remove('hidden');
@@ -519,7 +616,7 @@
         }
 
         function actualizarBadgeAdmin() {
-            const pendientes = servicios.filter(s => (s.montoUsd === 0) || (s.refPago !== "" && !s.pagoConfirmado)).length;
+            const pendientes = servicios.filter(s => (s.montoUsd === 0) || (s.refPago !== "" && !s.pagoConfirmado && !s.esAliado)).length;
             const badge = document.getElementById('admin-badge');
             if(!badge) return;
             if(pendientes > 0) { badge.innerText = pendientes; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
@@ -537,11 +634,13 @@
                     htmlAccion = `<input type="number" id="p-in-${s.id}" placeholder="USD" class="w-20 p-1 border text-xs"><button type="button" onclick="asignarPrecio(${s.id})" class="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold">Asignar</button>`;
                 } else if(!s.pagoConfirmado) {
                     htmlAccion = `<button type="button" onclick="validarPagoYConductor(${s.id})" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs font-bold">Validar y Asignar</button>`;
+                } else if(s.conductor === "Por Asignar") {
+                    htmlAccion = `<button type="button" onclick="validarPagoYConductor(${s.id})" class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">Asignar Conductor</button>`;
                 } else {
                     htmlAccion = `
                         <div class="flex items-center space-x-2">
                             <img src="${s.fotoConductor}" class="w-7 h-7 rounded-full object-cover border">
-                            <span class="text-emerald-600 font-bold text-xs">${s.conductor}</span>
+                            <span class="text-emerald-600 font-bold text-xs">Asignado: ${s.conductor}</span>
                         </div>`;
                 }
 
@@ -552,6 +651,68 @@
                             <p>Precio: $${s.montoUsd} | Ref: ${s.refPago || 'Ninguna'}</p>
                         </div>
                         <div class="flex items-center space-x-2">${htmlAccion}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function asignarPrecio(id) {
+            const precio = parseFloat(document.getElementById(`p-in-${id}`).value);
+            if(!precio) { alert("Ingresa un precio válido"); return; }
+            db.ref('servicios/' + id).update({ montoUsd: precio, estatus: "Precio Asignado (Pendiente de Pago)" });
+        }
+
+        function validarPagoYConductor(id) {
+            const prestadorDisponible = prestadores.find(p => p.estatus === 'Activo' && p.disponible);
+            if(!prestadorDisponible) { alert("⚠️ No hay prestadores disponibles en este momento."); return; }
+
+            db.ref('servicios/' + id).update({
+                pagoConfirmado: true,
+                estatus: "Pago Confirmado y En Ruta",
+                conductor: prestadorDisponible.nombre,
+                fotoConductor: prestadorDisponible.foto,
+                vehiculoInfo: `${prestadorDisponible.vehiculo} - Placa: ${prestadorDisponible.placa}`
+            });
+
+            db.ref('prestadores/' + (prestadorDisponible.id || 1)).update({ disponible: false });
+            alert(`✅ Conductor asignado con éxito: ${prestadorDisponible.nombre}`);
+        }
+
+        function registrarPrestadorAdmin() {
+            const nombre = document.getElementById('p-nombre').value.trim();
+            const cedula = document.getElementById('p-cedula').value.trim();
+            const vehiculo = document.getElementById('p-vehiculo').value.trim();
+            const placa = document.getElementById('p-placa').value.trim();
+            const foto = document.getElementById('p-foto-url').value.trim();
+
+            if(!nombre || !cedula || !foto) { 
+                alert("⚠️ Por favor completa los campos obligatorios, incluyendo obligatoriamente la URL de la foto del prestador."); 
+                return; 
+            }
+            
+            const pId = Date.now();
+            db.ref('prestadores/' + pId).set({ id: pId, nombre, cedula, vehiculo, placa, foto, estatus: "Activo", disponible: true });
+            alert("✅ Prestador registrado con éxito en la nube con su fotografía.");
+            
+            document.getElementById('p-nombre').value = '';
+            document.getElementById('p-cedula').value = '';
+            document.getElementById('p-vehiculo').value = '';
+            document.getElementById('p-placa').value = '';
+            document.getElementById('p-foto-url').value = '';
+        }
+
+        function renderizarPrestadoresAdmin() {
+            const cont = document.getElementById('lista-prestadores-admin');
+            if(!cont) return;
+            cont.innerHTML = '';
+            prestadores.forEach((p) => {
+                cont.innerHTML += `
+                    <div class="p-2 bg-white border rounded flex justify-between items-center text-xs">
+                        <div class="flex items-center space-x-2">
+                            <img src="${p.foto}" class="w-8 h-8 rounded-full object-cover border">
+                            <span><b>${p.nombre}</b> (${p.vehiculo} - ${p.placa})</span>
+                        </div>
+                        <span class="text-emerald-600 font-bold">${p.estatus}</span>
                     </div>
                 `;
             });
@@ -598,7 +759,6 @@
                     `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold text-[10px]">Liquidado</span>` :
                     `<button onclick="liquidarServicio(${s.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded font-bold text-[10px]">Liquidar Pago</button>`;
 
-                // Incluye la foto del prestador en la tabla de relación gerencial
                 let infoConductorTabla = s.conductor !== "Por Asignar" ? `
                     <div class="flex items-center space-x-2">
                         <img src="${s.fotoConductor}" class="w-6 h-6 rounded-full object-cover">
@@ -628,75 +788,6 @@
                 db.ref('servicios/' + id).update({ liquidado: true });
                 alert("✅ Pago liquidado con éxito.");
             }
-        }
-
-        function asignarPrecio(id) {
-            const precio = parseFloat(document.getElementById(`p-in-${id}`).value);
-            if(!precio) { alert("Ingresa un precio válido"); return; }
-            db.ref('servicios/' + id).update({ montoUsd: precio, estatus: "Precio Asignado (Pendiente de Pago)" });
-        }
-
-        function validarPagoYConductor(id) {
-            const prestadorDisponible = prestadores.find(p => p.estatus === 'Activo' && p.disponible);
-            if(!prestadorDisponible) { alert("⚠️ No hay prestadores disponibles."); return; }
-
-            db.ref('servicios/' + id).update({
-                pagoConfirmado: true,
-                estatus: "Pago Confirmado y En Ruta",
-                conductor: prestadorDisponible.nombre,
-                fotoConductor: prestadorDisponible.foto,
-                vehiculoInfo: `${prestadorDisponible.vehiculo} - Placa: ${prestadorDisponible.placa}`
-            });
-
-            db.ref('prestadores/' + (prestadorDisponible.id || 1)).update({ disponible: false });
-            alert(`✅ Conductor asignado: ${prestadorDisponible.nombre}`);
-        }
-
-        function registrarPrestadorAdmin() {
-            const nombre = document.getElementById('p-nombre').value.trim();
-            const cedula = document.getElementById('p-cedula').value.trim();
-            const vehiculo = document.getElementById('p-vehiculo').value.trim();
-            const placa = document.getElementById('p-placa').value.trim();
-            const foto = document.getElementById('p-foto-url').value.trim();
-
-            if(!nombre || !cedula || !foto) { 
-                alert("⚠️ Por favor completa los campos obligatorios, incluyendo obligatoriamente la URL de la foto del prestador."); 
-                return; 
-            }
-            
-            const pId = Date.now();
-            db.ref('prestadores/' + pId).set({ id: pId, nombre, cedula, vehiculo, placa, foto, estatus: "Activo", disponible: true });
-            alert("✅ Prestador registrado con éxito en la nube con su fotografía.");
-            
-            // Limpiar campos
-            document.getElementById('p-nombre').value = '';
-            document.getElementById('p-cedula').value = '';
-            document.getElementById('p-vehiculo').value = '';
-            document.getElementById('p-placa').value = '';
-            document.getElementById('p-foto-url').value = '';
-        }
-
-        function renderizarPrestadoresAdmin() {
-            const cont = document.getElementById('lista-prestadores-admin');
-            if(!cont) return;
-            cont.innerHTML = '';
-            prestadores.forEach((p, i) => {
-                cont.innerHTML += `
-                    <div class="p-2 bg-white border rounded flex justify-between items-center text-xs">
-                        <div class="flex items-center space-x-2">
-                            <img src="${p.foto}" class="w-8 h-8 rounded-full object-cover border">
-                            <span><b>${p.nombre}</b> (${p.vehiculo} - ${p.placa})</span>
-                        </div>
-                        <span class="text-emerald-600 font-bold">${p.estatus}</span>
-                    </div>
-                `;
-            });
-        }
-
-        function toggleDisponibilidad() {
-            const btn = document.getElementById('btn-disp');
-            if(btn.innerText === "DISPONIBLE") { btn.innerText = "FUERA"; btn.className = "bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
-            else { btn.innerText = "DISPONIBLE"; btn.className = "bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow"; }
         }
     </script>
 </body>
