@@ -45,16 +45,14 @@
         <!-- ================= 1. PORTAL DE CLIENTE ================= -->
         <div id="portal-cliente" class="space-y-4">
             
-            <!-- Pestañas internas del cliente -->
             <div class="flex space-x-2 border-b pb-2">
                 <button onclick="verTabCliente('solicitar')" id="tab-cli-solicitar" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white">Solicitar Servicio</button>
                 <button onclick="verTabCliente('mis-servicios')" id="tab-cli-mis-servicios" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700">Historial y Alertas de Pago</button>
             </div>
 
-            <!-- Alerta visual de estado -->
             <div id="form-mensaje" class="hidden p-3 rounded-xl text-xs font-bold"></div>
 
-            <!-- TAB 1: FORMULARIO DE SOLICITUD -->
+            <!-- TAB 1: FORMULARIO -->
             <div id="subtab-solicitar" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                 <h2 class="font-bold text-slate-900 text-lg flex items-center"><i class="fa-solid fa-taxi text-red-600 mr-2"></i> Solicitar Servicio de Movilidad o Logística</h2>
                 
@@ -111,7 +109,7 @@
                 </button>
             </div>
 
-            <!-- TAB 2: HISTORIAL Y ALERTAS DE PAGO MÓVIL -->
+            <!-- TAB 2: HISTORIAL (Orden: más antiguo al más nuevo) -->
             <div id="subtab-mis-servicios" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                 <div class="flex justify-between items-center">
                     <h2 class="font-bold text-slate-900 text-lg flex items-center"><i class="fa-solid fa-clock-rotate-left text-red-600 mr-2"></i> Historial de Servicios</h2>
@@ -185,7 +183,7 @@
                     </div>
 
                     <div class="p-5 bg-white border rounded-2xl shadow-sm space-y-4">
-                        <h3 class="font-bold text-slate-800 text-sm border-b pb-2"><i class="fa-solid fa-id-card-clip text-red-600 mr-2"></i> Registro de Prestadores</h3>
+                        <h3 class="font-bold text-slate-800 text-sm border-b pb-2"><i class="fa-solid fa-id-card-clip text-red-600 mr-2"></i> Registro y Control de Prestadores</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border">
                             <input type="text" id="p-nombre" placeholder="Nombre Completo *" class="p-2.5 border rounded-lg text-sm bg-white">
                             <input type="text" id="p-cedula" placeholder="Cédula *" class="p-2.5 border rounded-lg text-sm bg-white">
@@ -201,7 +199,7 @@
 
     </main>
 
-    <!-- Script de Lógica -->
+    <!-- Script de Lógica Blindado -->
     <script>
         let tasaBCV = 884.75;
         const DATOS_PAGO_MOVIL = { banco: "Banco de Venezuela (0102)", telefono: "0412-3349463", cedula: "V-13609424", titular: "LLEGANDO Red Integrada" };
@@ -213,13 +211,56 @@
 
         function cambiarPortal(portal) {
             ['cliente', 'prestador', 'aliado', 'admin'].forEach(p => {
-                document.getElementById(`portal-${p}`).classList.add('hidden');
-                document.getElementById(`btn-${p}`).className = 'px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap'; }); document.getElementById(`portal-${portal}`).classList.remove('hidden');
-            document.getElementById(`btn-${portal}`).className = 'px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white transition whitespace-nowrap'; if(portal === 'admin') actualizarBadgeAdmin(); if(portal === 'prestador') renderizarServiciosPrestador(); }  function verTabCliente(tab) { document.getElementById('subtab-solicitar').classList.add('hidden'); document.getElementById('subtab-mis-servicios').classList.add('hidden'); document.getElementById('tab-cli-solicitar').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700'; document.getElementById('tab-cli-mis-servicios').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700';  if(tab === 'solicitar') { document.getElementById('subtab-solicitar').classList.remove('hidden'); document.getElementById('tab-cli-solicitar').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white'; } else { document.getElementById('subtab-mis-servicios').classList.remove('hidden'); document.getElementById('tab-cli-mis-servicios').className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white'; } }  function actualizarCotizacion() { const tipo = document.getElementById('cli-tipo').value; const tarifas = { "Taxi": 5.00, "Mototaxi": 2.50, "Delivery": 3.00, "Fletes": 15.00, "Encomiendas": 2.50 }; const usd = tarifas[tipo] \vert{}\vert{} 3.00; const bs = usd * tasaBCV; document.getElementById('cotizacion-usd').innerText = `$${usd.toFixed(2)} USD`; document.getElementById('cotizacion-bs').innerText = `Bs. ${bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+                const elPortal = document.getElementById(`portal-${p}`);
+                const btnPortal = document.getElementById(`btn-${p}`);
+                if(elPortal) elPortal.classList.add('hidden');
+                if(btnPortal) btnPortal.className = 'px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap';
+            });
+            const selPortal = document.getElementById(`portal-${portal}`);
+            const selBtn = document.getElementById(`btn-${portal}`);
+            if(selPortal) selPortal.classList.remove('hidden');
+            if(selBtn) selBtn.className = 'px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white transition whitespace-nowrap';
+
+            if(portal === 'admin') actualizarBadgeAdmin();
+            if(portal === 'prestador') renderizarServiciosPrestador();
+        }
+
+        function verTabCliente(tab) {
+            const subSolicitar = document.getElementById('subtab-solicitar');
+            const subServicios = document.getElementById('subtab-mis-servicios');
+            const tabSolicitar = document.getElementById('tab-cli-solicitar');
+            const tabServicios = document.getElementById('tab-cli-mis-servicios');
+
+            if(subSolicitar) subSolicitar.classList.add('hidden');
+            if(subServicios) subServicios.classList.add('hidden');
+            if(tabSolicitar) tabSolicitar.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700';
+            if(tabServicios) tabServicios.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700';
+
+            if(tab === 'solicitar') {
+                if(subSolicitar) subSolicitar.classList.remove('hidden');
+                if(tabSolicitar) tabSolicitar.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white';
+            } else {
+                if(subServicios) subServicios.classList.remove('hidden');
+                if(tabServicios) tabServicios.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white';
+            }
+        }
+
+        function actualizarCotizacion() {
+            const tipoEl = document.getElementById('cli-tipo');
+            if(!tipoEl) return;
+            const tipo = tipoEl.value;
+            const tarifas = { "Taxi": 5.00, "Mototaxi": 2.50, "Delivery": 3.00, "Fletes": 15.00, "Encomiendas": 2.50 };
+            const usd = tarifas[tipo] || 3.00;
+            const bs = usd * tasaBCV;
+            const usdDisp = document.getElementById('cotizacion-usd');
+            const bsDisp = document.getElementById('cotizacion-bs');
+            if(usdDisp) usdDisp.innerText = `$${usd.toFixed(2)} USD`;
+            if(bsDisp) bsDisp.innerText = `Bs. ${bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
         }
 
         function mostrarMensajeFormulario(texto, tipo) {
             const msg = document.getElementById('form-mensaje');
+            if(!msg) return;
             msg.innerText = texto;
             msg.className = `p-3 rounded-xl text-xs font-bold ${tipo === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`;
             msg.classList.remove('hidden');
@@ -227,11 +268,19 @@
         }
 
         function enviarSolicitudCliente() {
-            const nombre = document.getElementById('cli-nombre').value.trim();
-            const telefono = document.getElementById('cli-telefono').value.trim();
-            const tipo = document.getElementById('cli-tipo').value;
-            const origen = document.getElementById('cli-origen').value.trim();
-            const destino = document.getElementById('cli-destino').value.trim();
+            const nombreEl = document.getElementById('cli-nombre');
+            const telefonoEl = document.getElementById('cli-telefono');
+            const tipoEl = document.getElementById('cli-tipo');
+            const origenEl = document.getElementById('cli-origen');
+            const destinoEl = document.getElementById('cli-destino');
+
+            if(!nombreEl || !telefonoEl || !origenEl || !destinoEl) return;
+
+            const nombre = nombreEl.value.trim();
+            const telefono = telefonoEl.value.trim();
+            const tipo = tipoEl.value;
+            const origen = origenEl.value.trim();
+            const destino = destinoEl.value.trim();
 
             if(!nombre || !telefono || !origen || !destino) {
                 mostrarMensajeFormulario("⚠️ Por favor complete todos los campos obligatorios (*).", "error");
@@ -256,18 +305,20 @@
 
             mostrarMensajeFormulario("✅ ¡Solicitud enviada con éxito!", "exito");
             
-            document.getElementById('consultar-tlf-cli').value = telefono;
+            const consultaTlf = document.getElementById('consultar-tlf-cli');
+            if(consultaTlf) consultaTlf.value = telefono;
             verTabCliente('mis-servicios');
             buscarServiciosCliente();
             actualizarBadgeAdmin();
         }
 
         function buscarServiciosCliente() {
-            const tlf = document.getElementById('consultar-tlf-cli').value.trim();
+            const tlfEl = document.getElementById('consultar-tlf-cli');
             const cont = document.getElementById('lista-servicios-cliente-resultado');
-            if(!cont) return;
+            if(!cont || !tlfEl) return;
             cont.innerHTML = '';
 
+            const tlf = tlfEl.value.trim();
             if(!tlf) {
                 cont.innerHTML = `<p class="text-xs text-red-500 font-bold">Por favor ingresa tu número de teléfono.</p>`;
                 return;
@@ -297,4 +348,41 @@
                         <div class="text-xs text-slate-600 space-y-1">
                             <p>📍 <b>Origen:</b> ${s.origen}</p>
                             <p>🏁 <b>Destino:</b> ${s.destino}</p>
-                            <p>
+                            <p>💵 <b>Monto:</b> <span class="font-extrabold text-red-600">$${s.montoUsd.toFixed(2)} USD</span> (Bs. ${montoBs})</p>
+                        </div>
+                        <div class="p-3 bg-slate-900 text-white rounded-xl text-xs space-y-1">
+                            <p class="font-bold text-red-400 text-[11px] uppercase">Pago Móvil Oficial</p>
+                            <p>• Banco: ${DATOS_PAGO_MOVIL.banco}</p>
+                            <p>• Teléfono: ${DATOS_PAGO_MOVIL.telefono}</p>
+                            <p>• Cédula: ${DATOS_PAGO_MOVIL.cedula}</p>
+                            <p>• Monto: <b>Bs. ${montoBs}</b></p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <input type="text" id="ref-input-${s.id}" value="${s.refPago}" placeholder="Número de referencia..." class="w-full p-2 border rounded-xl text-xs outline-none bg-white">
+                            <button onclick="reportarReferenciaCliente(${s.id})" class="bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Reportar</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function reportarReferenciaCliente(id) {
+            const refEl = document.getElementById(`ref-input-${id}`);
+            if(!refEl) return;
+            const ref = refEl.value.trim();
+            if(!ref) { alert("Ingresa el número de referencia."); return; }
+            const serv = servicios.find(s => s.id === id);
+            if(serv) {
+                serv.refPago = ref;
+                serv.estatus = "Pago Reportado (Por Verificar)";
+                localStorage.setItem('llegando_servicios', JSON.stringify(servicios));
+                alert("¡Referencia enviada con éxito!");
+                buscarServiciosCliente();
+                actualizarBadgeAdmin();
+            }
+        }
+
+        function verificarPasswordAdmin() {
+            const passEl = document.getElementById('admin-pass');
+            const content = document.getElementById('admin-content');
+            if(!passEl || !content) return;
