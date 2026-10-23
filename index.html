@@ -32,10 +32,10 @@
     <!-- Navegación por Portales -->
     <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-16 z-20 overflow-x-auto">
         <div class="max-w-7xl mx-auto px-4 flex space-x-2 py-2">
-            <button onclick="cambiarPortal('cliente')" id="btn-cliente" class="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white transition whitespace-nowrap shadow-sm"><i class="fa-solid fa-user mr-1"></i> 1. Portal Cliente</button>
-            <button onclick="cambiarPortal('prestador')" id="btn-prestador" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap"><i class="fa-solid fa-id-badge mr-1"></i> 2. Portal Prestador</button>
-            <button onclick="cambiarPortal('aliado')" id="btn-aliado" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap"><i class="fa-solid fa-store mr-1"></i> 3. Aliado Comercial</button>
-            <button onclick="cambiarPortal('admin')" id="btn-admin" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap relative"><i class="fa-solid fa-gauge-high mr-1"></i> 4. Panel Gerencial <span id="admin-badge" class="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] px-1.5 py-0.2 rounded-full hidden">0</span></button>
+            <button type="button" onclick="cambiarPortal('cliente')" id="btn-cliente" class="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white transition whitespace-nowrap shadow-sm"><i class="fa-solid fa-user mr-1"></i> 1. Portal Cliente</button>
+            <button type="button" onclick="cambiarPortal('prestador')" id="btn-prestador" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap"><i class="fa-solid fa-id-badge mr-1"></i> 2. Portal Prestador</button>
+            <button type="button" onclick="cambiarPortal('aliado')" id="btn-aliado" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap"><i class="fa-solid fa-store mr-1"></i> 3. Aliado Comercial</button>
+            <button type="button" onclick="cambiarPortal('admin')" id="btn-admin" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap relative"><i class="fa-solid fa-gauge-high mr-1"></i> 4. Panel Gerencial <span id="admin-badge" class="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] px-1.5 py-0.2 rounded-full hidden">0</span></button>
         </div>
     </nav>
 
@@ -46,8 +46,8 @@
         <div id="portal-cliente" class="space-y-4">
             
             <div class="flex space-x-2 border-b pb-2">
-                <button onclick="verTabCliente('solicitar')" id="tab-cli-solicitar" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white">Solicitar Servicio</button>
-                <button onclick="verTabCliente('mis-servicios')" id="tab-cli-mis-servicios" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700">Historial y Alertas de Pago</button>
+                <button type="button" onclick="verTabCliente('solicitar')" id="tab-cli-solicitar" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white">Solicitar Servicio</button>
+                <button type="button" onclick="verTabCliente('mis-servicios')" id="tab-cli-mis-servicios" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-200 text-slate-700">Historial y Alertas de Pago</button>
             </div>
 
             <div id="form-mensaje" class="hidden p-3 rounded-xl text-xs font-bold"></div>
@@ -202,7 +202,7 @@
 
     </main>
 
-    <!-- Script de Lógica Blindada -->
+    <!-- Script de Autoprotección contra Bloqueos -->
     <script>
         const tasaBCV = 884.75;
         const ADMIN_TELEFONO = "584123349463";
@@ -213,24 +213,52 @@
             { id: 1, nombre: "Carlos Mendoza", cedula: "V-15482910", vehiculo: "Moto", placa: "AB1C23D", foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150", estatus: "Activo", disponible: true }
         ];
 
+        // Autoprotección y limpieza automática de almacenamiento corrupto
         try {
-            const servStorage = localStorage.getItem('llegando_servicios');
-            if (servStorage) servicios = JSON.parse(servStorage);
-            const presStorage = localStorage.getItem('llegando_prestadores');
-            if (presStorage) prestadores = JSON.parse(presStorage);
+            const servStorage = localStorage.getItem('llegando_servicios_v2');
+            if (servStorage) {
+                servicios = JSON.parse(servStorage);
+            } else {
+                // Migración limpia desde la versión anterior si existiera
+                const viejoServ = localStorage.getItem('llegando_servicios');
+                if (viejoServ) {
+                    servicios = JSON.parse(viejoServ);
+                    localStorage.setItem('llegando_servicios_v2', JSON.stringify(servicios));
+                }
+            }
+
+            const presStorage = localStorage.getItem('llegando_prestadores_v2');
+            if (presStorage) {
+                prestadores = JSON.parse(presStorage);
+            } else {
+                const viejoPres = localStorage.getItem('llegando_prestadores');
+                if (viejoPres) {
+                    prestadores = JSON.parse(viejoPres);
+                    localStorage.setItem('llegando_prestadores_v2', JSON.stringify(prestadores));
+                }
+            }
         } catch (e) {
-            console.error(e);
+            console.warn("Memoria local reiniciada por seguridad:", e);
+            localStorage.removeItem('llegando_servicios');
+            localStorage.removeItem('llegando_prestadores');
+        }
+
+        function guardarDatosSeguro() {
+            try {
+                localStorage.setItem('llegando_servicios_v2', JSON.stringify(servicios));
+                localStorage.setItem('llegando_prestadores_v2', JSON.stringify(prestadores));
+            } catch (e) {
+                console.error("Error al guardar en localStorage:", e);
+            }
         }
 
         function cambiarPortal(portal) {
             ['cliente', 'prestador', 'aliado', 'admin'].forEach(p => {
-                const elPortal = document.getElementById(`portal-${p}`);
-                const btnPortal = document.getElementById(`btn-${p}`);
+                const elPortal = document.getElementById(`portal-${p}`); const btnPortal = document.getElementById(`btn-${p}`);
                 if(elPortal) elPortal.classList.add('hidden');
                 if(btnPortal) btnPortal.className = 'px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition whitespace-nowrap';
             });
-            const selPortal = document.getElementById(`portal-${portal}`);
-            const selBtn = document.getElementById(`btn-${portal}`);
+            const selPortal = document.getElementById(`portal-${portal}`); const selBtn = document.getElementById(`btn-${portal}`);
             if(selPortal) selPortal.classList.remove('hidden');
             if(selBtn) selBtn.className = 'px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white transition whitespace-nowrap';
 
@@ -302,9 +330,7 @@
             };
 
             servicios.push(nuevoServicio);
-            try {
-                localStorage.setItem('llegando_servicios', JSON.stringify(servicios));
-            } catch(e) {}
+            guardarDatosSeguro();
 
             mostrarMensajeFormulario("✅ ¡Solicitud enviada con éxito!", "exito");
             
@@ -342,7 +368,7 @@
                 if(s.estatus === "Completado") {
                     let htmlEstrellas = '';
                     for(let i = 1; i <= 5; i++) {
-                        htmlEstrellas += `<i class="fa-solid fa-star cursor-pointer ${i <= s.calificacion ? 'text-yellow-400' : 'text-slate-300'}" onclick="calificarServicio(${s.id}, ${i})"></i>`;
+                        htmlEstrellas += `<i class="fa-solid fa-star cursor-pointer ${i <= s.calificacion ? 'text-yellow-400' : 'text-slate-300'}" onclick="calificarServicio(${s.id},${i})"></i>`;
                     }
                     htmlAlerta = `
                         <div class="p-3 bg-slate-100 border rounded-xl text-xs space-y-1">
@@ -375,8 +401,7 @@
                         <p class="font-bold text-red-400 text-[11px] uppercase">Pago Móvil Oficial</p>
                         <p>• Banco: ${DATOS_PAGO_MOVIL.banco}</p>
                         <p>• Teléfono: ${DATOS_PAGO_MOVIL.telefono}</p>
-                        <p>• Cédula: ${DATOS_PAGO_MOVIL.cedula}</p>
-                        <p>• Monto a Pagar: <span class="font-extrabold text-yellow-400">$${s.montoUsd.toFixed(2)} USD (Bs. ${montoBs})</span></p>
+                        <p>• Cédula: ${DATOS_PAGO_MOVIL.cedula}</p> <p>• Monto a Pagar: <span class="font-extrabold text-yellow-400">$${s.montoUsd.toFixed(2)} USD (Bs.${montoBs})</span></p>
                     </div>
                     <div class="flex space-x-2">
                         <input type="text" id="ref-input-${s.id}" value="${s.refPago}" placeholder="Número de referencia..." class="w-full p-2 border rounded-xl text-xs outline-none bg-white">
@@ -395,20 +420,145 @@
                             <p>📍 <b>Origen:</b> ${s.origen}</p>
                             <p>🏁 <b>Destino:</b> ${s.destino}</p>
                             <p>🕒 <b>Hora:</b> ${s.fecha}</p>
-                            <p>💵 <b>Precio:</b> <span class="font-extrabold text-red-600">${s.montoUsd > 0 ? `$${s.montoUsd.toFixed(2)} USD (Bs. ${montoBs})` : 'Pendiente'}</span></p> </div> ${htmlPagoMovil} </div> `; }); }          function calificarServicio(id, estrellas) { const serv = servicios.find(s => s.id === id); if(serv) { serv.calificacion = estrellas; try { localStorage.setItem('llegando_servicios', JSON.stringify(servicios)); } catch(e) {} buscarServiciosCliente(); alert(`⭐ ¡Gracias por valorar nuestro servicio con ${estrellas} estrellas!`); } }          function reportarReferenciaCliente(id) { const refEl = document.getElementById(`ref-input-${id}`); if(!refEl) return; const ref = refEl.value.trim(); if(!ref) { alert("Ingresa el número de referencia."); return; } const serv = servicios.find(s => s.id === id); if(serv) { serv.refPago = ref; serv.estatus = "Pago Reportado (Por Verificar)"; try { localStorage.setItem('llegando_servicios', JSON.stringify(servicios)); } catch(e) {} alert("¡Referencia enviada con éxito!"); buscarServiciosCliente(); actualizarBadgeAdmin(); } }          function renderizarServiciosPrestador() { const inputEl = document.getElementById('pres-nombre-login'); const cont = document.getElementById('prestador-mis-servicios'); if(!cont \vert{}\vert{} !inputEl) return; cont.innerHTML = '';              const nombreInput = inputEl.value.trim().toLowerCase(); if(!nombreInput) { cont.innerHTML = `<p class="text-xs text-slate-400">Escribe tu nombre exacto para ver tus carreras.</p>`; return; }              const misCarreras = servicios.filter(s => s.conductor.toLowerCase() === nombreInput && s.estatus !== "Completado"); if(misCarreras.length === 0) { cont.innerHTML = `<p class="text-xs text-slate-500">No tienes servicios asignados activos en este momento.</p>`; return; }              misCarreras.forEach(c => { const tlfCliente = c.telefono.replace(/\D/g,''); const msgCliente = encodeURIComponent(`Hola ${c.nombre}, soy tu prestador ${c.conductor} de LLEGANDO. Voy en camino a tu servicio.`); const msgAdmin = encodeURIComponent(`Hola Admin, el prestador ${c.conductor} está atendiendo el servicio #${c.id} de ${c.nombre} (${c.tipo}).`);                  cont.innerHTML += ` <div class="p-4 bg-slate-50 border rounded-xl text-xs space-y-3"> <div> <p class="font-bold text-slate-800 text-sm">Servicio #${c.id} - ${c.tipo}</p> <p>Cliente: <b>${c.nombre}</b> (${c.telefono})</p> <p>Ruta: 📍 ${c.origen} ➡️ 🏁 ${c.destino}</p> <p class="text-emerald-600 font-bold pt-1">Estatus: ${c.estatus}</p> </div>  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1"> <a href="https://wa.me/58${tlfCliente}?text=${msgCliente}" target="_blank" class="bg-emerald-600 text-white py-2 px-3 rounded-lg font-bold text-center flex items-center justify-center space-x-1 hover:bg-emerald-700"> <i class="fa-brands fa-whatsapp text-sm"></i> <span>WhatsApp Cliente</span> </a> <a href="https://wa.me/${ADMIN_TELEFONO}?text=${msgAdmin}" target="_blank" class="bg-blue-600 text-white py-2 px-3 rounded-lg font-bold text-center flex items-center justify-center space-x-1 hover:bg-blue-700"> <i class="fa-brands fa-whatsapp text-sm"></i> <span>WhatsApp Admin</span> </a> </div>  <button type="button" onclick="finalizarServicioPrestador(${c.id})" class="w-full bg-slate-900 text-white py-2.5 rounded-xl font-bold hover:bg-slate-800 transition"> <i class="fa-solid fa-flag-checkered mr-1"></i> Finalizar Servicio </button> </div> `; }); }          function finalizarServicioPrestador(id) { const serv = servicios.find(s => s.id === id); if(serv) { serv.estatus = "Completado"; const pres = prestadores.find(p => p.nombre.toLowerCase() === serv.conductor.toLowerCase()); if(pres) { pres.disponible = true; try { localStorage.setItem('llegando_prestadores', JSON.stringify(prestadores)); } catch(e) {} } try { localStorage.setItem('llegando_servicios', JSON.stringify(servicios)); } catch(e) {} alert("✅ ¡Servicio finalizado con éxito!"); renderizarServiciosPrestador(); } }          function verificarPasswordAdmin() { const passEl = document.getElementById('admin-pass'); const content = document.getElementById('admin-content'); if(!passEl \vert{}\vert{} !content) return; if(passEl.value === "Sky1012#") { content.classList.remove('hidden'); renderizarAdminSolicitudes(); renderizarPrestadoresAdmin(); } else { content.classList.add('hidden'); } }          function actualizarBadgeAdmin() { const pendientes = servicios.filter(s => (s.montoUsd === 0) \vert{}\vert{} (s.refPago !== "" && !s.pagoConfirmado)).length; const badge = document.getElementById('admin-badge'); if(!badge) return; if(pendientes > 0) { badge.innerText = pendientes; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); } }          function renderizarAdminSolicitudes() { const cont = document.getElementById('admin-lista-solicitudes'); if(!cont) return; cont.innerHTML = ''; if(servicios.length === 0) { cont.innerHTML = `<p class="text-xs text-slate-400">Sin solicitudes.</p>`; return; }              servicios.slice().reverse().forEach((s) => { const montoBs = (s.montoUsd * tasaBCV).toFixed(2); let htmlAccionAdmin = '';                  if(s.montoUsd === 0) { htmlAccionAdmin = ` <div class="flex items-center space-x-2"> <input type="number" step="0.5" id="precio-input-${s.id}" placeholder="Precio USD" class="w-24 p-1.5 border rounded text-xs"> <button type="button" onclick="asignarPrecioAdmin(${s.id})" class="px-3 py-1.5 bg-red-600 text-white rounded-lg font-bold text-xs">Asignar Precio</button> </div> `; } else if(!s.pagoConfirmado) { htmlAccionAdmin = ` <button type="button" onclick="confirmarPagoYAsignarAuto(${s.id})" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-bold text-xs">Validar Pago y Conductor</button> `; } else { htmlAccionAdmin = `<span class="text-emerald-600 font-bold text-xs"><i class="fa-solid fa-check-double mr-1"></i> ${s.estatus} (${s.conductor})</span>`; }                  cont.innerHTML += ` <div class="p-3 bg-slate-50 border rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"> <div> <p class="font-bold text-slate-900">#${s.id} - ${s.tipo} \vert{} Cliente: ${s.nombre} (${s.telefono})</p> <p class="text-slate-600">Ruta: ${s.origen} ➡️ ${s.destino}</p> <p class="text-slate-500">Precio: <b class="text-red-600">${s.montoUsd > 0 ? `$${s.montoUsd.toFixed(2)} USD (Bs.${montoBs})` : 'Sin asignar'}</b> | Ref: <b>${s.refPago || 'Sin reportar'}</b> | Valoración: <b>${s.calificacion ? s.calificacion + ' ⭐' : 'Sin valorar'}</b></p>
+                            <p>💵 <b>Precio:</b> <span class="font-extrabold text-red-600">${s.montoUsd > 0 ? `$${s.montoUsd.toFixed(2)} USD (Bs. ${montoBs})` : 'Pendiente'}</span></p>
                         </div>
-                        <div>
-                            ${htmlAccionAdmin}
-                        </div>
+                        ${htmlPagoMovil}
                     </div>
                 `;
             });
         }
 
-        function asignarPrecioAdmin(id) {
-            const input = document.getElementById(`precio-input-${id}`);
-            if(!input) return;
-            const precio = parseFloat(input.value);
-            if(!precio || precio <= 0) {
-                alert("Por favor ingrese un monto válido en USD.");
+        function calificarServicio(id, estrellas) {
+            const serv = servicios.find(s => s.id === id);
+            if(serv) {
+                serv.calificacion = estrellas;
+                guardarDatosSeguro();
+                buscarServiciosCliente();
+                alert(`⭐ ¡Gracias por valorar nuestro servicio con ${estrellas} estrellas!`); } }  function reportarReferenciaCliente(id) { const refEl = document.getElementById(`ref-input-${id}`);
+            if(!refEl) return;
+            const ref = refEl.value.trim();
+            if(!ref) { alert("Ingresa el número de referencia."); return; }
+            const serv = servicios.find(s => s.id === id);
+            if(serv) {
+                serv.refPago = ref;
+                serv.estatus = "Pago Reportado (Por Verificar)";
+                guardarDatosSeguro();
+                alert("¡Referencia enviada con éxito!");
+                buscarServiciosCliente();
+                actualizarBadgeAdmin();
+            }
+        }
+
+        function renderizarServiciosPrestador() {
+            const inputEl = document.getElementById('pres-nombre-login');
+            const cont = document.getElementById('prestador-mis-servicios');
+            if(!cont || !inputEl) return;
+            cont.innerHTML = '';
+
+            const nombreInput = inputEl.value.trim().toLowerCase();
+            if(!nombreInput) {
+                cont.innerHTML = `<p class="text-xs text-slate-400">Escribe tu nombre exacto para ver tus carreras.</p>`;
                 return;
+            }
+
+            const misCarreras = servicios.filter(s => s.conductor.toLowerCase() === nombreInput && s.estatus !== "Completado");
+            if(misCarreras.length === 0) {
+                cont.innerHTML = `<p class="text-xs text-slate-500">No tienes servicios asignados activos en este momento.</p>`;
+                return;
+            }
+
+            misCarreras.forEach(c => {
+                const tlfCliente = c.telefono.replace(/\D/g,'');
+                const msgCliente = encodeURIComponent(`Hola ${c.nombre}, soy tu prestador${c.conductor} de LLEGANDO. Voy en camino a tu servicio.`);
+                const msgAdmin = encodeURIComponent(`Hola Admin, el prestador ${c.conductor} está atendiendo el servicio #${c.id} de ${c.nombre} (${c.tipo}).`);
+
+                cont.innerHTML += `
+                    <div class="p-4 bg-slate-50 border rounded-xl text-xs space-y-3">
+                        <div>
+                            <p class="font-bold text-slate-800 text-sm">Servicio #${c.id} -${c.tipo}</p>
+                            <p>Cliente: <b>${c.nombre}</b> (${c.telefono})</p>
+                            <p>Ruta: 📍 ${c.origen} ➡️ 🏁 ${c.destino}</p>
+                            <p class="text-emerald-600 font-bold pt-1">Estatus: ${c.estatus}</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                            <a href="https://wa.me/58${tlfCliente}?text=${msgCliente}" target="_blank" class="bg-emerald-600 text-white py-2 px-3 rounded-lg font-bold text-center flex items-center justify-center space-x-1 hover:bg-emerald-700">
+                                <i class="fa-brands fa-whatsapp text-sm"></i> <span>WhatsApp Cliente</span>
+                            </a>
+                            <a href="https://wa.me/${ADMIN_TELEFONO}?text=${msgAdmin}" target="_blank" class="bg-blue-600 text-white py-2 px-3 rounded-lg font-bold text-center flex items-center justify-center space-x-1 hover:bg-blue-700">
+                                <i class="fa-brands fa-whatsapp text-sm"></i> <span>WhatsApp Admin</span>
+                            </a>
+                        </div>
+
+                        <button type="button" onclick="finalizarServicioPrestador(${c.id})" class="w-full bg-slate-900 text-white py-2.5 rounded-xl font-bold hover:bg-slate-800 transition">
+                            <i class="fa-solid fa-flag-checkered mr-1"></i> Finalizar Servicio
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function finalizarServicioPrestador(id) {
+            const serv = servicios.find(s => s.id === id);
+            if(serv) {
+                serv.estatus = "Completado";
+                const pres = prestadores.find(p => p.nombre.toLowerCase() === serv.conductor.toLowerCase());
+                if(pres) {
+                    pres.disponible = true;
+                }
+                guardarDatosSeguro();
+                alert("✅ ¡Servicio finalizado con éxito!");
+                renderizarServiciosPrestador();
+            }
+        }
+
+        function verificarPasswordAdmin() {
+            const passEl = document.getElementById('admin-pass');
+            const content = document.getElementById('admin-content');
+            if(!passEl || !content) return;
+            if(passEl.value === "Sky1012#") {
+                content.classList.remove('hidden');
+                renderizarAdminSolicitudes();
+                renderizarPrestadoresAdmin();
+            } else {
+                content.classList.add('hidden');
+            }
+        }
+
+        function actualizarBadgeAdmin() {
+            const pendientes = servicios.filter(s => (s.montoUsd === 0) || (s.refPago !== "" && !s.pagoConfirmado)).length;
+            const badge = document.getElementById('admin-badge');
+            if(!badge) return;
+            if(pendientes > 0) { badge.innerText = pendientes; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+        }
+
+        function renderizarAdminSolicitudes() {
+            const cont = document.getElementById('admin-lista-solicitudes');
+            if(!cont) return;
+            cont.innerHTML = '';
+            if(servicios.length === 0) { cont.innerHTML = `<p class="text-xs text-slate-400">Sin solicitudes.</p>`; return; }
+
+            servicios.slice().reverse().forEach((s) => {
+                const montoBs = (s.montoUsd * tasaBCV).toFixed(2);
+                let htmlAccionAdmin = '';
+
+                if(s.montoUsd === 0) {
+                    htmlAccionAdmin = `
+                        <div class="flex items-center space-x-2">
+                            <input type="number" step="0.5" id="precio-input-${s.id}" placeholder="Precio USD" class="w-24 p-1.5 border rounded text-xs">
+                            <button type="button" onclick="asignarPrecioAdmin(${s.id})" class="px-3 py-1.5 bg-red-600 text-white rounded-lg font-bold text-xs">Asignar Precio</button>
+                        </div>
+                    `;
+                } else if(!s.pagoConfirmado) {
+                    htmlAccionAdmin = `
+                        <button type="button" onclick="confirmarPagoYAsignarAuto(${s.id})" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-bold text-xs">Validar Pago y Conductor</button>
+                    `;
+                } else {
+                    htmlAccionAdmin = `<span class="text-emerald-600 font-bold text-xs"><i class="fa-solid fa-check-double mr-1"></i> ${s.estatus} (${s.conductor})</span>`;
+                }
+
+                cont.innerHTML += `
+                    <div class="p-3 bg-slate-50 border rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
+                        <div>
+                            <p class="font-bold text-slate-900">#${s.id} -${s.tipo} | Cliente: ${s.nombre} (${s.telefono})</p>
+                            <p class="text-slate-600">Ruta: ${s.or
